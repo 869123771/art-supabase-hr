@@ -1,0 +1,1 @@
+import{St as e,dt as t,sn as n}from"./style-CCbnMNkJ.js";import{t as r}from"./hr-workspace-page-CC5IcB7_.js";var i=e({name:`HrTalentDevelopment`,__name:`index`,setup(e){let i={view:`Hr:Talent:View`,add:`Hr:Talent:Add`,edit:`Hr:Talent:Edit`,delete:`Hr:Talent:Delete`};return(e,a)=>(n(),t(r,{"workspace-key":`talent`,permissions:i}))}});export{i as default};

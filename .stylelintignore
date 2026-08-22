@@ -1,0 +1,11 @@
+dist
+docs
+node_modules
+public
+supabase
+.husky
+.vscode
+
+src/components/Layout/MenuLeft/index.vue
+src/assets
+stats.html
