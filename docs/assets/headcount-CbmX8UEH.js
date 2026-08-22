@@ -1,1 +1,0 @@
-import{St as e,dt as t,sn as n}from"./style-CCbnMNkJ.js";import{t as r}from"./hr-workspace-page-CC5IcB7_.js";var i=e({name:`HrHeadcount`,__name:`index`,setup(e){let i={view:`Hr:Headcount:View`,add:`Hr:Headcount:Add`,edit:`Hr:Headcount:Edit`,delete:`Hr:Headcount:Delete`};return(e,a)=>(n(),t(r,{"workspace-key":`headcount`,permissions:i}))}});export{i as default};

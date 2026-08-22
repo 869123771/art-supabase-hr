@@ -1,1 +1,0 @@
-import{St as e,dt as t,sn as n}from"./style-CCbnMNkJ.js";import{t as r}from"./hr-workspace-page-CC5IcB7_.js";var i=e({name:`HrPerformance`,__name:`index`,setup(e){let i={view:`Hr:Performance:View`,add:`Hr:Performance:Add`,edit:`Hr:Performance:Edit`,delete:`Hr:Performance:Delete`};return(e,a)=>(n(),t(r,{"workspace-key":`performance`,permissions:i}))}});export{i as default};

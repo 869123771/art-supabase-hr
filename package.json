@@ -30,7 +30,7 @@
     "@vue-flow/core": "1.48.2",
     "@vue-flow/minimap": "1.5.4",
     "@vueuse/core": "^14.3.0",
-    "art-supabase-pro": "https://gitee.com/wangyanghub/art-supabase-pro/raw/33b4c4166f97760f365a80b4796d54f05096c527/packages/art-supabase-pro-runtime.tgz",
+    "art-supabase-pro": "https://gitee.com/wangyanghub/art-supabase-pro/repository/archive/877b644c9e6fb1b8dc0925b9f5aa64d503a5cbfe.tar.gz",
     "dayjs": "^1.11.21",
     "element-plus": "2.14.3",
     "lodash-es": "^4.18.1",
