@@ -1,5 +1,5 @@
 <template>
-  <div class="business-workspace-page art-full-height">
+  <div v-auth="'Hr:Position:View'" class="business-workspace-page art-full-height">
     <BusinessWorkspaceHeader
       eyebrow="POSITION CATALOG"
       title="岗位管理"
