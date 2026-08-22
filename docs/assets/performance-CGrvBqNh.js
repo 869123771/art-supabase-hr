@@ -1,1 +1,0 @@
-import{Kn as e,Xt as t,sn as n}from"./file-DE4SY_R9.js";import{t as r}from"./hr-workspace-page-DMXDo3eD.js";var i=n({name:`HrPerformance`,__name:`index`,setup(n){let i={view:`Hr:Performance:View`,add:`Hr:Performance:Add`,edit:`Hr:Performance:Edit`,delete:`Hr:Performance:Delete`};return(n,a)=>(e(),t(r,{"workspace-key":`performance`,permissions:i}))}});export{i as default};
