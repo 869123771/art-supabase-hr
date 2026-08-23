@@ -55,6 +55,7 @@
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import TreeUtils from '@/utils/tree'
   import { useUserStore } from '@/store/modules/user'
+  import { useDocumentNumberRule } from '@/hooks/core/useDocumentNumberRule'
   import {
     fetchEmployeeOrganizationTree,
     fetchEmployeeSelectorList,
@@ -89,6 +90,13 @@
   const currentTab = shallowRef<HrWorkspaceTab>()
   const currentWorkspace = shallowRef<HrWorkspaceDefinition>()
   const isEditing = ref(false)
+  const documentNumberRules: Record<string, ReturnType<typeof useDocumentNumberRule>> = {
+    'hr.employee_contract': useDocumentNumberRule('hr.employee_contract'),
+    'hr.personnel_change': useDocumentNumberRule('hr.personnel_change'),
+    'hr.lifecycle_case': useDocumentNumberRule('hr.lifecycle_case'),
+    'hr.self_service_request': useDocumentNumberRule('hr.self_service_request'),
+    'hr.recruitment_requisition': useDocumentNumberRule('hr.recruitment_requisition')
+  }
   const dialogModeLabel = computed(() => (isEditing.value ? '编辑记录' : '新增记录'))
   const organizationTreeUtils = new TreeUtils({
     idKey: 'id',
@@ -102,7 +110,13 @@
     rules: computed(() => {
       const rules: FormRules<Api.Hr.WorkspaceRecord> = {}
       currentTab.value?.fields.forEach((field) => {
-        if (field.required)
+        const numberRule = field.documentNumberRuleKey
+          ? documentNumberRules[field.documentNumberRuleKey]
+          : undefined
+        const required = numberRule
+          ? isEditing.value || numberRule.manualRequired(false)
+          : field.required
+        if (required)
           rules[field.key] = [
             {
               required: true,
@@ -152,6 +166,16 @@
       type: field.type,
       span: field.span ?? 12,
       props: { style: { width: '100%' }, clearable: true, ...field.props }
+    }
+    const numberRule = field.documentNumberRuleKey
+      ? documentNumberRules[field.documentNumberRuleKey]
+      : undefined
+    if (numberRule) {
+      base.description = numberRule.description.value
+      base.props = {
+        ...base.props,
+        ...numberRule.inputProps(isEditing.value, `请输入${field.label}`, true)
+      }
     }
     if (field.dictCode) {
       base.props = { ...base.props, options: getDictMap.value[field.dictCode] ?? [] }
@@ -205,6 +229,10 @@
     currentTab.value = data.tab
     isEditing.value = Boolean(data.record?.id)
     Object.assign(form.model, cloneDeep({ ...data.tab.defaults, ...data.record }))
+    const ruleKeys = data.tab.fields.flatMap((field) =>
+      field.documentNumberRuleKey ? [field.documentNumberRuleKey] : []
+    )
+    await Promise.all(ruleKeys.map((ruleKey) => documentNumberRules[ruleKey]?.loadRule()))
     await dialogRef.value?.handleOpen(data, {
       title: `${data.record?.id ? '编辑' : '新增'}${data.tab.label}`,
       subtitle: `在${data.workspace.title}中维护${data.tab.label}，提交后将按权限和业务状态处理。`,

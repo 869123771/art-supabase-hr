@@ -76,6 +76,10 @@
         :dict="dict"
         :display-dict="displayDict"
         :validation-errors="historyValidationErrors"
+        :contract-number-automatic="contractNumber.automatic.value"
+        :contract-number-loading="contractNumber.loading.value"
+        :contract-number-manual-required="contractNumber.manualRequired(false)"
+        :contract-number-description="contractNumber.description.value"
       />
 
       <ElTabPane v-if="canViewCareerRecords && !form.historiesMasked" name="educations">
@@ -157,7 +161,7 @@
                 ><ElInput
                   v-model="item.remark"
                   type="textarea"
-                  :rows="2"
+                  :rows="4"
                   maxlength="300"
                   show-word-limit
               /></ElFormItem>
@@ -237,14 +241,19 @@
                   maxlength="20"
                   :disabled="!canEditContactDetails"
               /></ElFormItem>
-              <ElFormItem label="离职原因"
-                ><ElInput v-model="item.leavingReason" maxlength="150"
+              <ElFormItem label="离职原因" class="is-wide"
+                ><ElInput
+                  v-model="item.leavingReason"
+                  type="textarea"
+                  :rows="4"
+                  maxlength="150"
+                  show-word-limit
               /></ElFormItem>
               <ElFormItem label="主要职责" class="is-wide"
                 ><ElInput
                   v-model="item.responsibilities"
                   type="textarea"
-                  :rows="3"
+                  :rows="4"
                   maxlength="500"
                   show-word-limit
               /></ElFormItem>
@@ -333,7 +342,7 @@
                 ><ElInput
                   v-model="item.remark"
                   type="textarea"
-                  :rows="2"
+                  :rows="4"
                   maxlength="300"
                   show-word-limit
               /></ElFormItem>
@@ -428,7 +437,7 @@
                 ><ElInput
                   v-model="item.description"
                   type="textarea"
-                  :rows="3"
+                  :rows="4"
                   maxlength="500"
                   show-word-limit
               /></ElFormItem>
@@ -554,6 +563,7 @@
   const positionOptions = ref<Api.Hr.PositionOption[]>([])
   const driverCarrierOptions = ref<FormItemOption[]>([])
   const employeeNumber = useDocumentNumberRule('hr.employee')
+  const contractNumber = useDocumentNumberRule('hr.employee_contract')
   const historyValidationErrors = reactive<Record<string, string>>({})
   const isDesktop = useMediaQuery('(min-width: 1200px)')
   const isTablet = useMediaQuery('(min-width: 720px)')
@@ -853,6 +863,7 @@
     form.driverCarrierId = ''
     void loadOrganizationOptions()
     void loadPositionOptions()
+    void Promise.all([employeeNumber.loadRule(), contractNumber.loadRule()])
   }
 
   const basicRules = computed<FormRules<EmployeeProfileForm>>(() => ({
@@ -1190,7 +1201,11 @@
     page.loading = true
     page.error = null
     try {
-      await Promise.all([ensureDictionaries(), employeeNumber.loadRule()])
+      await Promise.all([
+        ensureDictionaries(),
+        employeeNumber.loadRule(),
+        contractNumber.loadRule()
+      ])
       if (isPlatformSuper.value) {
         const response = await fetchGetEnableTenantList()
         tenantFormOptions.value = (response.data ?? []).map((tenant) => ({
@@ -1239,7 +1254,7 @@
     const firstFailure: { value?: ValidationTarget } = {}
 
     form.contracts.forEach((item, index) => {
-      if (!item.contractNo.trim())
+      if (!item.contractNo.trim() && (Boolean(item.id) || contractNumber.manualRequired(false)))
         setHistoryValidationError('contracts', index, 'contractNo', '请输入合同编号', firstFailure)
       if (!item.contractType)
         setHistoryValidationError(

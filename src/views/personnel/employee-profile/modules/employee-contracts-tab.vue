@@ -24,11 +24,17 @@
         <ElForm label-position="top" class="hr-profile-page__record-form" :disabled="isReadonly">
           <ElFormItem
             label="合同编号"
-            required
+            :required="Boolean(item.id) || contractNumberManualRequired"
             :error="fieldError(index, 'contractNo')"
             :data-validation-key="fieldKey(index, 'contractNo')"
           >
-            <ElInput v-model="item.contractNo" maxlength="60" />
+            <ElInput
+              v-model="item.contractNo"
+              maxlength="60"
+              :disabled="contractNumberLoading || Boolean(item.id) || contractNumberAutomatic"
+              :placeholder="contractNumberAutomatic ? '保存后自动生成' : '请输入合同编号'"
+            />
+            <small class="hr-contract-number-help">{{ contractNumberDescription }}</small>
           </ElFormItem>
           <ElFormItem
             label="合同类型"
@@ -88,7 +94,7 @@
             <ElInput
               v-model="item.remark"
               type="textarea"
-              :rows="2"
+              :rows="4"
               maxlength="300"
               show-word-limit
             />
@@ -134,6 +140,10 @@
     dict: (code: string) => DictOption[]
     displayDict: (code: string, value?: string | null) => string
     validationErrors: Record<string, string>
+    contractNumberAutomatic: boolean
+    contractNumberLoading: boolean
+    contractNumberManualRequired: boolean
+    contractNumberDescription: string
   }>()
   const contracts = defineModel<Api.Hr.EmployeeContract[]>({ required: true })
 
@@ -159,3 +169,13 @@
     remark: ''
   })
 </script>
+
+<style scoped lang="scss">
+  .hr-contract-number-help {
+    display: block;
+    margin-top: 5px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--el-text-color-secondary);
+  }
+</style>

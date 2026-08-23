@@ -22,13 +22,14 @@ export interface HrWorkspaceColumn {
 export interface HrWorkspaceField {
   key: keyof Api.Hr.WorkspaceRecord
   label: string
-  type: 'input' | 'select' | 'date' | 'number' | 'switch' | 'timeSelect'
+  type: 'input' | 'textarea' | 'select' | 'date' | 'number' | 'switch' | 'timeSelect'
   required?: boolean
   dictCode?: string
   optionEntity?: Api.Hr.WorkspaceEntity
   optionLabelKeys?: Array<keyof Api.Hr.WorkspaceRecord | string>
   span?: number
   props?: Record<string, unknown>
+  documentNumberRuleKey?: string
 }
 
 export interface HrWorkspaceTab {
@@ -87,6 +88,20 @@ const input = (
   label: string,
   required = false
 ): HrWorkspaceField => ({ key, label, type: 'input', required })
+const textarea = (
+  key: keyof Api.Hr.WorkspaceRecord,
+  label: string,
+  required = false
+): HrWorkspaceField => ({ key, label, type: 'textarea', required, span: 24 })
+const numberedInput = (
+  key: keyof Api.Hr.WorkspaceRecord,
+  label: string,
+  documentNumberRuleKey: string
+): HrWorkspaceField => ({
+  ...input(key, label, true),
+  documentNumberRuleKey,
+  props: { maxlength: 60 }
+})
 const date = (
   key: keyof Api.Hr.WorkspaceRecord,
   label: string,
@@ -130,7 +145,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           { key: 'reason', label: '异动原因', minWidth: 220 }
         ],
         fields: [
-          input('changeNo', '异动单号', true),
+          numberedInput('changeNo', '异动单号', 'hr.personnel_change'),
           employeeField(),
           dict('changeType', '异动类型', 'hrPersonnelChangeType', true),
           date('effectiveDate', '生效日期', true),
@@ -142,8 +157,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           dict('toEmploymentStatus', '新任职状态', 'hrEmploymentStatus'),
           input('fromJobTitle', '原职务'),
           input('toJobTitle', '新职务'),
-          { ...input('reason', '异动原因', true), span: 24, props: { type: 'textarea', rows: 3 } },
-          { ...input('remark', '备注'), span: 24, props: { type: 'textarea', rows: 2 } }
+          textarea('reason', '异动原因', true),
+          textarea('remark', '备注')
         ],
         defaults: { status: 'draft' }
       }
@@ -172,11 +187,11 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           { key: 'remark', label: '说明', minWidth: 200 }
         ],
         fields: [
-          input('caseNo', '事项编号', true),
+          numberedInput('caseNo', '事项编号', 'hr.lifecycle_case'),
           employeeField(),
           dict('caseType', '事项类型', 'hrLifecycleCaseType', true),
           date('plannedEffectiveDate', '计划生效日期', true),
-          { ...input('remark', '事项说明'), span: 24, props: { type: 'textarea', rows: 3 } }
+          textarea('remark', '事项说明')
         ],
         defaults: { status: 'draft' }
       },
@@ -208,7 +223,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           input('taskName', '任务名称', true),
           date('dueDate', '截止日期'),
           number('sort', '排序'),
-          { ...input('completionNote', '处理说明'), span: 24, props: { type: 'textarea', rows: 3 } }
+          textarea('completionNote', '处理说明')
         ],
         defaults: { status: 'pending', sort: 0 }
       }
@@ -236,7 +251,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           { key: 'contractStatus', label: '状态', width: 110, dictCode: 'hrContractStatus' }
         ],
         fields: [
-          input('contractNo', '合同编号', true),
+          numberedInput('contractNo', '合同编号', 'hr.employee_contract'),
           employeeField(),
           dict('contractType', '合同类型', 'hrContractType', true),
           dict('contractStatus', '合同状态', 'hrContractStatus', true),
@@ -248,7 +263,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           number('monthlySalary', '月薪'),
           number('renewalReminderDays', '提前提醒天数'),
           input('attachmentUrl', '合同附件地址'),
-          { ...input('remark', '备注'), span: 24, props: { type: 'textarea', rows: 2 } }
+          textarea('remark', '备注')
         ],
         defaults: { contractStatus: 'active', contractType: 'fixed_term', renewalReminderDays: 30 }
       },
@@ -282,7 +297,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           dict('status', '资质状态', 'hrQualificationStatus', true),
           number('reminderDays', '提前提醒天数'),
           input('attachmentUrl', '证书附件地址'),
-          { ...input('remark', '备注'), span: 24, props: { type: 'textarea', rows: 2 } }
+          textarea('remark', '备注')
         ],
         defaults: { status: 'valid', reminderDays: 30 }
       }
@@ -316,7 +331,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           date('effectiveFrom', '生效日期', true),
           date('effectiveTo', '失效日期'),
           { key: 'enabled', label: '启用', type: 'switch' },
-          { ...input('remark', '备注'), span: 24, props: { type: 'textarea', rows: 2 } }
+          textarea('remark', '备注')
         ],
         defaults: {
           approvedCount: 0,
@@ -354,7 +369,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           number('breakMinutes', '休息分钟'),
           { key: 'crossDay', label: '跨日班次', type: 'switch' },
           { key: 'enabled', label: '启用', type: 'switch' },
-          input('remark', '备注')
+          textarea('remark', '备注')
         ],
         defaults: { shiftType: 'regular', breakMinutes: 0, crossDay: false, enabled: true }
       },
@@ -388,7 +403,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           },
           date('workDate', '工作日期', true),
           dict('assignmentStatus', '排班状态', 'hrShiftAssignmentStatus', true),
-          input('remark', '备注')
+          textarea('remark', '备注')
         ],
         defaults: { assignmentStatus: 'scheduled' }
       },
@@ -423,7 +438,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           number('overtimeMinutes', '加班分钟'),
           dict('attendanceStatus', '考勤状态', 'hrAttendanceStatus', true),
           dict('source', '数据来源', 'hrAttendanceSource', true),
-          input('remark', '备注')
+          textarea('remark', '备注')
         ],
         defaults: {
           attendanceStatus: 'normal',
@@ -463,14 +478,14 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           { key: 'status', label: '状态', width: 110, dictCode: 'hrApprovalStatus' }
         ],
         fields: [
-          input('requestNo', '申请编号', true),
+          numberedInput('requestNo', '申请编号', 'hr.self_service_request'),
           employeeField(),
           dict('requestType', '申请类型', 'hrSelfServiceRequestType', true),
           input('title', '申请主题', true),
           date('startAt', '开始时间'),
           date('endAt', '结束时间'),
           number('durationHours', '时长（小时）'),
-          { ...input('reason', '申请原因', true), span: 24, props: { type: 'textarea', rows: 3 } }
+          textarea('reason', '申请原因', true)
         ],
         defaults: { status: 'draft' }
       }
@@ -502,7 +517,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           date('startDate', '开始日期', true),
           date('endDate', '结束日期', true),
           dict('status', '周期状态', 'hrPerformanceCycleStatus', true),
-          { ...input('description', '周期说明'), span: 24, props: { type: 'textarea', rows: 3 } }
+          textarea('description', '周期说明')
         ],
         defaults: { status: 'draft' }
       },
@@ -532,16 +547,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           number('totalScore', '总分'),
           dict('performanceLevel', '绩效等级', 'hrPerformanceLevel'),
           dict('status', '考核状态', 'hrPerformanceReviewStatus', true),
-          {
-            ...input('employeeSummary', '员工总结'),
-            span: 24,
-            props: { type: 'textarea', rows: 3 }
-          },
-          {
-            ...input('reviewerComment', '主管评价'),
-            span: 24,
-            props: { type: 'textarea', rows: 3 }
-          }
+          textarea('employeeSummary', '员工总结'),
+          textarea('reviewerComment', '主管评价')
         ],
         defaults: { status: 'draft' }
       },
@@ -566,15 +573,11 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
             optionLabelKeys: ['employee.employeeName', 'cycle.cycleName']
           },
           input('goalName', '目标名称', true),
-          {
-            ...input('targetDescription', '目标标准', true),
-            span: 24,
-            props: { type: 'textarea', rows: 2 }
-          },
+          textarea('targetDescription', '目标标准', true),
           number('weight', '权重（%）', true),
           number('score', '得分'),
           input('evidenceSource', '证据来源'),
-          { ...input('actualResult', '实际结果'), span: 24, props: { type: 'textarea', rows: 2 } }
+          textarea('actualResult', '实际结果')
         ],
         defaults: { weight: 0 }
       }
@@ -610,7 +613,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           input('providerName', '培训机构'),
           number('budget', '预算'),
           dict('status', '计划状态', 'hrTrainingPlanStatus', true),
-          { ...input('objective', '培训目标'), span: 24, props: { type: 'textarea', rows: 3 } }
+          textarea('objective', '培训目标')
         ],
         defaults: { status: 'draft' }
       },
@@ -641,7 +644,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           number('score', '成绩'),
           input('result', '培训结果'),
           input('certificateNo', '证书编号'),
-          input('remark', '备注')
+          textarea('remark', '备注')
         ],
         defaults: { status: 'enrolled' }
       },
@@ -661,7 +664,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           input('competencyName', '能力名称', true),
           dict('category', '能力类别', 'hrCompetencyCategory', true),
           { key: 'enabled', label: '启用', type: 'switch' },
-          { ...input('description', '能力说明'), span: 24, props: { type: 'textarea', rows: 3 } }
+          textarea('description', '能力说明')
         ],
         defaults: { enabled: true }
       },
@@ -713,7 +716,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           },
           dict('currentLevel', '当前等级', 'hrCompetencyLevel', true),
           date('assessedDate', '评估日期', true),
-          { ...input('evidence', '评估依据'), span: 24, props: { type: 'textarea', rows: 3 } }
+          textarea('evidence', '评估依据')
         ],
         defaults: { assessedDate: new Date().toISOString().slice(0, 10) }
       }
@@ -744,15 +747,15 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           { key: 'status', label: '状态', width: 110, dictCode: 'hrRecruitmentStatus' }
         ],
         fields: [
-          input('requisitionNo', '需求编号', true),
+          numberedInput('requisitionNo', '需求编号', 'hr.recruitment_requisition'),
           organizationField('organizationId', '招聘组织'),
           positionField('positionId', '招聘岗位'),
           number('openingCount', '需求人数', true),
           number('hiredCount', '已录用人数'),
           date('expectedOnboardDate', '期望到岗日期'),
           dict('employmentType', '用工类型', 'hrEmploymentType', true),
-          { ...input('reason', '招聘原因', true), span: 24, props: { type: 'textarea', rows: 3 } },
-          { ...input('requirements', '任职要求'), span: 24, props: { type: 'textarea', rows: 3 } }
+          textarea('reason', '招聘原因', true),
+          textarea('requirements', '任职要求')
         ],
         defaults: { status: 'draft', openingCount: 1, hiredCount: 0, employmentType: 'full_time' }
       },
@@ -787,12 +790,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           number('expectedSalary', '期望薪资'),
           input('resumeUrl', '简历附件地址'),
           date('offerDate', 'Offer 日期'),
-          {
-            ...input('interviewFeedback', '面试反馈'),
-            span: 24,
-            props: { type: 'textarea', rows: 3 }
-          },
-          { ...input('remark', '备注'), span: 24, props: { type: 'textarea', rows: 2 } }
+          textarea('interviewFeedback', '面试反馈'),
+          textarea('remark', '备注')
         ],
         defaults: { source: 'referral', stage: 'new' }
       }

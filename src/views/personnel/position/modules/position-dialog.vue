@@ -45,6 +45,7 @@
   import { addPosition, editPosition } from '@hr/api'
   import { fetchGetEnableTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
+  import { useDocumentNumberRule } from '@/hooks/core/useDocumentNumberRule'
 
   defineOptions({ name: 'HrPositionDialog' })
 
@@ -72,6 +73,7 @@
     description: ''
   })
   const form = reactive<Position>(createInitialForm())
+  const positionNumber = useDocumentNumberRule('hr.position')
   const isSystemPosition = computed(() => Boolean(form.systemCode))
   const positionKindMeta = computed(() => {
     const isDriver = form.positionKind === 'driver'
@@ -87,14 +89,16 @@
     }
   })
 
-  const formRules: FormRules<Position> = {
+  const formRules = computed<FormRules<Position>>(() => ({
     tenantId: isPlatformSuper.value
       ? [{ required: true, message: '请选择所属租户', trigger: 'change' }]
       : [],
     positionCode: [
-      { required: true, message: '请输入岗位编码', trigger: 'blur' },
+      ...(form.id || positionNumber.manualRequired(false)
+        ? [{ required: true, message: '请输入岗位编码', trigger: 'blur' as const }]
+        : []),
       {
-        pattern: /^[A-Za-z][A-Za-z0-9_-]{1,31}$/,
+        pattern: /^$|^[A-Za-z][A-Za-z0-9_-]{1,31}$/,
         message: '请输入 2-32 位字母开头的编码',
         trigger: 'blur'
       }
@@ -105,7 +109,7 @@
     ],
     sort: [{ required: true, message: '请输入排序值', trigger: 'change' }],
     description: [{ max: 300, message: '岗位说明不能超过 300 个字符', trigger: 'blur' }]
-  }
+  }))
 
   const formItems = computed<FormItem[]>(() => [
     { label: '岗位信息', key: 'baseSection', type: 'divider', span: 24 },
@@ -116,13 +120,23 @@
       span: 24,
       hidden: !isPlatformSuper.value,
       options: tenantOptions.value,
-      props: { filterable: true, disabled: Boolean(form.id), placeholder: '请选择所属租户' }
+      props: {
+        filterable: true,
+        disabled: Boolean(form.id),
+        placeholder: '请选择所属租户',
+        onChange: () => void positionNumber.loadRule()
+      }
     },
     {
       label: '岗位编码',
       key: 'positionCode',
       type: 'input',
-      props: { maxlength: 32, disabled: isSystemPosition.value, placeholder: '如 DRIVER' }
+      props: {
+        maxlength: 32,
+        ...positionNumber.inputProps(Boolean(form.id), '如 DRIVER', true),
+        disabled: isSystemPosition.value || positionNumber.inputProps(Boolean(form.id), '').disabled
+      },
+      description: positionNumber.description.value
     },
     {
       label: '岗位名称',
@@ -189,6 +203,7 @@
   const handleOpen = async (row?: Position): Promise<void> => {
     await resetForm()
     if (row) replaceForm({ ...createInitialForm(), ...structuredClone(toRaw(row)) })
+    await positionNumber.loadRule()
     await dialogRef.value?.handleOpen(row, {
       title: row ? '编辑岗位' : '新增岗位',
       subtitle: row
