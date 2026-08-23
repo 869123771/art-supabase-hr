@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=11.9.0"
+  },
   "description": "Art Supabase Pro 的 HR 人力资源业务模块",
   "exports": {
     ".": "./src/index.ts",
@@ -13,11 +18,12 @@
     "build": "vue-tsc --noEmit --pretty false && vite build",
     "preview": "vite preview",
     "boundary:audit": "tsx scripts/audit-module-boundary.ts",
+    "ui:audit": "tsx node_modules/art-supabase-pro/scripts/ui-audit.ts",
     "lint": "eslint \"src/**/*.{ts,vue}\" \"scripts/**/*.ts\" vite.config.ts",
     "stylelint": "stylelint \"src/**/*.vue\"",
     "test:unit": "tsx --test tests/unit/*.test.ts",
     "typecheck": "vue-tsc --noEmit --pretty false",
-    "check": "pnpm boundary:audit && pnpm typecheck && pnpm lint && pnpm stylelint && pnpm test:unit"
+    "check": "pnpm boundary:audit && pnpm ui:audit && pnpm typecheck && pnpm lint && pnpm stylelint && pnpm test:unit"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
