@@ -1,1 +1,0 @@
-import{Un as e,in as t,qt as n}from"./file-DYERbsUW.js";import{t as r}from"./hr-workspace-page-BryGFxVp.js";var i=t({name:`HrHeadcount`,__name:`index`,setup(t){let i={view:`Hr:Headcount:View`,add:`Hr:Headcount:Add`,edit:`Hr:Headcount:Edit`,delete:`Hr:Headcount:Delete`};return(t,a)=>(e(),n(r,{"workspace-key":`headcount`,permissions:i}))}});export{i as default};

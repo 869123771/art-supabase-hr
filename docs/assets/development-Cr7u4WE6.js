@@ -1,1 +1,0 @@
-import{Un as e,in as t,qt as n}from"./file-DYERbsUW.js";import{t as r}from"./hr-workspace-page-BryGFxVp.js";var i=t({name:`HrTalentDevelopment`,__name:`index`,setup(t){let i={view:`Hr:Talent:View`,add:`Hr:Talent:Add`,edit:`Hr:Talent:Edit`,delete:`Hr:Talent:Delete`};return(t,a)=>(e(),n(r,{"workspace-key":`talent`,permissions:i}))}});export{i as default};

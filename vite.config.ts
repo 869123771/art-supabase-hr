@@ -45,7 +45,12 @@ const sourceTransformPattern = createSourceTransformPattern(applicationRoot, pla
 
 function createSourceTransformPattern(...roots: string[]): RegExp {
   const rootPattern = roots
-    .map((root) => root.replace(/\\/g, '/').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .map((root) =>
+      root
+        .replace(/\\/g, '/')
+        .replace(/\/+$/, '')
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    )
     .join('|')
   return new RegExp(`^(?:${rootPattern})/.*\\.(?:ts|tsx|vue)(?:\\?.*)?$`)
 }

@@ -1,1 +1,0 @@
-import{Un as e,in as t,qt as n}from"./file-DYERbsUW.js";import{t as r}from"./hr-workspace-page-BryGFxVp.js";var i=t({name:`HrAttendance`,__name:`index`,setup(t){let i={view:`Hr:Attendance:View`,add:`Hr:Attendance:Add`,edit:`Hr:Attendance:Edit`,delete:`Hr:Attendance:Delete`};return(t,a)=>(e(),n(r,{"workspace-key":`attendance`,permissions:i}))}});export{i as default};
