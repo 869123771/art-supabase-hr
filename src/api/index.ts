@@ -25,3 +25,7 @@ export {
   saveHrWorkspaceRecord,
   submitHrApproval
 } from '@hr/api/modules/workspace'
+
+export { fetchWorkforceRiskOverview } from '@hr/api/modules/workforce-risk'
+export { fetchTalentInventory } from '@hr/api/modules/talent-inventory'
+export { fetchSkillMatrix } from '@hr/api/modules/skill-matrix'

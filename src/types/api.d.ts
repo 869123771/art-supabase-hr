@@ -429,5 +429,104 @@ declare namespace Api {
       employeeId?: string
       tenantId?: string
     }
+
+    type WorkforceRiskKind = 'contract' | 'qualification' | 'headcount' | 'probation'
+    type WorkforceRiskLevel = 'critical' | 'warning' | 'attention'
+
+    interface WorkforceRiskItem {
+      id: string
+      kind: WorkforceRiskKind
+      level: WorkforceRiskLevel
+      title: string
+      subject: string
+      dueDate?: string | null
+      daysRemaining?: number | null
+      description: string
+      routePath: string
+    }
+
+    interface WorkforceRiskOverview {
+      generatedAt: string
+      activeEmployeeCount: number
+      criticalCount: number
+      expiringContractCount: number
+      expiringQualificationCount: number
+      vacancyCount: number
+      probationDueCount: number
+      items: WorkforceRiskItem[]
+    }
+
+    interface TalentInventoryRecord {
+      id: string
+      employeeNo: string
+      employeeName: string
+      jobTitle?: string | null
+      organizationName?: string | null
+      positionName?: string | null
+      performanceLevel?: string | null
+      totalScore?: number | null
+      cycleName?: string | null
+      competencyTotal: number
+      competencyMet: number
+      competencyGapCount: number
+      readinessRate?: number | null
+    }
+
+    interface TalentInventoryOverview {
+      generatedAt: string
+      totalRecords: number
+      returnedRecords: number
+      truncated: boolean
+      employeeCount: number
+      assessedCount: number
+      highPerformerCount: number
+      gapEmployeeCount: number
+      averageReadinessRate?: number
+      records: TalentInventoryRecord[]
+    }
+
+    interface SkillMatrixEmployee {
+      id: string
+      employeeNo: string
+      employeeName: string
+      jobTitle?: string | null
+      organizationName?: string | null
+      positionName?: string | null
+      requiredCount: number
+      assessedCount: number
+      metCount: number
+      gapCount: number
+      unassessedCount: number
+      readinessRate?: number | null
+    }
+
+    interface SkillMatrixCompetency {
+      id: string
+      competencyCode: string
+      competencyName: string
+      category: string
+      requiredEmployees: number
+      assessedEmployees: number
+      metEmployees: number
+      gapEmployees: number
+      unassessedEmployees: number
+      readinessRate?: number | null
+      averageWeight?: number | null
+    }
+
+    interface SkillMatrixOverview {
+      generatedAt: string
+      totalRecords: number
+      returnedRecords: number
+      truncated: boolean
+      employeeCount: number
+      modelledEmployeeCount: number
+      assessedEmployeeCount: number
+      readyEmployeeCount: number
+      gapEmployeeCount: number
+      unassessedEmployeeCount: number
+      records: SkillMatrixEmployee[]
+      competencies: SkillMatrixCompetency[]
+    }
   }
 }
