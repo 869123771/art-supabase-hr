@@ -416,6 +416,10 @@
           padding-inline: 16px;
         }
 
+        :deep(.el-tabs__item.is-top:nth-child(2)) {
+          padding-left: 0;
+        }
+
         :deep(.el-tabs__active-bar) {
           height: 3px;
           border-radius: 999px 999px 0 0;
