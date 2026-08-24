@@ -46,12 +46,13 @@
 </template>
 
 <script setup lang="ts">
-  import { cloneDeep, compact, get } from 'lodash-es'
+  import { cloneDeep, compact, get, uniqBy } from 'lodash-es'
   import type { FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
   import ArtForm, { type FormItem } from '@/components/core/forms/art-form/index.vue'
-  import ArtSectionTitle from '@/components/core/forms/art-section-title/index.vue'
+  import type { ArtUserSelectOption } from '@/components/core/forms/art-user-select/types'
+  import ArtSectionTitle from '@/components/core/surfaces/art-section-title/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import TreeUtils from '@/utils/tree'
   import { useUserStore } from '@/store/modules/user'
@@ -138,14 +139,6 @@
 
   const fetchFieldOptions = async (field: HrWorkspaceField): Promise<Record<string, unknown>[]> => {
     const key = String(field.key)
-    if (key === 'employeeId') {
-      const result = await fetchEmployeeSelectorList({
-        tenantId: getUserInfo.value.tenantId,
-        from: 0,
-        to: 499
-      })
-      return result.data.map((item) => ({ ...item }))
-    }
     if (key.toLowerCase().includes('positionid')) {
       const result = await fetchPositionOptions({ tenantId: getUserInfo.value.tenantId })
       return (result.data ?? []).map((item) => ({ ...item }))
@@ -157,6 +150,58 @@
     if (!field.optionEntity) return []
     const result = await fetchHrWorkspaceRecords(field.optionEntity, { from: 0, to: 499 })
     return result.data.map((item) => ({ ...item }))
+  }
+
+  const toEmployeeUserOption = (
+    employee: Pick<
+      Api.Hr.EmployeeSelectorItem,
+      'id' | 'employeeNo' | 'employeeName' | 'avatarUrl' | 'email' | 'jobTitle' | 'organization'
+    >
+  ): ArtUserSelectOption => {
+    const employeeName = employee.employeeName?.trim() || '未命名员工'
+    const employeeNo = employee.employeeNo?.trim() || ''
+    const departmentName = compact([
+      employee.organization?.organizationName,
+      employee.jobTitle
+    ]).join(' · ')
+
+    return {
+      value: employee.id,
+      label: compact([employeeName, employeeNo]).join(' · '),
+      avatar: employee.avatarUrl,
+      nickName: employeeName,
+      userName: employeeNo,
+      userEmail: employee.email,
+      departmentName: departmentName || undefined
+    }
+  }
+
+  const getSelectedEmployeeOption = (): ArtUserSelectOption | undefined => {
+    const employeeId = form.model.employeeId
+    const employee = form.model.employee
+    if (!employeeId || !employee?.employeeName) return undefined
+
+    return toEmployeeUserOption({
+      id: employeeId,
+      employeeNo: employee.employeeNo ?? '',
+      employeeName: employee.employeeName,
+      avatarUrl: null,
+      email: null,
+      jobTitle: null,
+      organization: null
+    })
+  }
+
+  const fetchEmployeeUserOptions = async (): Promise<ArtUserSelectOption[]> => {
+    const result = await fetchEmployeeSelectorList({
+      tenantId: getUserInfo.value.tenantId,
+      from: 0,
+      to: 999
+    })
+    const selectedOption = getSelectedEmployeeOption()
+    const options = result.data.map(toEmployeeUserOption)
+
+    return uniqBy(selectedOption ? [...options, selectedOption] : options, 'value')
   }
 
   const createFormItem = (field: HrWorkspaceField): FormItem => {
@@ -179,6 +224,16 @@
     }
     if (field.dictCode) {
       base.props = { ...base.props, options: getDictMap.value[field.dictCode] ?? [] }
+    } else if (field.type === 'userSelect') {
+      const selectedOption = getSelectedEmployeeOption()
+      base.options = selectedOption ? [selectedOption] : []
+      base.api = fetchEmployeeUserOptions
+      base.props = {
+        ...base.props,
+        placeholder: `请选择${field.label}`,
+        noDataText: '暂无可选员工',
+        noMatchText: '未找到匹配员工'
+      }
     } else if (field.type === 'select') {
       base.api = () => fetchFieldOptions(field)
       base.valueField = 'id'

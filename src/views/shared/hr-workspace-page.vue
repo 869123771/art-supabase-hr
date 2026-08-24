@@ -393,7 +393,8 @@
     min-width: 0;
 
     &__tabs {
-      padding: 0 16px;
+      min-width: 0;
+      padding-inline: 8px;
 
       :deep(.el-tabs__header) {
         margin: 0;
@@ -403,7 +404,7 @@
         padding-inline: 0;
 
         :deep(.el-tabs__nav-wrap) {
-          padding-inline: 8px;
+          padding-inline: 0;
 
           &::after {
             height: 1px;
@@ -412,8 +413,20 @@
         }
 
         :deep(.el-tabs__item) {
-          height: 56px;
-          padding-inline: 16px;
+          height: 64px;
+          padding-inline: 18px;
+          color: var(--art-gray-600);
+
+          &:hover,
+          &.is-active {
+            color: var(--theme-color);
+          }
+
+          &:focus-visible {
+            outline: 2px solid color-mix(in srgb, var(--theme-color) 34%, transparent);
+            outline-offset: -4px;
+            border-radius: var(--el-border-radius-small);
+          }
         }
 
         :deep(.el-tabs__item.is-top:nth-child(2)) {
@@ -423,6 +436,16 @@
         :deep(.el-tabs__active-bar) {
           height: 3px;
           border-radius: 999px 999px 0 0;
+        }
+
+        :deep(.el-tabs__nav-next),
+        :deep(.el-tabs__nav-prev) {
+          display: grid;
+          place-items: center;
+          width: 32px;
+          height: 64px;
+          color: var(--art-gray-700);
+          background: var(--default-box-color);
         }
       }
     }
@@ -435,8 +458,8 @@
 
       > svg {
         flex: 0 0 auto;
-        width: 19px;
-        height: 19px;
+        width: 20px;
+        height: 20px;
       }
 
       > span {
@@ -448,13 +471,18 @@
 
       strong {
         font-size: 14px;
+        font-weight: 600;
       }
 
       small {
-        margin-top: 2px;
-        font-size: 10px;
+        max-width: 224px;
+        margin-top: 3px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 11px;
         font-weight: 400;
-        color: var(--art-text-gray-400);
+        color: var(--art-gray-500);
+        white-space: nowrap;
       }
     }
 
@@ -471,14 +499,19 @@
       min-height: 0;
     }
 
-    @media (width <= 640px) {
+    @media (width <= 860px) {
       &__tabs.has-detailed-tabs :deep(.el-tabs__item) {
-        height: 48px;
-        padding-inline: 8px;
+        height: 52px;
+        padding-inline: 12px;
       }
 
       &__tab-label small {
         display: none;
+      }
+
+      &__tabs.has-detailed-tabs :deep(.el-tabs__nav-next),
+      &__tabs.has-detailed-tabs :deep(.el-tabs__nav-prev) {
+        height: 52px;
       }
     }
   }

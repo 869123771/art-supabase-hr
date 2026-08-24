@@ -21,162 +21,251 @@
       @refresh="loadOverview"
     />
 
-    <ElAlert v-if="errorMessage" type="error" show-icon :closable="false" :title="errorMessage">
-      <template #default
-        ><ElButton type="primary" link @click="loadOverview">重新加载</ElButton></template
-      >
-    </ElAlert>
-    <ElSkeleton v-else-if="loading && !overview" :rows="8" animated />
-    <template v-else-if="overview">
-      <ElAlert
-        v-if="overview.truncated"
-        type="warning"
-        show-icon
-        :closable="false"
-        :title="`员工数量较大，当前分析 ${overview.returnedRecords} / ${overview.totalRecords} 人`"
-        description="可结合组织范围继续拆分技能盘点。"
-      />
+    <ArtSectionCard
+      class="skill-matrix-page__analysis"
+      title="组织能力风险排行"
+      :subtitle="`优先处理缺口人数多、评估覆盖不足的能力项，更新时间 ${generatedAt}`"
+      :loading="loading && !overview"
+      :error="errorMessage"
+      :empty="Boolean(overview) && !overview?.competencies.length"
+      empty-title="暂无能力风险数据"
+      empty-description="尚未形成能力风险排行，请先在“培训与能力”中配置岗位能力要求。"
+      :empty-visual-size="120"
+      :min-height="360"
+      @retry="loadOverview"
+    >
+      <template #actions>
+        <ElTag v-if="overview" type="info" effect="plain" round>
+          {{ overview.competencies.length }} 项岗位能力
+        </ElTag>
+      </template>
 
-      <section class="skill-matrix-page__gaps art-card-xs">
-        <header>
-          <div>
-            <ArtSectionTitle :show-line="false">组织能力缺口</ArtSectionTitle>
-            <p>按未达岗位要求人数排序，更新时间 {{ generatedAt }}</p>
-          </div>
-          <ElTag type="info" effect="plain" round>
-            {{ overview.competencies.length }} 项岗位能力
-          </ElTag>
-        </header>
-        <ElEmpty v-if="!overview.competencies.length" description="岗位尚未配置能力要求" />
-        <div v-else class="skill-matrix-page__competencies">
-          <article v-for="item in overview.competencies.slice(0, 12)" :key="item.id">
-            <div class="skill-matrix-page__competency-head">
-              <div>
-                <strong>{{ item.competencyName }}</strong>
-                <span>{{ item.category }} · {{ item.competencyCode }}</span>
-              </div>
-              <ElTag :type="item.gapEmployees ? 'warning' : 'success'" effect="light" round>
-                {{ item.gapEmployees ? `${item.gapEmployees} 人缺口` : '全部达标' }}
-              </ElTag>
-            </div>
-            <div class="skill-matrix-page__competency-rate">
-              <span>达标率</span>
-              <strong>{{ item.readinessRate == null ? '--' : `${item.readinessRate}%` }}</strong>
-            </div>
-            <ElProgress
-              :percentage="item.readinessRate ?? 0"
-              :status="competencyStatus(item)"
-              :stroke-width="7"
-              :show-text="false"
-            />
-            <p>
-              已评估 {{ item.assessedEmployees }} / {{ item.requiredEmployees }} 人
-              <span v-if="item.unassessedEmployees">
-                · {{ item.unassessedEmployees }} 人待评估</span
-              >
-            </p>
-          </article>
-        </div>
-      </section>
+      <template v-if="overview">
+        <ElAlert
+          v-if="overview.truncated"
+          class="skill-matrix-page__capacity-alert"
+          type="warning"
+          show-icon
+          :closable="false"
+          :title="`员工数量较大，当前分析 ${overview.returnedRecords} / ${overview.totalRecords} 人`"
+          description="可结合组织范围继续拆分技能盘点。"
+        />
 
-      <section class="skill-matrix-page__employees art-card-xs">
-        <header>
-          <div>
-            <ArtSectionTitle :show-line="false">员工岗位准备度</ArtSectionTitle>
-            <p>能力缺口包含尚未评估和评估等级低于岗位要求两种情况。</p>
+        <div class="skill-matrix-page__analysis-grid">
+          <div class="skill-matrix-page__priority">
+            <ol class="skill-matrix-page__competency-list">
+              <li v-for="(item, index) in overview.competencies.slice(0, 8)" :key="item.id">
+                <span class="skill-matrix-page__rank">{{ index + 1 }}</span>
+                <div class="skill-matrix-page__competency-main">
+                  <strong>{{ item.competencyName }}</strong>
+                  <span>{{ item.category }} · {{ item.competencyCode }}</span>
+                </div>
+                <div class="skill-matrix-page__competency-progress">
+                  <span
+                    >达标率 {{ item.readinessRate == null ? '--' : `${item.readinessRate}%` }}</span
+                  >
+                  <ElProgress
+                    :percentage="item.readinessRate ?? 0"
+                    :status="competencyStatus(item)"
+                    :stroke-width="6"
+                    :show-text="false"
+                  />
+                </div>
+                <div class="skill-matrix-page__competency-result">
+                  <strong>{{ item.gapEmployees }}</strong>
+                  <span>人有缺口</span>
+                </div>
+                <div class="skill-matrix-page__competency-result is-muted">
+                  <strong>{{ item.unassessedEmployees }}</strong>
+                  <span>人待评估</span>
+                </div>
+              </li>
+            </ol>
           </div>
-          <div class="skill-matrix-page__filters">
-            <ElInput
-              v-model="keyword"
-              clearable
-              placeholder="员工、工号或岗位"
-              aria-label="检索员工技能矩阵"
-            >
-              <template #prefix><ArtSvgIcon icon="ri:search-line" /></template>
-            </ElInput>
-            <ElRadioGroup v-model="activeScope" size="small" aria-label="技能矩阵范围">
-              <ElRadioButton value="all">全部</ElRadioButton>
-              <ElRadioButton value="gap">有缺口</ElRadioButton>
-              <ElRadioButton value="ready">已就绪</ElRadioButton>
-              <ElRadioButton value="unassessed">待评估</ElRadioButton>
-              <ElRadioButton value="unmodelled">未建模</ElRadioButton>
-            </ElRadioGroup>
-          </div>
-        </header>
 
-        <ElEmpty v-if="!filteredRecords.length" description="当前筛选范围暂无员工" />
-        <div v-else class="skill-matrix-page__employee-grid">
-          <article v-for="employee in pagedRecords" :key="employee.id">
+          <aside class="skill-matrix-page__coverage" aria-label="能力评估覆盖概览">
             <header>
               <div>
-                <BusinessRecordLink
-                  :label="employee.employeeName"
-                  :description="employee.employeeNo"
-                  :title="`查看员工 ${employee.employeeName} 档案`"
-                  :to="canViewEmployee ? `/hr/personnel/employee-detail/${employee.id}` : undefined"
-                  compact
-                />
+                <ArtSectionTitle :show-line="false">评估覆盖</ArtSectionTitle>
+                <p>以已配置岗位能力模型的员工为口径</p>
               </div>
-              <ElTag :type="employeeTone(employee)" effect="light" round>
-                {{ employeeState(employee) }}
-              </ElTag>
             </header>
-            <p>{{ employee.organizationName || '未分配组织' }}</p>
-            <p>{{ employee.positionName || employee.jobTitle || '未分配岗位' }}</p>
-            <div class="skill-matrix-page__readiness">
-              <span>岗位准备度</span>
+            <ElProgress
+              class="skill-matrix-page__coverage-progress"
+              type="dashboard"
+              :width="126"
+              :stroke-width="9"
+              :percentage="assessmentCoverage ?? 0"
+              :status="coverageStatus"
+            />
+            <strong class="skill-matrix-page__coverage-label">
+              {{ assessmentCoverage == null ? '暂无覆盖口径' : '能力评估覆盖率' }}
+            </strong>
+            <dl>
+              <div>
+                <dt>已建模员工</dt>
+                <dd>{{ overview.modelledEmployeeCount }}</dd>
+              </div>
+              <div>
+                <dt>已完成评估</dt>
+                <dd>{{ overview.assessedEmployeeCount }}</dd>
+              </div>
+              <div>
+                <dt>岗位待评估</dt>
+                <dd>{{ overview.unassessedEmployeeCount }}</dd>
+              </div>
+            </dl>
+            <p class="skill-matrix-page__coverage-note">
+              <ArtSvgIcon icon="ri:information-line" />
+              未建模员工不会计入覆盖率，应先补齐岗位能力标准。
+            </p>
+          </aside>
+        </div>
+      </template>
+    </ArtSectionCard>
+
+    <ArtSectionCard
+      v-if="overview"
+      class="skill-matrix-page__employees"
+      title="员工岗位准备度"
+      subtitle="集中查看岗位建模、评估覆盖与实际达标情况，能力缺口同时包含未评估项。"
+      :empty="!filteredRecords.length"
+      empty-title="暂无准备度员工"
+      empty-description="当前筛选范围暂无匹配员工，可调整关键词或准备度范围。"
+      :min-height="320"
+    >
+      <template #actions>
+        <div class="skill-matrix-page__filters">
+          <ElInput
+            v-model="keyword"
+            clearable
+            placeholder="员工、工号或岗位"
+            aria-label="检索员工技能矩阵"
+          >
+            <template #prefix><ArtSvgIcon icon="ri:search-line" /></template>
+          </ElInput>
+          <ElRadioGroup v-model="activeScope" size="small" aria-label="技能矩阵范围">
+            <ElRadioButton value="all">全部</ElRadioButton>
+            <ElRadioButton value="gap">有缺口</ElRadioButton>
+            <ElRadioButton value="ready">已就绪</ElRadioButton>
+            <ElRadioButton value="unassessed">待评估</ElRadioButton>
+            <ElRadioButton value="unmodelled">未建模</ElRadioButton>
+          </ElRadioGroup>
+        </div>
+      </template>
+
+      <ArtTable
+        :data="pagedRecords"
+        :columns="tableColumns"
+        :loading="loading"
+        :pagination="false"
+        :show-table-header="false"
+        row-key="id"
+        table-layout="fixed"
+        empty-height="220px"
+        empty-text="暂无准备度员工"
+        empty-description="当前筛选范围暂无匹配员工，可调整关键词或准备度范围。"
+      >
+        <template #employeeIdentity="{ row: employee }">
+          <HrEmployeeIdentityCell
+            :employee-name="employee.employeeName"
+            :employee-no="employee.employeeNo"
+            :to="canViewEmployee ? `/hr/personnel/employee-detail/${employee.id}` : undefined"
+          />
+        </template>
+        <template #positionState="{ row: employee }">
+          <ElTag :type="employeeTone(employee)" effect="light" round>
+            {{ employeeState(employee) }}
+          </ElTag>
+        </template>
+        <template #readiness="{ row: employee }">
+          <div class="skill-matrix-page__readiness">
+            <div>
               <strong>{{
                 employee.readinessRate == null ? '--' : `${employee.readinessRate}%`
               }}</strong>
+              <span>
+                {{
+                  employee.requiredCount
+                    ? `${employee.metCount} / ${employee.requiredCount} 项达标`
+                    : '未建立准备度口径'
+                }}
+              </span>
             </div>
             <ElProgress
+              v-if="employee.requiredCount"
               :percentage="employee.readinessRate ?? 0"
               :status="employeeProgressStatus(employee)"
-              :stroke-width="8"
+              :stroke-width="7"
               :show-text="false"
             />
-            <dl>
-              <div
-                ><dt>岗位要求</dt><dd>{{ employee.requiredCount }}</dd></div
-              >
-              <div
-                ><dt>已评估</dt><dd>{{ employee.assessedCount }}</dd></div
-              >
-              <div
-                ><dt>已达标</dt><dd>{{ employee.metCount }}</dd></div
-              >
-              <div
-                ><dt>能力缺口</dt><dd>{{ employee.gapCount }}</dd></div
-              >
-            </dl>
-          </article>
-        </div>
+          </div>
+        </template>
+        <template #assessmentCoverage="{ row: employee }">
+          <div class="skill-matrix-page__stacked-cell">
+            <strong>{{ employee.assessedCount }} / {{ employee.requiredCount }}</strong>
+            <small v-if="employee.unassessedCount">
+              {{ employee.unassessedCount }} 项尚未评估
+            </small>
+            <small v-else-if="employee.requiredCount">评估已覆盖岗位要求</small>
+            <small v-else>需先配置岗位能力要求</small>
+          </div>
+        </template>
+        <template #abilityResult="{ row: employee }">
+          <span
+            class="skill-matrix-page__gap-result"
+            :class="{
+              'has-gap': employee.requiredCount > 0 && employee.gapCount > 0,
+              'is-unmodelled': employee.requiredCount === 0
+            }"
+          >
+            <ArtSvgIcon
+              :icon="
+                !employee.requiredCount
+                  ? 'ri:node-tree'
+                  : employee.gapCount
+                    ? 'ri:alarm-warning-line'
+                    : 'ri:shield-check-line'
+              "
+            />
+            {{
+              !employee.requiredCount
+                ? '待建模'
+                : employee.gapCount
+                  ? `${employee.gapCount} 项缺口`
+                  : '全部达标'
+            }}
+          </span>
+        </template>
+      </ArtTable>
 
-        <ElPagination
-          v-if="filteredRecords.length > pageSize"
-          v-model:current-page="currentPage"
-          class="skill-matrix-page__pagination"
-          background
-          layout="total, prev, pager, next"
-          :page-size="pageSize"
-          :total="filteredRecords.length"
-        />
-      </section>
-    </template>
+      <ElPagination
+        v-if="filteredRecords.length > pageSize"
+        v-model:current-page="currentPage"
+        class="skill-matrix-page__pagination"
+        background
+        layout="total, prev, pager, next"
+        :page-size="pageSize"
+        :total="filteredRecords.length"
+      />
+    </ArtSectionCard>
   </div>
 </template>
 
 <script setup lang="ts">
   import { ElMessage } from 'element-plus'
-  import BusinessRecordLink from '@/components/business/business-record-link/index.vue'
+  import type { ColumnOption } from '@/types'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric
   } from '@/components/business/business-workspace-header/index.vue'
-  import ArtSectionTitle from '@/components/core/forms/art-section-title/index.vue'
+  import ArtSectionCard from '@/components/core/surfaces/art-section-card/index.vue'
+  import ArtTable from '@/components/core/tables/art-table/index.vue'
+  import ArtSectionTitle from '@/components/core/surfaces/art-section-title/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import { useAuth } from '@/hooks/core/useAuth'
   import { formatWithDayjs } from '@/utils/time'
   import { fetchSkillMatrix } from '@hr/api'
+  import HrEmployeeIdentityCell from '@hr/views/shared/hr-employee-identity-cell.vue'
 
   defineOptions({ name: 'HrSkillMatrix' })
 
@@ -193,6 +282,33 @@
   const pageSize = 20
   const overview = ref<Api.Hr.SkillMatrixOverview | null>(null)
   const canViewEmployee = computed(() => hasAuth('Hr:Employee:View'))
+  const tableColumns: ColumnOption<Employee>[] = [
+    {
+      prop: 'employeeIdentity',
+      label: '员工身份',
+      minWidth: 210,
+      fixed: 'left',
+      useSlot: true
+    },
+    {
+      prop: 'organizationName',
+      label: '所属组织',
+      minWidth: 160,
+      showOverflowTooltip: true,
+      formatter: (employee) => employee.organizationName || '未分配组织'
+    },
+    {
+      prop: 'positionName',
+      label: '工作岗位',
+      minWidth: 145,
+      showOverflowTooltip: true,
+      formatter: (employee) => employee.positionName || employee.jobTitle || '未分配岗位'
+    },
+    { prop: 'positionState', label: '岗位状态', width: 128, useSlot: true },
+    { prop: 'readiness', label: '岗位准备度', minWidth: 210, useSlot: true },
+    { prop: 'assessmentCoverage', label: '评估覆盖', minWidth: 175, useSlot: true },
+    { prop: 'abilityResult', label: '能力结果', minWidth: 130, useSlot: true }
+  ]
 
   const generatedAt = computed(() =>
     overview.value ? formatWithDayjs(overview.value.generatedAt) : '--'
@@ -202,6 +318,12 @@
     return modelled
       ? Math.round(((overview.value?.assessedEmployeeCount ?? 0) * 1000) / modelled) / 10
       : undefined
+  })
+  const coverageStatus = computed<'success' | 'warning' | 'exception' | undefined>(() => {
+    if (assessmentCoverage.value == null) return undefined
+    if (assessmentCoverage.value >= 90) return 'success'
+    if (assessmentCoverage.value >= 60) return 'warning'
+    return 'exception'
   })
   const filteredRecords = computed(() => {
     const normalizedKeyword = keyword.value.trim().toLocaleLowerCase()
@@ -329,81 +451,202 @@
     gap: 12px;
     min-width: 0;
 
-    &__gaps,
+    &__analysis,
     &__employees {
       min-width: 0;
-      padding: 18px;
+    }
+
+    &__analysis-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 18px;
+    }
+
+    &__capacity-alert {
+      margin-bottom: var(--art-space-4);
+    }
+
+    &__priority {
+      min-width: 0;
+      padding-right: 18px;
+      border-right: 1px solid var(--art-border-color);
 
       > header {
         display: flex;
         gap: 16px;
-        align-items: flex-end;
+        align-items: center;
         justify-content: space-between;
-        margin-bottom: 16px;
+        margin-bottom: 8px;
 
         p {
           margin: 5px 0 0;
           font-size: 12px;
-          color: var(--art-gray-500);
+          color: var(--art-gray-600);
         }
       }
     }
 
-    &__competencies {
+    &__competency-list {
+      padding: 0;
+      margin: 0;
+      list-style: none;
+
+      li {
+        display: grid;
+        grid-template-columns: 28px minmax(150px, 1.1fr) minmax(150px, 0.9fr) 72px 72px;
+        gap: 12px;
+        align-items: center;
+        min-width: 0;
+        padding: 11px 4px;
+        border-bottom: 1px solid var(--art-border-color);
+
+        &:last-child {
+          border-bottom: 0;
+        }
+      }
+    }
+
+    &__rank {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      font-size: 12px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--theme-color);
+      background: color-mix(in srgb, var(--theme-color) 10%, transparent);
+      border-radius: 50%;
+    }
 
-      article {
-        min-width: 0;
-        padding: 14px;
-        background: var(--art-main-bg-color);
-        border: 1px solid var(--art-border-color);
-        border-radius: var(--el-border-radius-base);
+    &__competency-main {
+      min-width: 0;
 
-        > p {
-          margin: 8px 0 0;
-          font-size: 12px;
-          color: var(--art-gray-500);
-        }
+      strong,
+      span {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
-    }
 
-    &__competency-head,
-    &__competency-rate {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-      justify-content: space-between;
-    }
-
-    &__competency-head {
-      > div {
-        min-width: 0;
-
-        strong,
-        span {
-          display: block;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        span {
-          margin-top: 4px;
-          font-size: 12px;
-          color: var(--art-gray-500);
-        }
+      strong {
+        color: var(--art-gray-900);
       }
-    }
-
-    &__competency-rate {
-      align-items: center;
-      margin: 14px 0 8px;
 
       span {
+        margin-top: 4px;
         font-size: 12px;
-        color: var(--art-gray-500);
+        color: var(--art-gray-600);
+      }
+    }
+
+    &__competency-progress {
+      min-width: 0;
+
+      > span {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 12px;
+        color: var(--art-gray-700);
+      }
+    }
+
+    &__competency-result {
+      text-align: right;
+
+      strong,
+      span {
+        display: block;
+      }
+
+      strong {
+        font-size: 16px;
+        font-variant-numeric: tabular-nums;
+        color: var(--el-color-warning-dark-2);
+      }
+
+      span {
+        margin-top: 2px;
+        font-size: 11px;
+        color: var(--art-gray-600);
+      }
+
+      &.is-muted strong {
+        color: var(--art-gray-800);
+      }
+    }
+
+    &__coverage {
+      min-width: 0;
+      text-align: center;
+
+      > header {
+        text-align: left;
+
+        p {
+          margin: 5px 0 0;
+          font-size: 12px;
+          color: var(--art-gray-600);
+        }
+      }
+
+      dl {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin: 18px 0 0;
+        background: var(--art-gray-100);
+        border-radius: var(--el-border-radius-base);
+
+        div {
+          padding: 11px 6px;
+
+          + div {
+            border-left: 1px solid var(--art-border-color);
+          }
+        }
+
+        dt {
+          font-size: 12px;
+          color: var(--art-gray-600);
+        }
+
+        dd {
+          margin: 5px 0 0;
+          font-size: 17px;
+          font-weight: 700;
+          font-variant-numeric: tabular-nums;
+          color: var(--art-gray-900);
+        }
+      }
+    }
+
+    &__coverage-progress {
+      margin-top: 12px;
+    }
+
+    &__coverage-label {
+      display: block;
+      margin-top: -12px;
+      font-size: 13px;
+      color: var(--art-gray-800);
+    }
+
+    &__coverage-note {
+      display: flex;
+      gap: 6px;
+      align-items: flex-start;
+      margin: 14px 0 0;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--art-gray-600);
+      text-align: left;
+
+      svg {
+        flex: 0 0 auto;
+        width: 15px;
+        height: 15px;
+        margin-top: 1px;
       }
     }
 
@@ -411,92 +654,71 @@
       display: flex;
       gap: 10px;
       align-items: center;
+      min-width: 0;
 
       .el-input {
-        width: 210px;
+        width: 220px;
       }
     }
 
-    &__employee-grid {
+    &__stacked-cell {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
+      gap: 5px;
+      min-width: 0;
 
-      article {
+      small {
         min-width: 0;
-        padding: 15px;
-        background: var(--art-main-bg-color);
-        border: 1px solid var(--art-border-color);
-        border-radius: var(--el-border-radius-base);
-
-        > header {
-          display: flex;
-          gap: 10px;
-          align-items: flex-start;
-          justify-content: space-between;
-
-          > div {
-            min-width: 0;
-
-            strong,
-            span {
-              display: block;
-              overflow: hidden;
-              text-overflow: ellipsis;
-              white-space: nowrap;
-            }
-
-            span {
-              margin-top: 4px;
-              font-size: 12px;
-              color: var(--art-gray-500);
-            }
-          }
-        }
-
-        > p {
-          margin: 8px 0 0;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          font-size: 12px;
-          color: var(--art-gray-600);
-          white-space: nowrap;
-        }
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: var(--art-gray-600);
+        white-space: nowrap;
       }
     }
 
     &__readiness {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      justify-content: space-between;
-      margin: 15px 0 8px;
+      min-width: 210px;
 
-      span {
-        font-size: 12px;
-        color: var(--art-gray-500);
+      > div {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 7px;
+
+        span {
+          font-size: 11px;
+          color: var(--art-gray-600);
+        }
       }
     }
 
-    dl {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+    &__gap-result {
+      display: inline-flex !important;
+      flex-direction: row;
       gap: 6px;
-      margin: 14px 0 0;
+      align-items: center;
+      width: fit-content;
+      min-height: 26px;
+      padding-inline: 9px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--el-color-success-dark-2);
+      background: var(--el-color-success-light-9);
+      border-radius: 999px;
 
-      div {
-        text-align: center;
+      svg {
+        width: 14px;
+        height: 14px;
       }
 
-      dt {
-        font-size: 11px;
-        color: var(--art-gray-500);
+      &.has-gap {
+        color: var(--el-color-warning-dark-2);
+        background: var(--el-color-warning-light-9);
       }
 
-      dd {
-        margin: 4px 0 0;
-        font-weight: 600;
-        color: var(--art-text-gray-800);
+      &.is-unmodelled {
+        color: var(--art-gray-700);
+        background: var(--art-gray-200);
       }
     }
 
@@ -506,22 +728,69 @@
     }
   }
 
-  @media only screen and (width <= 1280px) {
+  @media only screen and (width <= 1180px) {
     .skill-matrix-page {
-      &__competencies {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+      &__analysis-grid {
+        grid-template-columns: 1fr 280px;
       }
 
-      &__employee-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+      &__competency-list li {
+        grid-template-columns: 28px minmax(140px, 1fr) minmax(120px, 0.8fr) 68px;
+      }
+
+      &__competency-result.is-muted {
+        display: none;
       }
     }
   }
 
-  @media only screen and (width <= 960px) {
+  @media only screen and (width <= 900px) {
     .skill-matrix-page {
-      &__gaps > header,
-      &__employees > header,
+      &__analysis-grid {
+        grid-template-columns: 1fr;
+      }
+
+      &__priority {
+        padding-right: 0;
+        padding-bottom: 18px;
+        border-right: 0;
+        border-bottom: 1px solid var(--art-border-color);
+      }
+
+      &__coverage {
+        display: grid;
+        grid-template-columns: minmax(180px, 1fr) auto minmax(240px, 1fr);
+        gap: 14px;
+        align-items: center;
+        text-align: left;
+
+        > header,
+        &-note {
+          grid-column: 1;
+        }
+
+        dl {
+          grid-row: 1 / span 2;
+          grid-column: 3;
+          margin-top: 0;
+        }
+      }
+
+      &__coverage-progress {
+        grid-row: 1 / span 2;
+        grid-column: 2;
+        margin-top: 0;
+      }
+
+      &__coverage-label {
+        display: none;
+      }
+    }
+  }
+
+  @media only screen and (width <= 767px) {
+    .skill-matrix-page {
+      &__priority > header,
       &__filters {
         flex-direction: column;
         align-items: stretch;
@@ -536,17 +805,47 @@
         flex-wrap: wrap;
       }
 
-      &__employee-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+      &__coverage {
+        display: block;
+        text-align: center;
+
+        > header,
+        &-note {
+          text-align: left;
+        }
+
+        dl {
+          margin-top: 16px;
+        }
+      }
+
+      &__coverage-progress {
+        margin-top: 12px;
+      }
+
+      &__coverage-label {
+        display: block;
+      }
+
+      &__competency-list li {
+        grid-template-columns: 28px minmax(120px, 1fr) 68px;
+      }
+
+      &__competency-progress {
+        display: none;
       }
     }
   }
 
-  @media only screen and (width <= 620px) {
+  @media only screen and (width <= 480px) {
     .skill-matrix-page {
-      &__competencies,
-      &__employee-grid {
+      &__coverage dl {
         grid-template-columns: 1fr;
+
+        div + div {
+          border-top: 1px solid var(--art-border-color);
+          border-left: 0;
+        }
       }
     }
   }

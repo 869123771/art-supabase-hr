@@ -22,7 +22,7 @@ export interface HrWorkspaceColumn {
 export interface HrWorkspaceField {
   key: keyof Api.Hr.WorkspaceRecord
   label: string
-  type: 'input' | 'textarea' | 'select' | 'date' | 'number' | 'switch' | 'timeSelect'
+  type: 'input' | 'textarea' | 'select' | 'userSelect' | 'date' | 'number' | 'switch' | 'timeSelect'
   required?: boolean
   dictCode?: string
   optionEntity?: Api.Hr.WorkspaceEntity
@@ -60,10 +60,8 @@ export interface HrWorkspaceDefinition {
 const employeeField = (): HrWorkspaceField => ({
   key: 'employeeId',
   label: '员工',
-  type: 'select',
-  required: true,
-  optionEntity: 'personnelChange',
-  optionLabelKeys: ['employee.employeeNo', 'employee.employeeName']
+  type: 'userSelect',
+  required: true
 })
 const positionField = (
   key: 'positionId' | 'fromPositionId' | 'toPositionId',
@@ -73,7 +71,7 @@ const positionField = (
   label,
   type: 'select',
   optionEntity: 'headcount',
-  optionLabelKeys: ['position.positionCode', 'position.positionName']
+  optionLabelKeys: ['positionCode', 'positionName']
 })
 const organizationField = (
   key: 'organizationId' | 'fromOrganizationId' | 'toOrganizationId',
@@ -83,7 +81,7 @@ const organizationField = (
   label,
   type: 'select',
   optionEntity: 'headcount',
-  optionLabelKeys: ['organization.organizationCode', 'organization.organizationName']
+  optionLabelKeys: ['organizationCode', 'organizationName']
 })
 const input = (
   key: keyof Api.Hr.WorkspaceRecord,
@@ -361,6 +359,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
       {
         key: 'shifts',
         label: '班次',
+        icon: 'ri:time-line',
+        description: '定义上下班、休息与跨日班次规则',
         entity: 'shift',
         columns: [
           { key: 'shiftCode', label: '班次编码', width: 130 },
@@ -386,6 +386,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
       {
         key: 'assignments',
         label: '排班',
+        icon: 'ri:calendar-schedule-line',
+        description: '按员工与工作日期安排执行班次',
         entity: 'shiftAssignment',
         statusDict: 'hrShiftAssignmentStatus',
         statusKey: 'assignmentStatus',
@@ -420,6 +422,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
       {
         key: 'records',
         label: '考勤记录',
+        icon: 'ri:calendar-check-line',
+        description: '汇总打卡、工时与考勤异常事实',
         entity: 'attendance',
         statusDict: 'hrAttendanceStatus',
         statusKey: 'attendanceStatus',
@@ -511,6 +515,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
       {
         key: 'cycles',
         label: '考核周期',
+        icon: 'ri:calendar-event-line',
+        description: '定义考核范围、起止时间与执行状态',
         entity: 'performanceCycle',
         statusDict: 'hrPerformanceCycleStatus',
         statusKey: 'status',
@@ -534,6 +540,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
       {
         key: 'reviews',
         label: '员工考核',
+        icon: 'ri:user-star-line',
+        description: '记录员工评分、等级与主管评价结论',
         entity: 'performanceReview',
         statusDict: 'hrPerformanceReviewStatus',
         statusKey: 'status',
@@ -565,6 +573,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
       {
         key: 'goals',
         label: '考核目标',
+        icon: 'ri:focus-2-line',
+        description: '拆解目标权重并沉淀结果与证据',
         entity: 'performanceGoal',
         columns: [
           { key: 'goalName', label: '目标名称', minWidth: 180 },
@@ -603,6 +613,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
       {
         key: 'plans',
         label: '培训计划',
+        icon: 'ri:calendar-todo-line',
+        description: '规划培训主题、预算与执行周期',
         entity: 'trainingPlan',
         statusDict: 'hrTrainingPlanStatus',
         statusKey: 'status',
@@ -630,6 +642,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
       {
         key: 'enrollments',
         label: '培训参与',
+        icon: 'ri:user-follow-line',
+        description: '跟踪员工参与、成绩与证书结果',
         entity: 'trainingEnrollment',
         statusDict: 'hrTrainingEnrollmentStatus',
         statusKey: 'status',
@@ -661,6 +675,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
       {
         key: 'competencies',
         label: '能力字典',
+        icon: 'ri:book-2-line',
+        description: '统一维护组织能力项与分类口径',
         entity: 'competency',
         columns: [
           { key: 'competencyCode', label: '能力编码', width: 140 },
@@ -681,6 +697,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
       {
         key: 'positionMatrix',
         label: '岗位能力',
+        icon: 'ri:briefcase-4-line',
+        description: '配置岗位要求等级与能力权重',
         entity: 'positionCompetency',
         columns: [
           { key: 'position.positionName', label: '岗位', minWidth: 150 },
@@ -706,6 +724,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
       {
         key: 'employeeMatrix',
         label: '员工能力',
+        icon: 'ri:user-search-line',
+        description: '沉淀员工评估等级与事实依据',
         entity: 'employeeCompetency',
         columns: [
           { key: 'employee.employeeName', label: '员工', minWidth: 120 },
@@ -742,6 +762,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
       {
         key: 'requisitions',
         label: '招聘需求',
+        icon: 'ri:file-list-3-line',
+        description: '管理用人缺口、审批与到岗目标',
         entity: 'recruitmentRequisition',
         statusDict: 'hrRecruitmentStatus',
         statusKey: 'status',
@@ -772,6 +794,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
       {
         key: 'candidates',
         label: '候选人',
+        icon: 'ri:user-add-line',
+        description: '跟踪筛选、面试、Offer 与入职转化',
         entity: 'candidate',
         statusDict: 'hrCandidateStage',
         statusKey: 'stage',

@@ -1,15 +1,17 @@
 <template>
-  <section class="employee-history-list art-card-xs">
-    <header class="employee-history-list__header">
-      <div class="employee-history-list__identity">
-        <span aria-hidden="true"><ArtSvgIcon :icon="icon" /></span>
-        <div>
-          <h2>{{ title }}</h2>
-          <p>{{ description }}</p>
+  <ArtSectionCard class="employee-history-list" preserve-content-structure>
+    <template #header>
+      <header class="employee-history-list__header">
+        <div class="employee-history-list__identity">
+          <span aria-hidden="true"><ArtSvgIcon :icon="icon" /></span>
+          <div>
+            <h2>{{ title }}</h2>
+            <p>{{ description }}</p>
+          </div>
         </div>
-      </div>
-      <ElTag type="primary" effect="plain" round>{{ records.length }} 条记录</ElTag>
-    </header>
+        <ElTag type="primary" effect="plain" round>{{ records.length }} 条记录</ElTag>
+      </header>
+    </template>
 
     <div v-if="records.length" class="employee-history-list__records">
       <article v-for="(record, index) in records" :key="record.id || index">
@@ -23,10 +25,11 @@
       </article>
     </div>
     <ElEmpty v-else :description="`暂无${title}`" :image-size="72" />
-  </section>
+  </ArtSectionCard>
 </template>
 
 <script setup lang="ts">
+  import ArtSectionCard from '@/components/core/surfaces/art-section-card/index.vue'
   import ArtDescriptions from '@/components/core/base/art-descriptions/index.vue'
   import type { ArtDescriptionItem } from '@/components/core/base/art-descriptions/types'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'

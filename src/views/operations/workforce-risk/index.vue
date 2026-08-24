@@ -21,20 +21,22 @@
       @refresh="loadOverview"
     />
 
-    <section class="workforce-risk-page__workspace art-card-xs">
-      <header class="workforce-risk-page__toolbar">
-        <div>
-          <ArtSectionTitle :show-line="false">风险处置队列</ArtSectionTitle>
-          <p>按风险紧急程度排序，数据更新时间：{{ generatedAt }}</p>
-        </div>
-        <ElRadioGroup v-model="activeKind" size="small">
-          <ElRadioButton value="all">全部</ElRadioButton>
-          <ElRadioButton value="contract">合同</ElRadioButton>
-          <ElRadioButton value="qualification">资质</ElRadioButton>
-          <ElRadioButton value="probation">试用期</ElRadioButton>
-          <ElRadioButton value="headcount">编制</ElRadioButton>
-        </ElRadioGroup>
-      </header>
+    <ArtSectionCard class="workforce-risk-page__workspace" preserve-content-structure>
+      <template #header>
+        <header class="workforce-risk-page__toolbar">
+          <div>
+            <ArtSectionTitle :show-line="false">风险处置队列</ArtSectionTitle>
+            <p>按风险紧急程度排序，数据更新时间：{{ generatedAt }}</p>
+          </div>
+          <ElRadioGroup v-model="activeKind" size="small">
+            <ElRadioButton value="all">全部</ElRadioButton>
+            <ElRadioButton value="contract">合同</ElRadioButton>
+            <ElRadioButton value="qualification">资质</ElRadioButton>
+            <ElRadioButton value="probation">试用期</ElRadioButton>
+            <ElRadioButton value="headcount">编制</ElRadioButton>
+          </ElRadioGroup>
+        </header>
+      </template>
 
       <ElAlert v-if="errorMessage" type="error" show-icon :closable="false" :title="errorMessage">
         <template #default>
@@ -73,17 +75,18 @@
           </div>
         </li>
       </ol>
-    </section>
+    </ArtSectionCard>
   </div>
 </template>
 
 <script setup lang="ts">
+  import ArtSectionCard from '@/components/core/surfaces/art-section-card/index.vue'
   import { ElMessage } from 'element-plus'
   import { useRouter } from 'vue-router'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric
   } from '@/components/business/business-workspace-header/index.vue'
-  import ArtSectionTitle from '@/components/core/forms/art-section-title/index.vue'
+  import ArtSectionTitle from '@/components/core/surfaces/art-section-title/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import { formatWithDayjs } from '@/utils/time'
   import { fetchWorkforceRiskOverview } from '@hr/api'
