@@ -1,0 +1,1 @@
+import{Kn as e,Xt as t,sn as n}from"./file-DE4SY_R9.js";import{t as r}from"./hr-workspace-page-aKBkzy1i.js";var i=n({name:`HrCompliance`,__name:`index`,setup(n){let i={view:`Hr:Compliance:View`,add:`Hr:Compliance:Add`,edit:`Hr:Compliance:Edit`,delete:`Hr:Compliance:Delete`};return(n,a)=>(e(),t(r,{"workspace-key":`compliance`,permissions:i}))}});export{i as default};

@@ -14,14 +14,24 @@
       </template>
     </BusinessWorkspaceHeader>
 
-    <section v-if="workspace.tabs.length > 1" class="hr-workspace-page__tabs art-card-xs">
+    <section
+      v-if="workspace.tabs.length > 1"
+      class="hr-workspace-page__tabs"
+      :class="{ 'has-detailed-tabs': hasDetailedTabs }"
+    >
       <ElTabs v-model="activeTabKey" @tab-change="handleTabChange">
-        <ElTabPane
-          v-for="tab in workspace.tabs"
-          :key="tab.key"
-          :name="tab.key"
-          :label="tab.label"
-        />
+        <ElTabPane v-for="tab in workspace.tabs" :key="tab.key" :name="tab.key">
+          <template #label>
+            <span v-if="tab.description" class="hr-workspace-page__tab-label">
+              <ArtSvgIcon :icon="tab.icon || workspace.icon" />
+              <span>
+                <strong>{{ tab.label }}</strong>
+                <small>{{ tab.description }}</small>
+              </span>
+            </span>
+            <template v-else>{{ tab.label }}</template>
+          </template>
+        </ElTabPane>
       </ElTabs>
     </section>
 
@@ -60,6 +70,7 @@
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtDictDisplay from '@/components/core/base/art-dict-display/index.vue'
+  import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
@@ -119,6 +130,7 @@
       workspace.value.tabs.find((tab) => tab.key === activeTabKey.value) ?? workspace.value.tabs[0]
   )
   const tableKey = computed(() => `${props.workspaceKey}-${activeTabKey.value}`)
+  const hasDetailedTabs = computed(() => workspace.value.tabs.some((tab) => tab.description))
   const overview = reactive({ total: 0, attention: 0, completed: 0 })
 
   const search = reactive<{
@@ -386,6 +398,60 @@
       :deep(.el-tabs__header) {
         margin: 0;
       }
+
+      &.has-detailed-tabs {
+        padding-inline: 0;
+
+        :deep(.el-tabs__nav-wrap) {
+          padding-inline: 8px;
+
+          &::after {
+            height: 1px;
+            background-color: var(--el-border-color-lighter);
+          }
+        }
+
+        :deep(.el-tabs__item) {
+          height: 56px;
+          padding-inline: 16px;
+        }
+
+        :deep(.el-tabs__active-bar) {
+          height: 3px;
+          border-radius: 999px 999px 0 0;
+        }
+      }
+    }
+
+    &__tab-label {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+
+      > svg {
+        flex: 0 0 auto;
+        width: 19px;
+        height: 19px;
+      }
+
+      > span {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        line-height: 1.25;
+      }
+
+      strong {
+        font-size: 14px;
+      }
+
+      small {
+        margin-top: 2px;
+        font-size: 10px;
+        font-weight: 400;
+        color: var(--art-text-gray-400);
+      }
     }
 
     &__row-actions {
@@ -399,6 +465,17 @@
     :deep(.art-table-query) {
       flex: 1;
       min-height: 0;
+    }
+
+    @media (width <= 640px) {
+      &__tabs.has-detailed-tabs :deep(.el-tabs__item) {
+        height: 48px;
+        padding-inline: 8px;
+      }
+
+      &__tab-label small {
+        display: none;
+      }
     }
   }
 </style>

@@ -1,10 +1,10 @@
 import { existsSync, readFileSync, readdirSync, realpathSync } from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
-import { defineConfig, loadEnv, type Plugin } from 'vite'
+import { defineConfig, loadEnv, type Plugin, type UserConfig } from 'vite'
 import AutoImport from 'unplugin-auto-import/vite'
 import ElementPlus from 'unplugin-element-plus/vite'
 import Components from 'unplugin-vue-components/vite'
@@ -43,6 +43,25 @@ const platformRoot = resolvePlatformRoot()
 const platformSourceRoot = path.join(platformRoot, 'src')
 const sourceTransformPattern = createSourceTransformPattern(applicationRoot, platformSourceRoot)
 
+interface SharedBuildLogPolicy {
+  chunkSizeWarningLimit: number
+  rolldownOptions: NonNullable<NonNullable<UserConfig['build']>['rolldownOptions']>
+  summaryPlugin: Plugin
+}
+
+interface BuildLogPolicyModule {
+  createBuildLogPolicy(): SharedBuildLogPolicy
+}
+
+async function loadBuildLogPolicy(): Promise<BuildLogPolicyModule | null> {
+  const policyPath = path.join(platformRoot, 'scripts/build-log-policy.mjs')
+  if (!existsSync(policyPath)) {
+    console.warn('[vite] 当前平台版本未提供共享构建日志策略，未知警告将保持原样。')
+    return null
+  }
+  return import(pathToFileURL(policyPath).href) as Promise<BuildLogPolicyModule>
+}
+
 function createSourceTransformPattern(...roots: string[]): RegExp {
   const rootPattern = roots
     .map((root) =>
@@ -79,7 +98,7 @@ function createNoJekyllPlugin(): Plugin {
   }
 }
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(async ({ mode }) => {
   const platformEnv = loadEnv(mode, platformRoot, '')
   const applicationEnv = loadEnv(mode, applicationRoot, '')
   const env: HrRuntimeEnv = {
@@ -95,6 +114,7 @@ export default defineConfig(({ mode }) => {
       .map(([key, value]) => [`import.meta.env.${key}`, JSON.stringify(value)])
   )
   const outDir = process.env.VITE_OUT_DIR || env.VITE_OUT_DIR || 'docs'
+  const buildLogPolicy = (await loadBuildLogPolicy())?.createBuildLogPolicy()
 
   return {
     base: env.VITE_BASE_URL || '/',
@@ -146,14 +166,16 @@ export default defineConfig(({ mode }) => {
         resolvers: [ElementPlusResolver({ importStyle: 'sass' })]
       }),
       ElementPlus({ useSource: true }),
-      createNoJekyllPlugin()
+      createNoJekyllPlugin(),
+      ...(buildLogPolicy ? [buildLogPolicy.summaryPlugin] : [])
     ],
     build: {
       target: 'es2020',
       outDir,
       emptyOutDir: true,
       reportCompressedSize: false,
-      chunkSizeWarningLimit: 2000
+      chunkSizeWarningLimit: buildLogPolicy?.chunkSizeWarningLimit ?? 2000,
+      ...(buildLogPolicy ? { rolldownOptions: buildLogPolicy.rolldownOptions } : {})
     },
     css: {
       preprocessorOptions: {

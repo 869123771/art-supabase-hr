@@ -35,6 +35,8 @@ export interface HrWorkspaceField {
 export interface HrWorkspaceTab {
   key: string
   label: string
+  icon?: string
+  description?: string
   entity: Api.Hr.WorkspaceEntity
   statusDict?: string
   statusKey?: keyof Api.Hr.WorkspaceRecord
@@ -174,6 +176,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
       {
         key: 'cases',
         label: '生命周期事项',
+        icon: 'ri:file-list-3-line',
+        description: '入职、转正、调动与离职事项全程跟踪',
         entity: 'lifecycleCase',
         statusDict: 'hrApprovalStatus',
         statusKey: 'status',
@@ -198,6 +202,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
       {
         key: 'tasks',
         label: '交接任务',
+        icon: 'ri:task-line',
+        description: '账号、岗位、资产与资料交接闭环',
         entity: 'lifecycleTask',
         statusDict: 'hrLifecycleTaskStatus',
         statusKey: 'status',
@@ -239,6 +245,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
       {
         key: 'contracts',
         label: '劳动合同',
+        icon: 'ri:file-text-line',
+        description: '合同签订、续签与到期风险管理',
         entity: 'contract',
         statusDict: 'hrContractStatus',
         statusKey: 'contractStatus',
@@ -270,6 +278,8 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
       {
         key: 'qualifications',
         label: '资质证照',
+        icon: 'ri:verified-badge-line',
+        description: '员工证照、附件与复审到期管理',
         entity: 'qualification',
         statusDict: 'hrQualificationStatus',
         statusKey: 'status',
