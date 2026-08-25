@@ -1,0 +1,1 @@
+import{l as e}from"./art-form-DNB0ELLH.js";import{o as t}from"./style-Ct4K2Ph7.js";function n(e){for(var t=-1,n=e==null?0:e.length,r=0,i=[];++t<n;){var a=e[t];a&&(i[r++]=a)}return i}function r(n,r){return n&&n.length?e(n,t(r,2)):[]}export{n,r as t};
