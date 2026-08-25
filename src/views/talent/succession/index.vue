@@ -57,24 +57,13 @@
         </article>
       </div>
 
-      <nav class="succession-page__entity-nav" aria-label="继任管理分类" role="tablist">
-        <button
-          v-for="tab in tabs"
-          :key="tab.entity"
-          type="button"
-          role="tab"
-          :aria-selected="activeEntity === tab.entity"
-          :class="{ 'is-active': activeEntity === tab.entity }"
-          @click="selectEntity(tab.entity)"
-        >
-          <span class="succession-page__entity-icon"><ArtSvgIcon :icon="tab.icon" /></span>
-          <span
-            ><strong>{{ tab.label }}</strong
-            ><small>{{ tab.description }}</small></span
-          >
-          <ArtSvgIcon class="succession-page__entity-arrow" icon="ri:arrow-right-s-line" />
-        </button>
-      </nav>
+      <HrEntityNavigation
+        v-model="activeEntity"
+        :items="navigationItems"
+        navigation-label="继任管理分类"
+        compact
+        @change="handleTabChange"
+      />
 
       <footer class="succession-page__control-note">
         <ArtSvgIcon icon="ri:information-line" />
@@ -135,6 +124,9 @@
     fetchSuccessionRecords,
     reviewSuccessionCandidate
   } from '@hr/api'
+  import HrEntityNavigation, {
+    type HrEntityNavigationItem
+  } from '@hr/views/shared/hr-entity-navigation.vue'
   import SuccessionDialog from './modules/succession-dialog.vue'
 
   defineOptions({ name: 'HrSuccession' })
@@ -176,6 +168,12 @@
       icon: 'ri:route-line'
     }
   ]
+  const navigationItems: HrEntityNavigationItem[] = tabs.map((tab) => ({
+    value: tab.entity,
+    label: tab.label,
+    description: tab.description,
+    icon: tab.icon
+  }))
   const userStore = useUserStore()
   const { getDictMap, isPlatformSuper } = storeToRefs(userStore)
   const { hasAuth } = useAuth()
@@ -732,12 +730,6 @@
     Object.assign(tableState.searchQuery, { keyword: '', status: '' })
     tableTotal.value = 0
   }
-  const selectEntity = (entity: Entity): void => {
-    if (activeEntity.value === entity) return
-    activeEntity.value = entity
-    handleTabChange()
-  }
-
   onMounted(async () => {
     await Promise.all(
       [
@@ -818,8 +810,7 @@
     }
 
     &__section-icon,
-    &__journey-icon,
-    &__entity-icon {
+    &__journey-icon {
       display: grid;
       flex: 0 0 auto;
       place-items: center;
@@ -928,93 +919,8 @@
       }
     }
 
-    &__entity-nav {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
+    :deep(.hr-entity-navigation) {
       margin-top: 12px;
-
-      button {
-        display: grid;
-        grid-template-columns: 34px minmax(0, 1fr) 18px;
-        gap: 10px;
-        align-items: center;
-        min-width: 0;
-        min-height: 64px;
-        padding: 10px 12px;
-        color: inherit;
-        text-align: left;
-        cursor: pointer;
-        background: var(--art-main-bg-color);
-        border: 1px solid var(--art-card-border);
-        border-radius: calc(var(--el-border-radius-base) + 2px);
-        transition:
-          border-color 160ms ease,
-          background-color 160ms ease,
-          transform 160ms ease,
-          box-shadow 160ms ease;
-
-        &:hover {
-          border-color: color-mix(in srgb, var(--theme-color) 35%, var(--art-card-border));
-          transform: translateY(-1px);
-        }
-
-        &:focus-visible {
-          outline: 2px solid var(--theme-color);
-          outline-offset: 2px;
-        }
-
-        &.is-active {
-          background: color-mix(in srgb, var(--theme-color) 6%, var(--art-main-bg-color));
-          border-color: color-mix(in srgb, var(--theme-color) 48%, var(--art-card-border));
-          box-shadow: 0 7px 18px color-mix(in srgb, var(--theme-color) 10%, transparent);
-
-          .succession-page__entity-arrow {
-            color: var(--theme-color);
-            transform: translateX(2px);
-          }
-        }
-
-        > span:nth-child(2) {
-          display: grid;
-          min-width: 0;
-        }
-
-        strong,
-        small {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        strong {
-          font-size: 13px;
-          color: var(--art-text-gray-900);
-        }
-
-        small {
-          margin-top: 3px;
-          font-size: 11px;
-          color: var(--art-text-gray-600);
-        }
-      }
-    }
-
-    &__entity-icon {
-      width: 34px;
-      height: 34px;
-      border-radius: 10px;
-
-      :deep(.art-svg-icon) {
-        font-size: 17px;
-      }
-    }
-
-    &__entity-arrow {
-      color: var(--art-text-gray-500);
-      transition:
-        color 160ms ease,
-        transform 160ms ease;
     }
 
     &__control-note {
@@ -1121,14 +1027,6 @@
 
       &__control-heading {
         flex-direction: column;
-      }
-
-      &__entity-nav {
-        grid-template-columns: 1fr;
-      }
-
-      &__entity-nav button {
-        min-height: 58px;
       }
     }
   }

@@ -746,17 +746,12 @@ declare namespace Api {
     type WorkspaceEntity =
       | 'contract'
       | 'personnelChange'
-      | 'lifecycleCase'
-      | 'lifecycleTask'
       | 'qualification'
       | 'headcount'
       | 'shift'
       | 'shiftAssignment'
       | 'attendance'
       | 'selfServiceRequest'
-      | 'performanceCycle'
-      | 'performanceReview'
-      | 'performanceGoal'
       | 'trainingPlan'
       | 'trainingEnrollment'
       | 'competency'
@@ -1147,6 +1142,513 @@ declare namespace Api {
       vacancyCount: number
       probationDueCount: number
       items: WorkforceRiskItem[]
+    }
+
+    type WorkforcePlanningEntity = 'cycle' | 'line' | 'effective'
+    type WorkforcePlanningOptionKind = 'plan' | 'organization' | 'position'
+    type WorkforcePlanScenario = 'baseline' | 'growth' | 'efficiency' | 'restructure'
+    type WorkforcePlanStatus =
+      'draft' | 'submitted' | 'approved' | 'active' | 'closed' | 'cancelled'
+    type WorkforcePlanPriority = 'critical' | 'high' | 'normal' | 'low'
+    type WorkforcePlanAction = 'submit' | 'return' | 'cancel' | 'approve' | 'activate' | 'close'
+
+    interface WorkforcePlanningReference {
+      id: string
+      tenantId?: string
+      code?: string | null
+      name?: string | null
+      status?: string | null
+      organizationId?: string | null
+      headcountLimit?: number
+      currentCount?: number
+      periodStart?: string
+      periodEnd?: string
+    }
+
+    interface WorkforcePlanCycle {
+      id?: string
+      tenantId?: string
+      planNo: string
+      planName: string
+      scenario: WorkforcePlanScenario
+      periodStart: string
+      periodEnd: string
+      baselineDate: string
+      ownerEmployeeId?: string | null
+      status: WorkforcePlanStatus
+      budgetAmount?: number | null
+      currencyCode: string
+      objective?: string | null
+      assumptions?: string | null
+      approvedBy?: string | null
+      approvedAt?: string | null
+      activatedAt?: string | null
+      closedAt?: string | null
+      remark?: string | null
+      tenant?: WorkforcePlanningReference
+      owner?: WorkforcePlanningReference | null
+      lineCount?: number
+      baselineCount?: number
+      plannedHires?: number
+      plannedExits?: number
+      targetCount?: number
+      plannedPayroll?: number | null
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface WorkforcePlanLine {
+      id?: string
+      tenantId?: string
+      planId: string
+      organizationId: string
+      positionId: string
+      baselineCount: number
+      plannedHires: number
+      plannedExits: number
+      targetCount: number
+      annualCostPerHead?: number | null
+      plannedPayroll?: number | null
+      demandDate?: string | null
+      priority: WorkforcePlanPriority
+      rationale: string
+      assumptions?: string | null
+      currentCount?: number
+      forecastGap?: number
+      requisitionCount?: number
+      recruitingCount?: number
+      planStatus?: WorkforcePlanStatus
+      periodStart?: string
+      periodEnd?: string
+      plan?: WorkforcePlanningReference
+      organization?: WorkforcePlanningReference
+      position?: WorkforcePlanningReference
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface WorkforceEffectiveHeadcount {
+      id?: string
+      tenantId?: string
+      organizationId: string
+      positionId: string
+      approvedCount: number
+      currentCount?: number
+      vacancyCount?: number
+      effectiveFrom?: string | null
+      effectiveTo?: string | null
+      enabled: boolean
+      remark?: string | null
+      sourcePlanLineId?: string | null
+      organization?: WorkforcePlanningReference
+      position?: WorkforcePlanningReference
+      createTime?: string
+      updateTime?: string
+    }
+
+    type WorkforcePlanningRecord =
+      WorkforcePlanCycle | WorkforcePlanLine | WorkforceEffectiveHeadcount
+
+    interface WorkforceFeaturedPlan {
+      id: string
+      planNo: string
+      planName: string
+      status: WorkforcePlanStatus
+      budgetAmount?: number | null
+      currencyCode: string
+      baselineCount: number
+      plannedHires: number
+      plannedExits: number
+      targetCount: number
+      plannedPayroll: number
+      budgetVariance?: number | null
+    }
+
+    interface WorkforcePlanningOverview {
+      activePlanCount: number
+      pendingApprovalCount: number
+      operationalCapacity: number
+      currentIncumbentCount: number
+      vacancyCount: number
+      overCapacityCount: number
+      featuredPlan?: WorkforceFeaturedPlan | null
+    }
+
+    interface WorkforcePlanningListResult<
+      TRecord extends WorkforcePlanningRecord = WorkforcePlanningRecord
+    > {
+      records: TRecord[]
+      total: number
+    }
+
+    interface WorkforcePlanningSearchParams extends Api.Common.CommonSearchParams {
+      keyword?: string
+      tenantId?: string
+      status?: string
+      planId?: string
+    }
+
+    type LifecycleEntity = 'case' | 'task' | 'template' | 'template_task'
+    type LifecycleOptionKind =
+      'case' | 'template' | 'employee' | 'organization' | 'position' | 'handoff'
+    type LifecycleCaseType = 'onboarding' | 'regularization' | 'transfer' | 'offboarding'
+    type LifecycleExecutionStatus = 'planning' | 'in_progress' | 'ready' | 'completed' | 'cancelled'
+    type LifecycleTaskStatus = 'pending' | 'processing' | 'completed' | 'skipped' | 'cancelled'
+    type LifecycleTemplateStatus = 'draft' | 'active' | 'inactive'
+    type LifecycleOwnerRole =
+      'hr' | 'manager' | 'employee' | 'it' | 'finance' | 'administration' | 'asset' | 'other'
+    type LifecyclePriority = 'low' | 'normal' | 'high' | 'critical'
+    type LifecycleCaseAction = 'start' | 'ready' | 'complete' | 'cancel'
+    type LifecycleTaskAction = 'start' | 'complete' | 'waive' | 'reopen'
+    type LifecycleTemplateAction = 'activate' | 'deactivate'
+
+    interface LifecycleReference {
+      id: string
+      tenantId?: string
+      code?: string | null
+      name?: string | null
+      status?: string | null
+      caseType?: LifecycleCaseType | null
+      executionStatus?: LifecycleExecutionStatus | null
+      employeeId?: string | null
+      organizationId?: string | null
+      positionId?: string | null
+    }
+
+    interface LifecycleOverview {
+      activeCaseCount: number
+      dueSoonCaseCount: number
+      overdueBlockingTaskCount: number
+      readyCaseCount: number
+      defaultTemplateCount: number
+      completionRate: number
+    }
+
+    interface LifecycleCase {
+      id?: string
+      tenantId?: string
+      caseNo: string
+      employeeId: string
+      caseType: LifecycleCaseType
+      plannedEffectiveDate: string
+      status: ApprovalStatus
+      templateId?: string | null
+      handoffId?: string | null
+      sourceType?: 'recruitment_handoff' | null
+      sourceId?: string | null
+      organizationId?: string | null
+      positionId?: string | null
+      ownerEmployeeId?: string | null
+      buddyEmployeeId?: string | null
+      priority: LifecyclePriority
+      executionStatus: LifecycleExecutionStatus
+      actualEffectiveDate?: string | null
+      startedAt?: string | null
+      readyAt?: string | null
+      completedAt?: string | null
+      cancelledAt?: string | null
+      cancellationReason?: string | null
+      remark?: string | null
+      employee?: LifecycleReference
+      organization?: LifecycleReference | null
+      position?: LifecycleReference | null
+      template?: LifecycleReference | null
+      owner?: LifecycleReference | null
+      buddy?: LifecycleReference | null
+      taskCount?: number
+      closedTaskCount?: number
+      openBlockingTaskCount?: number
+      overdueTaskCount?: number
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface LifecycleTask {
+      id?: string
+      tenantId?: string
+      lifecycleCaseId: string
+      templateTaskId?: string | null
+      taskType: string
+      taskName: string
+      description?: string | null
+      ownerEmployeeId?: string | null
+      ownerRole: LifecycleOwnerRole
+      dueDate: string
+      required: boolean
+      blocking: boolean
+      evidenceRequired: boolean
+      status: LifecycleTaskStatus
+      completionNote?: string | null
+      evidenceNote?: string | null
+      evidenceUrl?: string | null
+      startedAt?: string | null
+      completedAt?: string | null
+      waivedAt?: string | null
+      waiverReason?: string | null
+      dependencyTaskId?: string | null
+      sort: number
+      case?: LifecycleReference | null
+      employee?: LifecycleReference | null
+      owner?: LifecycleReference | null
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface LifecycleTemplate {
+      id?: string
+      tenantId?: string
+      templateCode: string
+      templateName: string
+      caseType: LifecycleCaseType
+      status: LifecycleTemplateStatus
+      isDefault: boolean
+      description?: string | null
+      taskCount?: number
+      usageCount?: number
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface LifecycleTemplateTask {
+      id?: string
+      tenantId?: string
+      templateId: string
+      taskType: string
+      taskName: string
+      description?: string | null
+      ownerRole: LifecycleOwnerRole
+      dueOffsetDays: number
+      required: boolean
+      blocking: boolean
+      evidenceRequired: boolean
+      sort: number
+      template?: LifecycleReference | null
+      createTime?: string
+      updateTime?: string
+    }
+
+    type LifecycleRecord = LifecycleCase | LifecycleTask | LifecycleTemplate | LifecycleTemplateTask
+
+    interface LifecycleSearchParams extends Api.Common.CommonSearchParams {
+      keyword?: string
+      tenantId?: string
+      status?: string
+      caseId?: string
+      templateId?: string
+    }
+
+    interface LifecycleListResult<TRecord extends LifecycleRecord = LifecycleRecord> {
+      records: TRecord[]
+      total: number
+    }
+
+    type PerformanceEntity =
+      'cycle' | 'review' | 'goal' | 'check_in' | 'calibration' | 'calibration_item'
+    type PerformanceOptionKind = 'cycle' | 'review' | 'employee' | 'organization' | 'calibration'
+    type PerformanceCycleStatus = 'draft' | 'active' | 'reviewing' | 'completed' | 'cancelled'
+    type PerformanceReviewStatus =
+      'draft' | 'self_review' | 'manager_review' | 'confirmed' | 'completed' | 'cancelled'
+    type PerformanceGoalStatus = 'draft' | 'in_progress' | 'at_risk' | 'completed'
+    type PerformanceCalibrationStatus = 'setup' | 'in_progress' | 'approved' | 'deactivated'
+    type PerformanceLevel = 's' | 'a' | 'b' | 'c' | 'd'
+    type PerformanceCycleAction = 'activate' | 'begin_review' | 'complete' | 'cancel'
+    type PerformanceReviewAction = 'submit_self' | 'submit_manager' | 'complete'
+    type PerformanceCalibrationAction = 'start' | 'approve' | 'deactivate'
+
+    interface PerformanceReference {
+      id: string
+      tenantId?: string
+      code?: string | null
+      name?: string | null
+      status?: string | null
+      organizationId?: string | null
+      cycleId?: string | null
+    }
+
+    interface PerformanceCycle {
+      id?: string
+      tenantId?: string
+      cycleCode: string
+      cycleName: string
+      startDate: string
+      endDate: string
+      status: PerformanceCycleStatus
+      description?: string | null
+      ownerEmployeeId?: string | null
+      checkInFrequencyDays: number
+      selfReviewDueDate?: string | null
+      managerReviewDueDate?: string | null
+      calibrationDueDate?: string | null
+      activatedAt?: string | null
+      completedAt?: string | null
+      owner?: PerformanceReference | null
+      reviewCount?: number
+      completedCount?: number
+      pendingCalibrationCount?: number
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface PerformanceReview {
+      id?: string
+      tenantId?: string
+      cycleId: string
+      employeeId: string
+      reviewerEmployeeId?: string | null
+      status: PerformanceReviewStatus
+      selfScore?: number | null
+      managerScore?: number | null
+      calibratedScore?: number | null
+      calibratedLevel?: PerformanceLevel | null
+      totalScore?: number | null
+      performanceLevel?: PerformanceLevel | null
+      employeeSummary?: string | null
+      reviewerComment?: string | null
+      calibrationComment?: string | null
+      submittedAt?: string | null
+      managerReviewedAt?: string | null
+      confirmedAt?: string | null
+      completedAt?: string | null
+      goalCount?: number
+      goalWeight?: number
+      lastCheckInDate?: string | null
+      latestRiskStatus?: string | null
+      latestProgressPercent?: number | null
+      cycle?: PerformanceReference
+      employee?: PerformanceReference
+      reviewer?: PerformanceReference | null
+      organization?: PerformanceReference | null
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface PerformanceGoal {
+      id?: string
+      tenantId?: string
+      reviewId: string
+      goalName: string
+      targetDescription: string
+      goalType: 'business' | 'customer' | 'operations' | 'safety' | 'development'
+      weight: number
+      progressPercent: number
+      status: PerformanceGoalStatus
+      dueDate?: string | null
+      actualResult?: string | null
+      evidenceSource?: string | null
+      employeeScore?: number | null
+      managerScore?: number | null
+      employeeId?: string
+      cycleId?: string
+      reviewStatus?: PerformanceReviewStatus
+      employee?: PerformanceReference
+      cycle?: PerformanceReference
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface PerformanceCheckIn {
+      id?: string
+      tenantId?: string
+      reviewId: string
+      checkInDate: string
+      progressPercent: number
+      riskStatus: 'on_track' | 'attention' | 'off_track'
+      achievement?: string | null
+      blocker?: string | null
+      nextAction: string
+      managerFeedback?: string | null
+      facilitatorEmployeeId?: string | null
+      employeeId?: string
+      cycleId?: string
+      employee?: PerformanceReference
+      cycle?: PerformanceReference
+      facilitator?: PerformanceReference | null
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface PerformanceCalibrationSession {
+      id?: string
+      tenantId?: string
+      sessionNo: string
+      sessionName: string
+      cycleId: string
+      organizationId?: string | null
+      facilitatorEmployeeId?: string | null
+      scheduledAt: string
+      status: PerformanceCalibrationStatus
+      distributionNote?: string | null
+      decisionNote?: string | null
+      approvedAt?: string | null
+      itemCount?: number
+      adjustedCount?: number
+      cycle?: PerformanceReference
+      organization?: PerformanceReference | null
+      facilitator?: PerformanceReference | null
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface PerformanceCalibrationItem {
+      id?: string
+      tenantId?: string
+      sessionId: string
+      reviewId: string
+      originalScore: number
+      originalLevel: PerformanceLevel
+      calibratedScore: number
+      calibratedLevel: PerformanceLevel
+      adjustmentReason?: string | null
+      employeeId?: string
+      cycleId?: string
+      session?: PerformanceReference
+      employee?: PerformanceReference
+      cycle?: PerformanceReference
+      createTime?: string
+      updateTime?: string
+    }
+
+    type PerformanceRecord =
+      | PerformanceCycle
+      | PerformanceReview
+      | PerformanceGoal
+      | PerformanceCheckIn
+      | PerformanceCalibrationSession
+      | PerformanceCalibrationItem
+
+    interface PerformanceFeaturedCycle {
+      id: string
+      cycleCode: string
+      cycleName: string
+      status: PerformanceCycleStatus
+      startDate: string
+      endDate: string
+      goalSettingCount: number
+      managerReviewCount: number
+      calibrationCount: number
+      completedCount: number
+    }
+
+    interface PerformanceOverview {
+      activeCycleCount: number
+      inScopeEmployeeCount: number
+      completionRate: number
+      atRiskCheckInCount: number
+      pendingCalibrationCount: number
+      featuredCycle?: PerformanceFeaturedCycle | null
+    }
+
+    interface PerformanceListResult<TRecord extends PerformanceRecord = PerformanceRecord> {
+      records: TRecord[]
+      total: number
+    }
+
+    interface PerformanceSearchParams extends Api.Common.CommonSearchParams {
+      keyword?: string
+      tenantId?: string
+      status?: string
+      cycleId?: string
+      sessionId?: string
     }
 
     type LearningEntity =

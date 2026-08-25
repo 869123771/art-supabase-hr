@@ -1,11 +1,9 @@
 export type HrWorkspaceKey =
   | 'personnelChange'
-  | 'lifecycle'
   | 'compliance'
   | 'headcount'
   | 'attendance'
   | 'selfService'
-  | 'performance'
   | 'talent'
   | 'recruitment'
 
@@ -45,7 +43,6 @@ export interface HrWorkspaceTab {
   defaults: Api.Hr.WorkspaceRecord
   approvalBusinessType?: string
   canEffect?: boolean
-  canCompleteTask?: boolean
 }
 
 export interface HrWorkspaceDefinition {
@@ -161,75 +158,6 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           textarea('remark', '备注')
         ],
         defaults: { status: 'draft' }
-      }
-    ]
-  },
-  lifecycle: {
-    eyebrow: 'ONBOARDING & OFFBOARDING',
-    title: '入转调离工作台',
-    icon: 'ri:user-settings-line',
-    description: '通过可审计任务清单衔接账号、组织岗位、司机档案、资产交接与资料归档。',
-    tags: ['任务清单', '跨系统交接', '完成闭环'],
-    tabs: [
-      {
-        key: 'cases',
-        label: '生命周期事项',
-        icon: 'ri:file-list-3-line',
-        description: '入职、转正、调动与离职事项全程跟踪',
-        entity: 'lifecycleCase',
-        statusDict: 'hrApprovalStatus',
-        statusKey: 'status',
-        approvalBusinessType: 'hr_lifecycle_case',
-        columns: [
-          { key: 'caseNo', label: '事项编号', minWidth: 150 },
-          { key: 'employee.employeeName', label: '员工', minWidth: 120 },
-          { key: 'caseType', label: '事项类型', width: 110, dictCode: 'hrLifecycleCaseType' },
-          { key: 'plannedEffectiveDate', label: '计划日期', width: 120 },
-          { key: 'status', label: '状态', width: 110, dictCode: 'hrApprovalStatus' },
-          { key: 'remark', label: '说明', minWidth: 200 }
-        ],
-        fields: [
-          numberedInput('caseNo', '事项编号', 'hr.lifecycle_case'),
-          employeeField(),
-          dict('caseType', '事项类型', 'hrLifecycleCaseType', true),
-          date('plannedEffectiveDate', '计划生效日期', true),
-          textarea('remark', '事项说明')
-        ],
-        defaults: { status: 'draft' }
-      },
-      {
-        key: 'tasks',
-        label: '交接任务',
-        icon: 'ri:task-line',
-        description: '账号、岗位、资产与资料交接闭环',
-        entity: 'lifecycleTask',
-        statusDict: 'hrLifecycleTaskStatus',
-        statusKey: 'status',
-        canCompleteTask: true,
-        columns: [
-          { key: 'lifecycleCase.caseNo', label: '事项编号', minWidth: 150 },
-          { key: 'taskType', label: '任务类型', width: 120, dictCode: 'hrLifecycleTaskType' },
-          { key: 'taskName', label: '任务名称', minWidth: 180 },
-          { key: 'dueDate', label: '截止日期', width: 120 },
-          { key: 'status', label: '状态', width: 110, dictCode: 'hrLifecycleTaskStatus' },
-          { key: 'completionNote', label: '完成说明', minWidth: 180 }
-        ],
-        fields: [
-          {
-            key: 'lifecycleCaseId',
-            label: '生命周期事项',
-            type: 'select',
-            required: true,
-            optionEntity: 'lifecycleCase',
-            optionLabelKeys: ['caseNo', 'employee.employeeName']
-          },
-          dict('taskType', '任务类型', 'hrLifecycleTaskType', true),
-          input('taskName', '任务名称', true),
-          date('dueDate', '截止日期'),
-          number('sort', '排序'),
-          textarea('completionNote', '处理说明')
-        ],
-        defaults: { status: 'pending', sort: 0 }
       }
     ]
   },
@@ -502,104 +430,6 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           textarea('reason', '申请原因', true)
         ],
         defaults: { status: 'draft' }
-      }
-    ]
-  },
-  performance: {
-    eyebrow: 'PERFORMANCE CYCLE',
-    title: '绩效考核',
-    icon: 'ri:bar-chart-box-line',
-    description: '建立考核周期、员工评价和目标结果，可引用运输时效、安全与服务质量作为证据。',
-    tags: ['周期管理', '目标评分', '结果确认'],
-    tabs: [
-      {
-        key: 'cycles',
-        label: '考核周期',
-        icon: 'ri:calendar-event-line',
-        description: '定义考核范围、起止时间与执行状态',
-        entity: 'performanceCycle',
-        statusDict: 'hrPerformanceCycleStatus',
-        statusKey: 'status',
-        columns: [
-          { key: 'cycleCode', label: '周期编码', width: 140 },
-          { key: 'cycleName', label: '周期名称', minWidth: 160 },
-          { key: 'startDate', label: '开始日期', width: 120 },
-          { key: 'endDate', label: '结束日期', width: 120 },
-          { key: 'status', label: '状态', width: 110, dictCode: 'hrPerformanceCycleStatus' }
-        ],
-        fields: [
-          input('cycleCode', '周期编码', true),
-          input('cycleName', '周期名称', true),
-          date('startDate', '开始日期', true),
-          date('endDate', '结束日期', true),
-          dict('status', '周期状态', 'hrPerformanceCycleStatus', true),
-          textarea('description', '周期说明')
-        ],
-        defaults: { status: 'draft' }
-      },
-      {
-        key: 'reviews',
-        label: '员工考核',
-        icon: 'ri:user-star-line',
-        description: '记录员工评分、等级与主管评价结论',
-        entity: 'performanceReview',
-        statusDict: 'hrPerformanceReviewStatus',
-        statusKey: 'status',
-        columns: [
-          { key: 'cycle.cycleName', label: '考核周期', minWidth: 150 },
-          { key: 'employee.employeeName', label: '员工', minWidth: 120 },
-          { key: 'totalScore', label: '总分', width: 90 },
-          { key: 'performanceLevel', label: '等级', width: 100, dictCode: 'hrPerformanceLevel' },
-          { key: 'status', label: '状态', width: 110, dictCode: 'hrPerformanceReviewStatus' }
-        ],
-        fields: [
-          {
-            key: 'cycleId',
-            label: '考核周期',
-            type: 'select',
-            required: true,
-            optionEntity: 'performanceCycle',
-            optionLabelKeys: ['cycleCode', 'cycleName']
-          },
-          employeeField(),
-          number('totalScore', '总分'),
-          dict('performanceLevel', '绩效等级', 'hrPerformanceLevel'),
-          dict('status', '考核状态', 'hrPerformanceReviewStatus', true),
-          textarea('employeeSummary', '员工总结'),
-          textarea('reviewerComment', '主管评价')
-        ],
-        defaults: { status: 'draft' }
-      },
-      {
-        key: 'goals',
-        label: '考核目标',
-        icon: 'ri:focus-2-line',
-        description: '拆解目标权重并沉淀结果与证据',
-        entity: 'performanceGoal',
-        columns: [
-          { key: 'goalName', label: '目标名称', minWidth: 180 },
-          { key: 'targetDescription', label: '目标标准', minWidth: 220 },
-          { key: 'weight', label: '权重', width: 90, suffix: '%' },
-          { key: 'actualResult', label: '实际结果', minWidth: 180 },
-          { key: 'score', label: '得分', width: 90 }
-        ],
-        fields: [
-          {
-            key: 'reviewId',
-            label: '员工考核',
-            type: 'select',
-            required: true,
-            optionEntity: 'performanceReview',
-            optionLabelKeys: ['employee.employeeName', 'cycle.cycleName']
-          },
-          input('goalName', '目标名称', true),
-          textarea('targetDescription', '目标标准', true),
-          number('weight', '权重（%）', true),
-          number('score', '得分'),
-          input('evidenceSource', '证据来源'),
-          textarea('actualResult', '实际结果')
-        ],
-        defaults: { weight: 0 }
       }
     ]
   },

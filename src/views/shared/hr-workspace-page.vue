@@ -86,7 +86,6 @@
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import {
-    completeLifecycleTask,
     deleteHrWorkspaceRecord,
     effectPersonnelChange,
     effectRecruitmentRequisition,
@@ -109,7 +108,6 @@
     delete: string
     submit?: string
     effect?: string
-    completeTask?: string
   }
 
   interface WorkspaceRecordDialogExpose {
@@ -278,12 +276,6 @@
     void tableQueryRef.value?.refreshUpdate()
   }
 
-  const handleCompleteTask = async (row: Api.Hr.WorkspaceRecord): Promise<void> => {
-    if (!row.id) return
-    await completeLifecycleTask(row.id)
-    void tableQueryRef.value?.refreshUpdate()
-  }
-
   const columnsFactory = (): ColumnOption<Api.Hr.WorkspaceRecord>[] => [
     ...activeTab.value.columns.map((column) => ({
       prop: String(column.key),
@@ -304,7 +296,7 @@
     {
       prop: 'operation',
       label: '操作',
-      width: activeTab.value.approvalBusinessType || activeTab.value.canCompleteTask ? 250 : 120,
+      width: activeTab.value.approvalBusinessType ? 250 : 120,
       fixed: 'right',
       formatter: (row: Api.Hr.WorkspaceRecord) => (
         <div class="hr-workspace-page__row-actions">
@@ -341,16 +333,6 @@
                 label="生效"
                 permission={props.permissions.effect}
                 onClick={() => void handleEffect(row)}
-              />
-            )}
-          {activeTab.value.canCompleteTask &&
-            ['pending', 'processing'].includes(getRowStatus(row)) &&
-            props.permissions.completeTask && (
-              <ArtButtonTable
-                type="sign"
-                label="完成"
-                permission={props.permissions.completeTask}
-                onClick={() => void handleCompleteTask(row)}
               />
             )}
         </div>

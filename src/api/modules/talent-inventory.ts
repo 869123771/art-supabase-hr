@@ -17,7 +17,10 @@ export async function fetchTalentInventory(): Promise<Api.Hr.TalentInventoryOver
   )
   if (result.error) throw result.error
 
-  const records = result.data?.records ?? []
+  const records = (result.data?.records ?? []).map((record) => ({
+    ...record,
+    performanceLevel: record.performanceLevel?.toUpperCase() ?? null
+  }))
   const assessed = records.filter((record) => record.competencyTotal > 0)
   const performanceRated = records.filter((record) => record.performanceLevel)
   return {

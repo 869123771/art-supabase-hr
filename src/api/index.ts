@@ -52,7 +52,6 @@ export {
 } from '@hr/api/modules/absence'
 
 export {
-  completeLifecycleTask,
   deleteHrWorkspaceRecord,
   effectPersonnelChange,
   effectRecruitmentRequisition,
@@ -61,7 +60,26 @@ export {
   submitHrApproval
 } from '@hr/api/modules/workspace'
 
+export {
+  deleteLifecycleRecord,
+  fetchLifecycleOptions,
+  fetchLifecycleOverview,
+  fetchLifecycleRecords,
+  saveLifecycleRecord,
+  transitionLifecycleCase,
+  transitionLifecycleTask,
+  transitionLifecycleTemplate
+} from '@hr/api/modules/lifecycle'
+
 export { fetchWorkforceRiskOverview } from '@hr/api/modules/workforce-risk'
+export {
+  deleteWorkforcePlanningRecord,
+  fetchWorkforcePlanningOptions,
+  fetchWorkforcePlanningOverview,
+  fetchWorkforcePlanningRecords,
+  saveWorkforcePlanningRecord,
+  transitionWorkforcePlan
+} from '@hr/api/modules/workforce-planning'
 export { fetchTalentInventory } from '@hr/api/modules/talent-inventory'
 export { fetchSkillMatrix } from '@hr/api/modules/skill-matrix'
 export {
@@ -80,6 +98,17 @@ export {
   reviewSuccessionCandidate,
   saveSuccessionRecord
 } from '@hr/api/modules/succession'
+
+export {
+  deletePerformanceRecord,
+  fetchPerformanceOptions,
+  fetchPerformanceOverview,
+  fetchPerformanceRecords,
+  savePerformanceRecord,
+  transitionPerformanceCalibration,
+  transitionPerformanceCycle,
+  transitionPerformanceReview
+} from '@hr/api/modules/performance'
 
 export {
   cancelRecruitmentInterview,

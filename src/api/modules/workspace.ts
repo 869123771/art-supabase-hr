@@ -33,22 +33,6 @@ const workspaceTransportConfigs: Record<WorkspaceEntity, WorkspaceTransportConfi
     employeeColumn: 'employee_id',
     orderColumn: 'create_time'
   },
-  lifecycleCase: {
-    table: 'hr_lifecycle_case',
-    select: '*',
-    searchColumns: ['case_no', 'remark'],
-    statusColumn: 'status',
-    employeeColumn: 'employee_id',
-    orderColumn: 'create_time'
-  },
-  lifecycleTask: {
-    table: 'hr_lifecycle_task',
-    select:
-      '*, lifecycle_case:hr_lifecycle_case!hr_lifecycle_task_case_fkey(id,case_no,case_type,employee_id)',
-    searchColumns: ['task_name', 'completion_note'],
-    statusColumn: 'status',
-    orderColumn: 'sort'
-  },
   qualification: {
     table: 'hr_employee_qualification',
     select: '*',
@@ -91,29 +75,6 @@ const workspaceTransportConfigs: Record<WorkspaceEntity, WorkspaceTransportConfi
     searchColumns: ['request_no', 'title', 'reason'],
     statusColumn: 'status',
     employeeColumn: 'employee_id',
-    orderColumn: 'create_time'
-  },
-  performanceCycle: {
-    table: 'hr_performance_cycle',
-    select: '*',
-    searchColumns: ['cycle_code', 'cycle_name'],
-    statusColumn: 'status',
-    orderColumn: 'start_date'
-  },
-  performanceReview: {
-    table: 'hr_performance_review',
-    select:
-      '*, cycle:hr_performance_cycle!hr_performance_review_cycle_id_tenant_id_fkey(id,cycle_code,cycle_name)',
-    searchColumns: ['employee_summary', 'reviewer_comment'],
-    statusColumn: 'status',
-    employeeColumn: 'employee_id',
-    orderColumn: 'create_time'
-  },
-  performanceGoal: {
-    table: 'hr_performance_goal',
-    select:
-      '*, review:hr_performance_review!hr_performance_goal_review_id_tenant_id_fkey(id,employee_id,cycle_id)',
-    searchColumns: ['goal_name', 'target_description', 'actual_result'],
     orderColumn: 'create_time'
   },
   trainingPlan: {
@@ -355,20 +316,5 @@ export async function effectRecruitmentRequisition(requisitionId: string) {
   return await responseHandle<boolean>(
     () => supabase.rpc('hr_effect_recruitment_requisition', { p_requisition_id: requisitionId }),
     { showMessage: true, breakReturn: true, message: '招聘需求已启动' }
-  )
-}
-
-export async function completeLifecycleTask(
-  taskId: string,
-  params: { completionNote?: string; skip?: boolean } = {}
-) {
-  return await responseHandle<boolean>(
-    () =>
-      supabase.rpc('hr_complete_lifecycle_task', {
-        p_task_id: taskId,
-        p_completion_note: params.completionNote?.trim() || null,
-        p_skip: params.skip ?? false
-      }),
-    { showMessage: true, breakReturn: true, message: params.skip ? '任务已跳过' : '任务已完成' }
   )
 }
