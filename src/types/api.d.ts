@@ -1150,23 +1150,13 @@ declare namespace Api {
     }
 
     type LearningEntity =
-      | 'plan'
-      | 'course'
-      | 'course_competency'
-      | 'session'
-      | 'enrollment'
-      | 'certificate'
+      'plan' | 'course' | 'course_competency' | 'session' | 'enrollment' | 'certificate'
     type LearningOptionKind = 'plan' | 'course' | 'session' | 'competency'
     type LearningPlanStatus = 'draft' | 'published' | 'in_progress' | 'completed' | 'cancelled'
     type LearningCourseStatus = 'draft' | 'published' | 'retired'
     type LearningSessionStatus = 'planned' | 'open' | 'in_progress' | 'completed' | 'cancelled'
     type LearningEnrollmentStatus =
-      | 'enrolled'
-      | 'attending'
-      | 'passed'
-      | 'failed'
-      | 'withdrawn'
-      | 'no_show'
+      'enrolled' | 'attending' | 'passed' | 'failed' | 'withdrawn' | 'no_show'
     type LearningCertificateStatus = 'valid' | 'expired' | 'revoked'
 
     interface LearningReference {
@@ -1336,6 +1326,7 @@ declare namespace Api {
     }
 
     interface LearningSearchParams extends Api.Common.CommonSearchParams {
+      keyword?: string
       tenantId?: string
       status?: string
     }
