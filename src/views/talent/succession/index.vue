@@ -32,29 +32,28 @@
       </header>
 
       <div class="succession-page__journey" aria-label="继任管理业务流程">
-        <article>
-          <span class="succession-page__journey-index">01</span>
-          <span class="succession-page__journey-icon"
-            ><ArtSvgIcon icon="ri:briefcase-4-line"
-          /></span>
-          <div><strong>识别关键岗位</strong><small>关键度 · 空缺风险 · 业务影响</small></div>
-        </article>
-        <span class="succession-page__connector" aria-hidden="true"
-          ><ArtSvgIcon icon="ri:arrow-right-line"
-        /></span>
-        <article>
-          <span class="succession-page__journey-index">02</span>
-          <span class="succession-page__journey-icon"><ArtSvgIcon icon="ri:user-star-line" /></span>
-          <div><strong>建立继任梯队</strong><small>准备度 · 潜力 · 留任风险</small></div>
-        </article>
-        <span class="succession-page__connector" aria-hidden="true"
-          ><ArtSvgIcon icon="ri:arrow-right-line"
-        /></span>
-        <article>
-          <span class="succession-page__journey-index">03</span>
-          <span class="succession-page__journey-icon"><ArtSvgIcon icon="ri:route-line" /></span>
-          <div><strong>推动发展行动</strong><small>负责人 · 时限 · 成果复盘</small></div>
-        </article>
+        <template v-for="(stage, index) in journeyStages" :key="stage.title">
+          <article :class="`is-${stage.tone}`">
+            <span class="succession-page__journey-index">0{{ index + 1 }}</span>
+            <span class="succession-page__journey-icon">
+              <ArtSvgIcon :icon="stage.icon" />
+            </span>
+            <div>
+              <span class="succession-page__journey-title">
+                <strong>{{ stage.title }}</strong>
+                <em>{{ stage.signal }}</em>
+              </span>
+              <small>{{ stage.description }}</small>
+            </div>
+          </article>
+          <span
+            v-if="index < journeyStages.length - 1"
+            class="succession-page__connector"
+            aria-hidden="true"
+          >
+            <ArtSvgIcon icon="ri:arrow-right-line" />
+          </span>
+        </template>
       </div>
 
       <HrEntityNavigation
@@ -64,6 +63,29 @@
         compact
         @change="handleTabChange"
       />
+
+      <div class="succession-page__view-context" aria-live="polite">
+        <div class="succession-page__view-intro">
+          <span class="succession-page__view-icon" aria-hidden="true">
+            <ArtSvgIcon :icon="activeTab.icon" />
+          </span>
+          <span>
+            <small>当前工作视图</small>
+            <strong>{{ activeTab.label }}</strong>
+            <em>{{ activeTab.description }}</em>
+          </span>
+        </div>
+        <dl>
+          <div>
+            <dt>当前结果</dt>
+            <dd>{{ tableTotal }}</dd>
+          </div>
+          <div :class="`is-${activeAttention.tone}`">
+            <dt>{{ activeAttention.label }}</dt>
+            <dd>{{ activeAttention.value }}</dd>
+          </div>
+        </dl>
+      </div>
 
       <footer class="succession-page__control-note">
         <ArtSvgIcon icon="ri:information-line" />
@@ -144,6 +166,7 @@
   interface DialogExpose {
     handleOpen: (entity: Entity, row?: RecordItem) => Promise<void>
   }
+  type SignalTone = 'primary' | 'success' | 'warning' | 'danger' | 'info'
 
   const tabs: Tab[] = [
     {
@@ -231,6 +254,46 @@
       tone: overview.overdueActionCount ? 'danger' : 'info'
     }
   ])
+  const journeyStages = computed<
+    Array<{
+      title: string
+      description: string
+      signal: string
+      icon: string
+      tone: SignalTone
+    }>
+  >(() => [
+    {
+      title: '识别关键岗位',
+      description: '关键度 · 空缺风险 · 业务影响',
+      signal: `${overview.criticalPositionCount} 个岗位`,
+      icon: 'ri:briefcase-4-line',
+      tone: overview.criticalPositionCount ? 'primary' : 'info'
+    },
+    {
+      title: '建立继任梯队',
+      description: '准备度 · 潜力 · 留任风险',
+      signal: overview.uncoveredPlanCount
+        ? `${overview.uncoveredPlanCount} 个未覆盖`
+        : `${overview.readyNowCount} 人就绪`,
+      icon: 'ri:user-star-line',
+      tone: overview.uncoveredPlanCount ? 'warning' : overview.readyNowCount ? 'success' : 'info'
+    },
+    {
+      title: '推动发展行动',
+      description: '负责人 · 时限 · 成果复盘',
+      signal: overview.overdueActionCount ? `${overview.overdueActionCount} 项逾期` : '进度正常',
+      icon: 'ri:route-line',
+      tone: overview.overdueActionCount ? 'danger' : 'success'
+    }
+  ])
+  const activeAttention = computed<{ label: string; value: number; tone: SignalTone }>(() =>
+    activeEntity.value === 'plan'
+      ? { label: '待补覆盖', value: overview.uncoveredPlanCount, tone: 'warning' }
+      : activeEntity.value === 'candidate'
+        ? { label: '立即就绪', value: overview.readyNowCount, tone: 'success' }
+        : { label: '逾期行动', value: overview.overdueActionCount, tone: 'danger' }
+  )
   const statusDictionary = computed(() =>
     activeEntity.value === 'plan'
       ? 'hrSuccessionPlanStatus'
@@ -850,7 +913,7 @@
       gap: 8px;
       align-items: center;
       padding: 14px;
-      background: color-mix(in srgb, var(--theme-color) 3%, var(--art-main-bg-color));
+      background: color-mix(in srgb, var(--theme-color) 2.5%, var(--art-main-bg-color));
       border: 1px solid var(--art-card-border);
       border-radius: calc(var(--el-border-radius-base) + 3px);
 
@@ -861,7 +924,26 @@
         gap: 11px;
         align-items: center;
         min-width: 0;
-        padding: 5px 8px 5px 0;
+        min-height: 58px;
+        padding: 7px 10px 7px 8px;
+        background: color-mix(in srgb, var(--art-main-bg-color) 94%, transparent);
+        border: 1px solid transparent;
+        border-radius: 10px;
+
+        &.is-warning {
+          background: color-mix(in srgb, var(--el-color-warning) 6%, var(--art-main-bg-color));
+          border-color: color-mix(in srgb, var(--el-color-warning) 18%, transparent);
+        }
+
+        &.is-danger {
+          background: color-mix(in srgb, var(--el-color-danger) 5%, var(--art-main-bg-color));
+          border-color: color-mix(in srgb, var(--el-color-danger) 16%, transparent);
+        }
+
+        &.is-success {
+          background: color-mix(in srgb, var(--el-color-success) 5%, var(--art-main-bg-color));
+          border-color: color-mix(in srgb, var(--el-color-success) 16%, transparent);
+        }
       }
 
       article > div {
@@ -885,6 +967,28 @@
         margin-top: 4px;
         font-size: 11px;
         color: var(--art-text-gray-600);
+      }
+    }
+
+    &__journey-title {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 0;
+
+      em {
+        flex: 0 0 auto;
+        padding: 2px 7px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 10px;
+        font-style: normal;
+        font-weight: 650;
+        color: var(--theme-color);
+        white-space: nowrap;
+        background: color-mix(in srgb, var(--theme-color) 9%, var(--art-main-bg-color));
+        border-radius: 999px;
       }
     }
 
@@ -921,6 +1025,114 @@
 
     :deep(.hr-entity-navigation) {
       margin-top: 12px;
+    }
+
+    &__view-context {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 0;
+      padding: 11px 13px;
+      margin-top: 10px;
+      background: color-mix(in srgb, var(--theme-color) 3.5%, var(--art-main-bg-color));
+      border: 1px solid color-mix(in srgb, var(--theme-color) 12%, var(--art-card-border));
+      border-radius: 10px;
+
+      dl {
+        display: flex;
+        flex: 0 0 auto;
+        gap: 8px;
+        margin: 0;
+      }
+
+      dl > div {
+        display: grid;
+        grid-template-columns: auto auto;
+        gap: 7px;
+        align-items: baseline;
+        min-width: 104px;
+        padding: 7px 10px;
+        background: var(--art-main-bg-color);
+        border: 1px solid var(--art-card-border);
+        border-radius: 8px;
+
+        &.is-warning dd {
+          color: var(--el-color-warning-dark-2);
+        }
+
+        &.is-success dd {
+          color: var(--el-color-success-dark-2);
+        }
+
+        &.is-danger dd {
+          color: var(--el-color-danger);
+        }
+      }
+
+      dt {
+        font-size: 11px;
+        color: var(--art-text-gray-600);
+      }
+
+      dd {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--art-text-gray-900);
+      }
+    }
+
+    &__view-intro {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      min-width: 0;
+
+      > span:last-child {
+        display: flex;
+        gap: 8px;
+        align-items: baseline;
+        min-width: 0;
+      }
+
+      small {
+        flex: 0 0 auto;
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--theme-color);
+        letter-spacing: 0.06em;
+      }
+
+      strong {
+        flex: 0 0 auto;
+        font-size: 13px;
+        color: var(--art-text-gray-900);
+      }
+
+      em {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 12px;
+        font-style: normal;
+        color: var(--art-text-gray-600);
+        white-space: nowrap;
+      }
+    }
+
+    &__view-icon {
+      display: grid;
+      flex: 0 0 auto;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      color: var(--theme-color);
+      background: color-mix(in srgb, var(--theme-color) 10%, transparent);
+      border-radius: 9px;
+
+      :deep(.art-svg-icon) {
+        font-size: 16px;
+      }
     }
 
     &__control-note {
@@ -1016,6 +1228,15 @@
           border-top: 1px solid var(--art-card-border);
         }
       }
+
+      &__view-context {
+        align-items: flex-start;
+      }
+
+      &__view-intro > span:last-child {
+        display: grid;
+        gap: 2px;
+      }
     }
   }
 
@@ -1027,6 +1248,20 @@
 
       &__control-heading {
         flex-direction: column;
+      }
+
+      &__view-context {
+        flex-direction: column;
+        align-items: stretch;
+
+        dl {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        dl > div {
+          min-width: 0;
+        }
       }
     }
   }

@@ -3,10 +3,16 @@
     <div class="succession-dialog">
       <div class="succession-dialog__context" role="note">
         <ArtSvgIcon :icon="contextNote.icon" />
-        <div
+        <div class="succession-dialog__context-copy"
           ><strong>{{ contextNote.title }}</strong
           ><span>{{ contextNote.description }}</span></div
         >
+        <ul aria-label="本次维护要点">
+          <li v-for="signal in contextSignals" :key="signal">
+            <ArtSvgIcon icon="ri:check-line" />
+            {{ signal }}
+          </li>
+        </ul>
       </div>
       <ArtForm
         ref="formRef"
@@ -275,6 +281,14 @@
         }
       })[entity.value]
   )
+  const contextSignals = computed(
+    () =>
+      ({
+        plan: ['岗位风险有依据', '覆盖目标可量化', '复盘日期明确'],
+        candidate: ['准备度已评审', '发展意愿已确认', '差距记录可追踪'],
+        action: ['责任人清晰', '截止日期明确', '成果可验证']
+      })[entity.value]
+  )
   const required = (message: string, trigger: 'blur' | 'change') => [
     { required: true, message, trigger }
   ]
@@ -502,7 +516,8 @@
     min-width: 0;
 
     &__context {
-      display: flex;
+      display: grid;
+      grid-template-columns: 22px minmax(0, 1fr) auto;
       gap: 12px;
       align-items: flex-start;
       padding: 14px 16px;
@@ -518,7 +533,7 @@
         color: var(--el-color-primary);
       }
 
-      div {
+      &-copy {
         display: grid;
         gap: 3px;
         min-width: 0;
@@ -531,6 +546,40 @@
       span {
         font-size: 13px;
         line-height: 1.6;
+      }
+
+      ul {
+        display: grid;
+        gap: 6px;
+        min-width: 154px;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+      }
+
+      li {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        font-size: 11px;
+        color: var(--art-text-gray-600);
+        white-space: nowrap;
+
+        :deep(.art-svg-icon) {
+          font-size: 13px;
+          color: var(--el-color-success);
+        }
+      }
+    }
+  }
+
+  @media only screen and (width <= 767px) {
+    .succession-dialog__context {
+      grid-template-columns: 22px minmax(0, 1fr);
+
+      ul {
+        grid-template-columns: 1fr;
+        grid-column: 2;
       }
     }
   }

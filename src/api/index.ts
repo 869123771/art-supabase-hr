@@ -82,6 +82,25 @@ export {
   transitionTimeAttendancePeriod
 } from '@hr/api/modules/attendance'
 
+export {
+  deleteServiceRequest,
+  fetchServiceDeliveryOverview,
+  fetchServiceDeliveryRecords,
+  fetchServiceRequestDetail,
+  saveServiceCatalog,
+  saveServiceRequest,
+  transitionServiceRequest
+} from '@hr/api/modules/service-delivery'
+
+export {
+  deleteComplianceRecord,
+  fetchComplianceDetail,
+  fetchComplianceOverview,
+  fetchComplianceRecords,
+  saveComplianceRecord,
+  transitionComplianceRecord
+} from '@hr/api/modules/compliance'
+
 export { fetchWorkforceRiskOverview } from '@hr/api/modules/workforce-risk'
 export {
   deleteWorkforcePlanningRecord,

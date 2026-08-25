@@ -95,7 +95,6 @@
     'hr.employee_contract': useDocumentNumberRule('hr.employee_contract'),
     'hr.personnel_change': useDocumentNumberRule('hr.personnel_change'),
     'hr.lifecycle_case': useDocumentNumberRule('hr.lifecycle_case'),
-    'hr.self_service_request': useDocumentNumberRule('hr.self_service_request'),
     'hr.recruitment_requisition': useDocumentNumberRule('hr.recruitment_requisition')
   }
   const dialogModeLabel = computed(() => (isEditing.value ? '编辑记录' : '新增记录'))

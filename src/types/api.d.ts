@@ -640,6 +640,13 @@ declare namespace Api {
       monthlySalary?: ProtectedAmount
       attachmentUrl?: string | null
       renewalReminderDays?: number
+      previousContractId?: string | null
+      renewalOwnerId?: string | null
+      renewalDecision?: ComplianceRenewalDecision
+      renewalStartedAt?: string | null
+      renewedAt?: string | null
+      terminationDate?: string | null
+      terminationReason?: string | null
       remark?: string | null
     }
 
@@ -748,7 +755,6 @@ declare namespace Api {
       | 'personnelChange'
       | 'qualification'
       | 'headcount'
-      | 'selfServiceRequest'
       | 'trainingPlan'
       | 'trainingEnrollment'
       | 'competency'
@@ -1435,6 +1441,260 @@ declare namespace Api {
     }
 
     interface LifecycleListResult<TRecord extends LifecycleRecord = LifecycleRecord> {
+      records: TRecord[]
+      total: number
+    }
+
+    type ComplianceEntity = 'risk' | 'contract' | 'qualification'
+    type ComplianceRecordEntity = Exclude<ComplianceEntity, 'risk'>
+    type ComplianceRiskStatus = 'overdue' | 'critical' | 'due_soon' | 'watch' | 'clear'
+    type ComplianceRenewalDecision = 'not_started' | 'pending' | 'renew' | 'terminate' | 'completed'
+    type ComplianceVerificationStatus = 'pending' | 'verified' | 'rejected'
+    type ComplianceAction =
+      | 'activate'
+      | 'start_renewal'
+      | 'renew'
+      | 'terminate'
+      | 'verify'
+      | 'reject'
+      | 'revoke'
+      | 'comment'
+
+    interface ComplianceReference extends WorkspaceReference {
+      jobTitle?: string | null
+    }
+
+    interface ComplianceOverview {
+      activeContractCount: number
+      contractRiskCount: number
+      overdueContractCount: number
+      qualificationRiskCount: number
+      expiredQualificationCount: number
+      pendingVerificationCount: number
+      verifiedRate: number
+    }
+
+    interface ComplianceEvent {
+      id: string
+      tenantId?: string
+      entityType: ComplianceRecordEntity
+      entityId: string
+      eventType: string
+      fromStatus?: string | null
+      toStatus?: string | null
+      actorEmployeeId?: string | null
+      comment?: string | null
+      eventData?: Record<string, unknown>
+      actor?: ComplianceReference | null
+      createBy?: string | null
+      createTime: string
+    }
+
+    interface ComplianceContract extends EmployeeContract {
+      employeeId: string
+      renewalDecision: ComplianceRenewalDecision
+      riskStatus?: ComplianceRiskStatus
+      daysRemaining?: number | null
+      previousContractNo?: string | null
+      employee?: ComplianceReference | null
+      renewalOwner?: ComplianceReference | null
+      events?: ComplianceEvent[]
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface ComplianceQualification {
+      id?: string
+      tenantId?: string
+      employeeId: string
+      qualificationType: string
+      qualificationName: string
+      certificateNo?: string | null
+      issuer?: string | null
+      issueDate?: string | null
+      expiryDate?: string | null
+      status: string
+      attachmentUrl?: string | null
+      reminderDays: number
+      responsibleEmployeeId?: string | null
+      verificationStatus: ComplianceVerificationStatus
+      verifiedByEmployeeId?: string | null
+      verifiedAt?: string | null
+      verificationNote?: string | null
+      nextReviewDate?: string | null
+      revokedAt?: string | null
+      revocationReason?: string | null
+      remark?: string | null
+      riskStatus?: ComplianceRiskStatus
+      daysRemaining?: number | null
+      employee?: ComplianceReference | null
+      responsibleEmployee?: ComplianceReference | null
+      verifiedByEmployee?: ComplianceReference | null
+      events?: ComplianceEvent[]
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface ComplianceRisk {
+      entityType: ComplianceRecordEntity
+      recordId: string
+      tenantId?: string
+      subject: string
+      status: string
+      dueDate: string
+      daysRemaining: number
+      riskStatus: Exclude<ComplianceRiskStatus, 'clear'>
+      riskType: string
+      description: string
+      employee: ComplianceReference
+      owner?: ComplianceReference | null
+    }
+
+    type ComplianceRecord = ComplianceRisk | ComplianceContract | ComplianceQualification
+
+    interface ComplianceSearchParams extends Api.Common.CommonSearchParams {
+      keyword?: string
+      status?: string
+      riskStatus?: string
+      tenantId?: string
+    }
+
+    interface ComplianceListResult<TRecord extends ComplianceRecord = ComplianceRecord> {
+      records: TRecord[]
+      total: number
+    }
+
+    interface ComplianceActionPayload extends Partial<ComplianceContract> {
+      comment?: string
+      responsibleEmployeeId?: string | null
+    }
+
+    type ServiceDeliveryEntity = 'request' | 'service'
+    type ServiceDeliveryMode = 'case' | 'redirect'
+    type ServiceRequestStatus =
+      | 'draft'
+      | 'submitted'
+      | 'assigned'
+      | 'in_progress'
+      | 'waiting_employee'
+      | 'resolved'
+      | 'closed'
+      | 'cancelled'
+    type ServiceRequestPriority = 'low' | 'normal' | 'high' | 'urgent'
+    type ServiceRequestChannel = 'self_service' | 'agent' | 'email' | 'phone'
+    type ServiceRequestSlaStatus = 'clear' | 'on_track' | 'at_risk' | 'breached'
+    type ServiceRequestAction =
+      | 'submit'
+      | 'assign'
+      | 'start'
+      | 'wait'
+      | 'resume'
+      | 'resolve'
+      | 'close'
+      | 'reopen'
+      | 'cancel'
+      | 'comment'
+
+    interface ServiceDeliveryReference {
+      id: string
+      tenantId?: string
+      code?: string | null
+      name?: string | null
+      category?: string | null
+      routingGroup?: string | null
+      jobTitle?: string | null
+    }
+
+    interface ServiceDeliveryOverview {
+      availableServiceCount: number
+      openRequestCount: number
+      slaRiskCount: number
+      unassignedCount: number
+      resolvedMonthCount: number
+      responseOnTimeRate: number
+      managerView: boolean
+    }
+
+    interface ServiceCatalog {
+      id?: string
+      tenantId?: string
+      serviceCode: string
+      serviceName: string
+      category: string
+      description?: string | null
+      serviceMode: ServiceDeliveryMode
+      routePath?: string | null
+      routingGroup?: string | null
+      firstResponseHours: number
+      resolutionHours: number
+      enabled: boolean
+      sort: number
+      requestCount?: number
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface ServiceRequestEvent {
+      id: string
+      tenantId?: string
+      requestId: string
+      eventType: string
+      fromStatus?: ServiceRequestStatus | null
+      toStatus?: ServiceRequestStatus | null
+      actorEmployeeId?: string | null
+      comment?: string | null
+      eventData?: Record<string, unknown>
+      actor?: ServiceDeliveryReference | null
+      createBy?: string | null
+      createTime: string
+    }
+
+    interface ServiceRequest {
+      id?: string
+      tenantId?: string
+      requestNo: string
+      employeeId: string
+      serviceId: string
+      requestType: string
+      title: string
+      reason: string
+      priority: ServiceRequestPriority
+      channel: ServiceRequestChannel
+      status: ServiceRequestStatus
+      assignedEmployeeId?: string | null
+      firstResponseDueAt?: string | null
+      resolutionDueAt?: string | null
+      firstRespondedAt?: string | null
+      resolvedAt?: string | null
+      closedAt?: string | null
+      waitingStartedAt?: string | null
+      waitingReason?: string | null
+      resolution?: string | null
+      attachmentUrls: string[]
+      reopenCount: number
+      lastActivityAt?: string
+      slaStatus?: ServiceRequestSlaStatus
+      service?: ServiceDeliveryReference | null
+      requester?: ServiceDeliveryReference | null
+      assignee?: ServiceDeliveryReference | null
+      events?: ServiceRequestEvent[]
+      createTime?: string
+      updateTime?: string
+    }
+
+    type ServiceDeliveryRecord = ServiceCatalog | ServiceRequest
+
+    interface ServiceDeliverySearchParams extends Api.Common.CommonSearchParams {
+      keyword?: string
+      status?: string
+      category?: string
+      scope?: 'mine' | 'team'
+      tenantId?: string
+    }
+
+    interface ServiceDeliveryListResult<
+      TRecord extends ServiceDeliveryRecord = ServiceDeliveryRecord
+    > {
       records: TRecord[]
       total: number
     }

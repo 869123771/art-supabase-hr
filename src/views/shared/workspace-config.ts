@@ -1,5 +1,4 @@
-export type HrWorkspaceKey =
-  'personnelChange' | 'compliance' | 'headcount' | 'selfService' | 'talent' | 'recruitment'
+export type HrWorkspaceKey = 'personnelChange' | 'headcount' | 'talent' | 'recruitment'
 
 export interface HrWorkspaceColumn {
   key: keyof Api.Hr.WorkspaceRecord | string
@@ -155,84 +154,6 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
       }
     ]
   },
-  compliance: {
-    eyebrow: 'COMPLIANCE DESK',
-    title: '合同与资质工作台',
-    icon: 'ri:verified-badge-line',
-    description: '跨员工汇总劳动合同与任职资质，统一管理续签、证书附件和到期风险。',
-    tags: ['合同到期', '资质复审', '附件留存'],
-    tabs: [
-      {
-        key: 'contracts',
-        label: '劳动合同',
-        icon: 'ri:file-text-line',
-        description: '合同签订、续签与到期风险管理',
-        entity: 'contract',
-        statusDict: 'hrContractStatus',
-        statusKey: 'contractStatus',
-        columns: [
-          { key: 'contractNo', label: '合同编号', minWidth: 150 },
-          { key: 'employee.employeeName', label: '员工', minWidth: 120 },
-          { key: 'contractType', label: '合同类型', width: 120, dictCode: 'hrContractType' },
-          { key: 'startDate', label: '开始日期', width: 120 },
-          { key: 'endDate', label: '到期日期', width: 120 },
-          { key: 'contractStatus', label: '状态', width: 110, dictCode: 'hrContractStatus' }
-        ],
-        fields: [
-          numberedInput('contractNo', '合同编号', 'hr.employee_contract'),
-          employeeField(),
-          dict('contractType', '合同类型', 'hrContractType', true),
-          dict('contractStatus', '合同状态', 'hrContractStatus', true),
-          date('signDate', '签订日期'),
-          date('startDate', '开始日期', true),
-          date('endDate', '结束日期'),
-          date('probationEndDate', '试用期结束'),
-          input('workLocation', '工作地点'),
-          number('monthlySalary', '月薪'),
-          number('renewalReminderDays', '提前提醒天数'),
-          input('attachmentUrl', '合同附件地址'),
-          textarea('remark', '备注')
-        ],
-        defaults: { contractStatus: 'active', contractType: 'fixed_term', renewalReminderDays: 30 }
-      },
-      {
-        key: 'qualifications',
-        label: '资质证照',
-        icon: 'ri:verified-badge-line',
-        description: '员工证照、附件与复审到期管理',
-        entity: 'qualification',
-        statusDict: 'hrQualificationStatus',
-        statusKey: 'status',
-        columns: [
-          { key: 'employee.employeeName', label: '员工', minWidth: 120 },
-          {
-            key: 'qualificationType',
-            label: '资质类型',
-            width: 120,
-            dictCode: 'hrQualificationType'
-          },
-          { key: 'qualificationName', label: '资质名称', minWidth: 180 },
-          { key: 'certificateNo', label: '证书编号', minWidth: 150 },
-          { key: 'expiryDate', label: '到期日期', width: 120 },
-          { key: 'status', label: '状态', width: 110, dictCode: 'hrQualificationStatus' }
-        ],
-        fields: [
-          employeeField(),
-          dict('qualificationType', '资质类型', 'hrQualificationType', true),
-          input('qualificationName', '资质名称', true),
-          input('certificateNo', '证书编号'),
-          input('issuer', '发证机构'),
-          date('issueDate', '发证日期'),
-          date('expiryDate', '到期日期'),
-          dict('status', '资质状态', 'hrQualificationStatus', true),
-          number('reminderDays', '提前提醒天数'),
-          input('attachmentUrl', '证书附件地址'),
-          textarea('remark', '备注')
-        ],
-        defaults: { status: 'valid', reminderDays: 30 }
-      }
-    ]
-  },
   headcount: {
     eyebrow: 'WORKFORCE PLAN',
     title: '编制管理',
@@ -268,48 +189,6 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
           effectiveFrom: new Date().toISOString().slice(0, 10),
           enabled: true
         }
-      }
-    ]
-  },
-  selfService: {
-    eyebrow: 'EMPLOYEE SELF SERVICE',
-    title: '员工自助',
-    icon: 'ri:user-shared-line',
-    description: '员工提交请假、加班、档案变更、证明与调动申请，并查看本人审批进度。',
-    tags: ['本人数据', '统一审批', '进度可查'],
-    tabs: [
-      {
-        key: 'requests',
-        label: '我的申请',
-        entity: 'selfServiceRequest',
-        statusDict: 'hrApprovalStatus',
-        statusKey: 'status',
-        approvalBusinessType: 'hr_self_service_request',
-        columns: [
-          { key: 'requestNo', label: '申请编号', minWidth: 150 },
-          { key: 'employee.employeeName', label: '申请人', minWidth: 120 },
-          {
-            key: 'requestType',
-            label: '申请类型',
-            width: 120,
-            dictCode: 'hrSelfServiceRequestType'
-          },
-          { key: 'title', label: '申请主题', minWidth: 180 },
-          { key: 'startAt', label: '开始时间', minWidth: 150, dateTime: true },
-          { key: 'durationHours', label: '时长', width: 90, suffix: ' 小时' },
-          { key: 'status', label: '状态', width: 110, dictCode: 'hrApprovalStatus' }
-        ],
-        fields: [
-          numberedInput('requestNo', '申请编号', 'hr.self_service_request'),
-          employeeField(),
-          dict('requestType', '申请类型', 'hrSelfServiceRequestType', true),
-          input('title', '申请主题', true),
-          date('startAt', '开始时间'),
-          date('endAt', '结束时间'),
-          number('durationHours', '时长（小时）'),
-          textarea('reason', '申请原因', true)
-        ],
-        defaults: { status: 'draft' }
       }
     ]
   },

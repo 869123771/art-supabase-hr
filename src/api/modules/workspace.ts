@@ -47,14 +47,6 @@ const workspaceTransportConfigs: Record<WorkspaceEntity, WorkspaceTransportConfi
     searchColumns: ['remark'],
     orderColumn: 'effective_from'
   },
-  selfServiceRequest: {
-    table: 'hr_self_service_request',
-    select: '*',
-    searchColumns: ['request_no', 'title', 'reason'],
-    statusColumn: 'status',
-    employeeColumn: 'employee_id',
-    orderColumn: 'create_time'
-  },
   trainingPlan: {
     table: 'hr_training_plan',
     select: '*',
