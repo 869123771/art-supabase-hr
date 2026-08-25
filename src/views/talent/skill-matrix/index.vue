@@ -6,12 +6,12 @@
     <BusinessWorkspaceHeader
       eyebrow="WORKFORCE SKILL MATRIX"
       title="技能矩阵"
-      description="按岗位能力要求检查员工评估覆盖和达标情况，识别组织级能力缺口与重点培养对象。"
+      description="以组织能力为中心聚合岗位要求与员工评估，识别能力风险、覆盖缺口和训练优先级。"
       icon="ri:grid-line"
       :tags="[
-        { label: '岗位能力模型', type: 'primary' },
-        { label: '评估覆盖', type: 'success' },
-        { label: '培养优先级', type: 'warning' }
+        { label: '组织能力视图', type: 'primary' },
+        { label: '岗位模型 × 评估', type: 'success' },
+        { label: '不含绩效结论', type: 'info' }
       ]"
       :metrics="metrics"
       refreshable
@@ -27,11 +27,7 @@
       :subtitle="`优先处理缺口人数多、评估覆盖不足的能力项，更新时间 ${generatedAt}`"
       :loading="loading && !overview"
       :error="errorMessage"
-      :empty="Boolean(overview) && !overview?.competencies.length"
-      empty-title="暂无能力风险数据"
-      empty-description="尚未形成能力风险排行，请先在“培训与能力”中配置岗位能力要求。"
-      :empty-visual-size="120"
-      :min-height="360"
+      :min-height="230"
       @retry="loadOverview"
     >
       <template #actions>
@@ -51,7 +47,7 @@
           description="可结合组织范围继续拆分技能盘点。"
         />
 
-        <div class="skill-matrix-page__analysis-grid">
+        <div v-if="overview.competencies.length" class="skill-matrix-page__analysis-grid">
           <div class="skill-matrix-page__priority">
             <ol class="skill-matrix-page__competency-list">
               <li v-for="(item, index) in overview.competencies.slice(0, 8)" :key="item.id">
@@ -121,6 +117,75 @@
             </p>
           </aside>
         </div>
+
+        <section v-else class="skill-matrix-page__setup-state" aria-labelledby="setup-title">
+          <div class="skill-matrix-page__setup-intro">
+            <span class="skill-matrix-page__setup-icon" aria-hidden="true">
+              <ArtSvgIcon icon="ri:route-line" />
+            </span>
+            <div>
+              <span class="skill-matrix-page__setup-eyebrow">CAPABILITY DATA SETUP</span>
+              <h2 id="setup-title">完成能力模型闭环后，自动形成风险排行</h2>
+              <p>
+                技能矩阵只分析岗位能力要求与员工能力评估，不读取绩效结论。当前可先补齐岗位标准，再开展员工评估。
+              </p>
+              <div class="skill-matrix-page__setup-summary" aria-label="能力数据准备概览">
+                <span
+                  ><strong>{{ overview.employeeCount }}</strong
+                  ><small>在盘员工</small></span
+                >
+                <span
+                  ><strong>{{ overview.modelledEmployeeCount }}</strong
+                  ><small>岗位已建模</small></span
+                >
+                <span
+                  ><strong>{{ overview.assessedEmployeeCount }}</strong
+                  ><small>评估已完成</small></span
+                >
+              </div>
+              <ElButton type="primary" @click="goToCapabilityConfig">
+                前往培训与能力
+                <ArtSvgIcon icon="ri:arrow-right-line" />
+              </ElButton>
+            </div>
+          </div>
+
+          <ol class="skill-matrix-page__setup-steps" aria-label="技能矩阵数据准备步骤">
+            <li>
+              <span>01</span>
+              <div>
+                <span class="skill-matrix-page__step-heading">
+                  <strong>配置岗位能力要求</strong>
+                  <ElTag type="warning" effect="light" round>当前步骤</ElTag>
+                </span>
+                <small>
+                  {{ overview.modelledEmployeeCount }} /
+                  {{ overview.employeeCount }} 人已具备岗位模型
+                </small>
+              </div>
+            </li>
+            <li>
+              <span>02</span>
+              <div>
+                <span class="skill-matrix-page__step-heading">
+                  <strong>完成员工能力评估</strong>
+                  <ElTag type="info" effect="plain" round>待推进</ElTag>
+                </span>
+                <small>{{ overview.assessedEmployeeCount }} 人已有有效评估</small>
+              </div>
+            </li>
+            <li>
+              <span>03</span>
+              <div>
+                <span class="skill-matrix-page__step-heading">
+                  <strong>查看组织能力风险</strong>
+                  <ElTag type="success" effect="plain" round>自动生成</ElTag>
+                </span>
+                <small>系统按缺口人数与评估覆盖自动排序</small>
+              </div>
+            </li>
+          </ol>
+        </section>
       </template>
     </ArtSectionCard>
 
@@ -253,7 +318,6 @@
 </template>
 
 <script setup lang="ts">
-  import { ElMessage } from 'element-plus'
   import type { ColumnOption } from '@/types'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric
@@ -274,6 +338,7 @@
   type Competency = Api.Hr.SkillMatrixCompetency
 
   const { hasAuth } = useAuth()
+  const router = useRouter()
   const loading = ref(false)
   const errorMessage = ref('')
   const activeScope = ref<Scope>('all')
@@ -424,15 +489,16 @@
     if (!employee.gapCount) return 'success'
     return 'warning'
   }
+  function goToCapabilityConfig(): void {
+    void router.push('/hr/talent/development')
+  }
   async function loadOverview(): Promise<void> {
     loading.value = true
     errorMessage.value = ''
     try {
       overview.value = await fetchSkillMatrix()
-    } catch (error) {
-      errorMessage.value =
-        error instanceof Error ? error.message : '技能矩阵数据加载失败，请稍后重试'
-      ElMessage.error(errorMessage.value)
+    } catch {
+      errorMessage.value = '技能矩阵数据暂时无法加载，请稍后重试'
     } finally {
       loading.value = false
     }
@@ -464,6 +530,189 @@
 
     &__capacity-alert {
       margin-bottom: var(--art-space-4);
+    }
+
+    &__setup-state {
+      display: grid;
+      grid-template-columns: minmax(340px, 0.9fr) minmax(420px, 1.1fr);
+      gap: clamp(22px, 3vw, 42px);
+      align-items: stretch;
+      min-height: 0;
+      padding: clamp(18px, 2vw, 26px);
+      overflow: hidden;
+      background:
+        radial-gradient(
+          circle at 4% 2%,
+          color-mix(in srgb, var(--theme-color) 9%, transparent),
+          transparent 30%
+        ),
+        linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--theme-color) 4%, var(--art-main-bg-color)),
+          var(--art-main-bg-color)
+        );
+      border: 1px solid color-mix(in srgb, var(--theme-color) 12%, var(--art-border-color));
+      border-radius: calc(var(--el-border-radius-base) + 3px);
+    }
+
+    &__setup-intro {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr);
+      gap: var(--art-space-4);
+      align-items: start;
+      min-width: 0;
+
+      h2 {
+        margin: 5px 0 0;
+        font-size: clamp(17px, 1.35vw, 21px);
+        line-height: 1.35;
+        color: var(--art-gray-900);
+      }
+
+      p {
+        max-width: 560px;
+        margin: 8px 0 12px;
+        font-size: 13px;
+        line-height: 1.65;
+        color: var(--art-gray-600);
+      }
+
+      .el-button svg {
+        width: 15px;
+        height: 15px;
+        margin-left: 4px;
+      }
+    }
+
+    &__setup-icon {
+      display: grid;
+      place-items: center;
+      width: 52px;
+      height: 52px;
+      color: var(--theme-color);
+      background: color-mix(in srgb, var(--theme-color) 11%, transparent);
+      border: 1px solid color-mix(in srgb, var(--theme-color) 16%, transparent);
+      border-radius: calc(var(--el-border-radius-base) * 1.5);
+
+      svg {
+        width: 24px;
+        height: 24px;
+      }
+    }
+
+    &__setup-eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--theme-color);
+      letter-spacing: 0.1em;
+    }
+
+    &__setup-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      max-width: 430px;
+      margin-bottom: 14px;
+      overflow: hidden;
+      background: var(--art-border-color);
+      border: 1px solid var(--art-border-color);
+      border-radius: var(--el-border-radius-base);
+
+      span {
+        display: grid;
+        gap: 2px;
+        padding: 8px 10px;
+        background: color-mix(in srgb, var(--theme-color) 2%, var(--art-gray-100));
+      }
+
+      strong {
+        font-size: 16px;
+        font-variant-numeric: tabular-nums;
+        color: var(--art-gray-900);
+      }
+
+      small {
+        font-size: 10px;
+        color: var(--art-gray-600);
+      }
+    }
+
+    &__setup-steps {
+      display: grid;
+      gap: 8px;
+      align-content: center;
+      min-width: 0;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+
+      li {
+        position: relative;
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr);
+        gap: var(--art-space-3);
+        align-items: center;
+        min-width: 0;
+        padding: 11px 12px;
+        background: color-mix(in srgb, var(--theme-color) 2%, var(--art-gray-100));
+        border: 1px solid color-mix(in srgb, var(--theme-color) 11%, var(--art-border-color));
+        border-radius: calc(var(--el-border-radius-base) + 1px);
+
+        &:first-child {
+          background: color-mix(in srgb, var(--theme-color) 5%, var(--art-main-bg-color));
+          border-color: color-mix(in srgb, var(--theme-color) 26%, var(--art-border-color));
+        }
+
+        > span {
+          display: grid;
+          place-items: center;
+          width: 34px;
+          height: 34px;
+          font-size: 11px;
+          font-weight: 700;
+          font-variant-numeric: tabular-nums;
+          color: var(--theme-color);
+          background: color-mix(in srgb, var(--theme-color) 9%, transparent);
+          border-radius: 50%;
+        }
+
+        div {
+          min-width: 0;
+        }
+
+        strong,
+        small {
+          display: block;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        strong {
+          font-size: 13px;
+          color: var(--art-gray-800);
+        }
+
+        small {
+          margin-top: 4px;
+          color: var(--art-gray-600);
+        }
+      }
+    }
+
+    &__step-heading {
+      display: flex !important;
+      gap: 10px;
+      align-items: center;
+      min-width: 0;
+
+      strong {
+        min-width: 0;
+      }
+
+      .el-tag {
+        flex: 0 0 auto;
+      }
     }
 
     &__priority {
@@ -746,8 +995,13 @@
 
   @media only screen and (width <= 900px) {
     .skill-matrix-page {
-      &__analysis-grid {
+      &__analysis-grid,
+      &__setup-state {
         grid-template-columns: 1fr;
+      }
+
+      &__setup-state {
+        gap: var(--art-space-5);
       }
 
       &__priority {
@@ -829,6 +1083,29 @@
 
       &__competency-list li {
         grid-template-columns: 28px minmax(120px, 1fr) 68px;
+      }
+
+      &__setup-state {
+        min-height: 0;
+        padding: var(--art-space-4);
+      }
+
+      &__setup-intro {
+        grid-template-columns: 42px minmax(0, 1fr);
+      }
+
+      &__setup-icon {
+        width: 42px;
+        height: 42px;
+
+        svg {
+          width: 20px;
+          height: 20px;
+        }
+      }
+
+      &__setup-steps li {
+        grid-template-columns: 32px minmax(0, 1fr);
       }
 
       &__competency-progress {

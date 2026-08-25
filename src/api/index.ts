@@ -2,6 +2,8 @@ export {
   deleteEmployee,
   fetchEmployeeList,
   fetchEmployeeOrganizationTree,
+  fetchEmployeeOrganizationOptions,
+  fetchOrganizationPositionDirectory,
   fetchEmployeeProfile,
   fetchEmployeeSelectorList,
   saveEmployeeProfile
@@ -17,6 +19,39 @@ export {
 } from '@hr/api/modules/position'
 
 export {
+  deleteJobArchitectureRecord,
+  fetchJobArchitectureList,
+  fetchJobArchitectureOptions,
+  saveJobArchitectureRecord
+} from '@hr/api/modules/job-architecture'
+
+export {
+  fetchAssignmentPositionOptions,
+  fetchPersonnelChangeEmployees,
+  savePersonnelChange
+} from '@hr/api/modules/personnel-change'
+
+export {
+  actCompensationRecord,
+  deleteCompensationRecord,
+  fetchCompensationOptions,
+  fetchCompensationOverview,
+  fetchCompensationPayrollInputs,
+  fetchCompensationRecords,
+  saveCompensationRecord
+} from '@hr/api/modules/compensation'
+
+export {
+  actLeaveRequest,
+  adjustLeaveBalance,
+  deleteAbsenceRecord,
+  fetchAbsenceOptions,
+  fetchAbsenceOverview,
+  fetchAbsenceRecords,
+  saveAbsenceRecord
+} from '@hr/api/modules/absence'
+
+export {
   completeLifecycleTask,
   deleteHrWorkspaceRecord,
   effectPersonnelChange,
@@ -29,3 +64,34 @@ export {
 export { fetchWorkforceRiskOverview } from '@hr/api/modules/workforce-risk'
 export { fetchTalentInventory } from '@hr/api/modules/talent-inventory'
 export { fetchSkillMatrix } from '@hr/api/modules/skill-matrix'
+export {
+  deleteLearningRecord,
+  fetchLearningOptions,
+  fetchLearningOverview,
+  fetchLearningRecords,
+  saveLearningRecord,
+  transitionLearningRecord
+} from '@hr/api/modules/learning'
+export {
+  deleteSuccessionRecord,
+  fetchSuccessionOptions,
+  fetchSuccessionOverview,
+  fetchSuccessionRecords,
+  reviewSuccessionCandidate,
+  saveSuccessionRecord
+} from '@hr/api/modules/succession'
+
+export {
+  cancelRecruitmentInterview,
+  completeRecruitmentInterview,
+  completeRecruitmentTask,
+  deleteRecruitmentRecord,
+  fetchRecruitmentOptions,
+  fetchRecruitmentOverview,
+  fetchRecruitmentRecords,
+  saveRecruitmentRecord,
+  transitionCandidateStage,
+  transitionRecruitmentHandoff,
+  transitionRecruitmentOffer,
+  type RecruitmentOfferAction
+} from '@hr/api/modules/recruitment'

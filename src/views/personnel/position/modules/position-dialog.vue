@@ -42,7 +42,12 @@
     type FormItemOption
   } from '@/components/core/forms/art-form/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
-  import { addPosition, editPosition } from '@hr/api'
+  import {
+    addPosition,
+    editPosition,
+    fetchEmployeeOrganizationOptions,
+    fetchJobArchitectureOptions
+  } from '@hr/api'
   import { fetchGetEnableTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
   import { useDocumentNumberRule } from '@/hooks/core/useDocumentNumberRule'
@@ -54,6 +59,7 @@
   interface DialogExposeForm {
     validate: () => Promise<boolean>
     clearValidate: () => void
+    reloadOptions: (key: string) => Promise<void>
   }
 
   const emit = defineEmits<{ (event: 'success', type: 'add' | 'edit'): void }>()
@@ -64,11 +70,16 @@
 
   const createInitialForm = (): Position => ({
     tenantId: isPlatformSuper.value ? undefined : getUserInfo.value.tenantId,
+    organizationId: null,
+    jobProfileId: '',
+    gradeId: null,
     positionCode: '',
     positionName: '',
     positionKind: 'standard',
     systemCode: null,
     enabled: true,
+    headcountLimit: 1,
+    multipleIncumbentsAllowed: false,
     sort: 0,
     description: ''
   })
@@ -107,6 +118,11 @@
       { required: true, message: '请输入岗位名称', trigger: 'blur' },
       { min: 2, max: 50, message: '岗位名称应为 2-50 个字符', trigger: 'blur' }
     ],
+    organizationId: [
+      { required: !isSystemPosition.value, message: '请选择所属组织', trigger: 'change' }
+    ],
+    jobProfileId: [{ required: true, message: '请选择标准职务', trigger: 'change' }],
+    headcountLimit: [{ required: true, message: '请输入编制上限', trigger: 'change' }],
     sort: [{ required: true, message: '请输入排序值', trigger: 'change' }],
     description: [{ max: 300, message: '岗位说明不能超过 300 个字符', trigger: 'blur' }]
   }))
@@ -124,8 +140,49 @@
         filterable: true,
         disabled: Boolean(form.id),
         placeholder: '请选择所属租户',
-        onChange: () => void positionNumber.loadRule()
+        onChange: () => {
+          form.organizationId = null
+          form.jobProfileId = ''
+          form.gradeId = null
+          void Promise.all([
+            positionNumber.loadRule(),
+            formRef.value?.reloadOptions('organizationId'),
+            formRef.value?.reloadOptions('jobProfileId'),
+            formRef.value?.reloadOptions('gradeId')
+          ])
+        }
       }
+    },
+    {
+      label: '所属组织',
+      key: 'organizationId',
+      type: 'select',
+      hidden: isSystemPosition.value,
+      immediate: false,
+      api: async () => (await fetchEmployeeOrganizationOptions({ tenantId: form.tenantId })).data,
+      valueField: 'id',
+      labelFn: (option) => `${option.organizationName ?? ''} · ${option.organizationCode ?? ''}`,
+      props: { filterable: true, placeholder: '请选择岗位所属组织' }
+    },
+    {
+      label: '标准职务',
+      key: 'jobProfileId',
+      type: 'select',
+      immediate: false,
+      api: async () => (await fetchJobArchitectureOptions('profile', form.tenantId)).data ?? [],
+      valueField: 'id',
+      labelFn: (option) => `${option.name ?? ''} · ${option.code ?? ''}`,
+      props: { filterable: true, placeholder: '请选择岗位对应的标准职务' }
+    },
+    {
+      label: '职级',
+      key: 'gradeId',
+      type: 'select',
+      immediate: false,
+      api: async () => (await fetchJobArchitectureOptions('grade', form.tenantId)).data ?? [],
+      valueField: 'id',
+      labelFn: (option) => `${option.name ?? ''} · ${option.code ?? ''}`,
+      props: { filterable: true, clearable: true, placeholder: '可选，默认继承标准职务' }
     },
     {
       label: '岗位编码',
@@ -156,6 +213,34 @@
       key: 'sort',
       type: 'number',
       props: { min: 0, max: 9999, controlsPosition: 'right', class: '!w-full' }
+    },
+    {
+      label: '编制上限',
+      key: 'headcountLimit',
+      type: 'number',
+      props: {
+        min: 1,
+        max: 9999,
+        disabled: !form.multipleIncumbentsAllowed,
+        controlsPosition: 'right',
+        class: '!w-full'
+      },
+      help: form.multipleIncumbentsAllowed
+        ? '允许多人共享该岗位时的最大在岗人数。'
+        : '单人岗位固定为 1 人。'
+    },
+    {
+      label: '允许多人任职',
+      key: 'multipleIncumbentsAllowed',
+      type: 'switch',
+      props: {
+        activeText: '多人岗位',
+        inactiveText: '单人岗位',
+        inlinePrompt: true,
+        onChange: (value: boolean) => {
+          if (!value) form.headcountLimit = 1
+        }
+      }
     },
     {
       label: '状态',
@@ -214,14 +299,20 @@
       loading: isPlatformSuper.value && !tenantOptions.value.length,
       loadingText: '正在加载租户选项…',
       onOpen: async (_openRow, api) => {
-        if (!isPlatformSuper.value || tenantOptions.value.length) return
         api.setLoading(true)
         try {
-          const response = await fetchGetEnableTenantList()
-          tenantOptions.value = (response.data ?? []).map((tenant) => ({
-            label: `${tenant.tenantName}（${tenant.tenantCode}）`,
-            value: tenant.id!
-          }))
+          if (isPlatformSuper.value && !tenantOptions.value.length) {
+            const response = await fetchGetEnableTenantList()
+            tenantOptions.value = (response.data ?? []).map((tenant) => ({
+              label: `${tenant.tenantName}（${tenant.tenantCode}）`,
+              value: tenant.id!
+            }))
+          }
+          await Promise.all([
+            formRef.value?.reloadOptions('organizationId'),
+            formRef.value?.reloadOptions('jobProfileId'),
+            formRef.value?.reloadOptions('gradeId')
+          ])
         } finally {
           api.setLoading(false)
         }

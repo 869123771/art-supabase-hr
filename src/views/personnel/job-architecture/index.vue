@@ -1,0 +1,443 @@
+<template>
+  <div
+    v-auth="'Hr:JobProfile:View'"
+    class="job-architecture-page business-workspace-page art-full-height"
+  >
+    <BusinessWorkspaceHeader
+      eyebrow="JOB ARCHITECTURE"
+      title="职务体系"
+      description="统一维护职族、标准职务和职级；岗位引用标准职务，员工通过任职关系占用岗位。"
+      icon="ri:stack-line"
+      :tags="workspaceTags"
+      :metrics="workspaceMetrics"
+    >
+      <template #actions>
+        <BusinessTableWorkspaceActions :table="tableQueryRef" />
+      </template>
+    </BusinessWorkspaceHeader>
+
+    <section class="job-architecture-page__domain-navigation" aria-label="职务体系工作域">
+      <div>
+        <span class="job-architecture-page__domain-icon" aria-hidden="true">
+          <ArtSvgIcon icon="ri:node-tree" />
+        </span>
+        <span>
+          <strong>标准职务架构</strong>
+          <small>先定义职族与标准职务，再建立职级层级，供岗位和员工任职关系引用</small>
+        </span>
+      </div>
+      <HrEntityNavigation
+        :model-value="activeEntity"
+        :items="navigationItems"
+        navigation-label="职务体系分类"
+        compact
+        @update:model-value="selectEntity"
+      />
+    </section>
+
+    <ArtTableQuery
+      :key="activeEntity"
+      ref="tableQueryRef"
+      v-model="tableState.searchQuery"
+      :search-items="searchItems"
+      :api-fn="fetchTableData"
+      :columns-factory="columnsFactory"
+      :header-actions="headerActions"
+      header-actions-placement="workspace"
+      :search-bar-props="{ span: 6, labelWidth: 80, showExpand: false }"
+      :table-props="{
+        rowKey: 'id',
+        tableLayout: 'fixed',
+        emptyText: `暂无${activeTab.label}`,
+        emptyDescription: `可新增${activeTab.label}，逐步建立企业统一任职标准。`
+      }"
+      :on-success="handleTableSuccess"
+      focusable
+    />
+
+    <JobArchitectureDialog ref="dialogRef" @success="handleSaveSuccess" />
+  </div>
+</template>
+
+<script setup lang="tsx">
+  import { ElTag } from 'element-plus'
+  import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
+  import type {
+    ArtTableQueryExpose,
+    ArtTableQueryHeaderAction,
+    ArtTableQueryProps
+  } from '@/components/core/tables/art-table-query/index.vue'
+  import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
+  import BusinessWorkspaceHeader, {
+    type BusinessWorkspaceMetric,
+    type BusinessWorkspaceTag
+  } from '@/components/business/business-workspace-header/index.vue'
+  import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
+  import HrEntityNavigation, {
+    type HrEntityNavigationItem
+  } from '../../shared/hr-entity-navigation.vue'
+  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { useUserStore } from '@/store/modules/user'
+  import { pageInfoHandler } from '@/utils/table/tableUtils'
+  import type { ColumnOption, DialogType } from '@/types'
+  import { fetchGetEnableTenantList } from '@/api/system-manage'
+  import { deleteJobArchitectureRecord, fetchJobArchitectureList } from '@hr/api'
+  import JobArchitectureDialog from './modules/job-architecture-dialog.vue'
+
+  defineOptions({ name: 'HrJobArchitecture' })
+
+  type Entity = Api.Hr.JobArchitectureEntity
+  type RecordItem = Api.Hr.JobFamily | Api.Hr.Grade | Api.Hr.JobProfile
+  type TableParams = Api.Hr.JobArchitectureSearchParams &
+    Pick<Api.Common.PaginationParams, 'current' | 'size'>
+
+  interface ArchitectureTab {
+    entity: Entity
+    label: string
+    description: string
+    icon: string
+    addPermission: string
+    editPermission: string
+    deletePermission: string
+  }
+
+  interface JobArchitectureDialogExpose {
+    handleOpen: (entity: Entity, row?: RecordItem) => Promise<void>
+  }
+
+  const tabs: ArchitectureTab[] = [
+    {
+      entity: 'profile',
+      label: '标准职务',
+      description: '跨组织复用的工作分类',
+      icon: 'ri:id-card-line',
+      addPermission: 'Hr:JobProfile:Add',
+      editPermission: 'Hr:JobProfile:Edit',
+      deletePermission: 'Hr:JobProfile:Delete'
+    },
+    {
+      entity: 'family',
+      label: '职族',
+      description: '相近职务的专业序列',
+      icon: 'ri:git-branch-line',
+      addPermission: 'Hr:JobFamily:Add',
+      editPermission: 'Hr:JobFamily:Edit',
+      deletePermission: 'Hr:JobFamily:Delete'
+    },
+    {
+      entity: 'grade',
+      label: '职级',
+      description: '能力与薪酬层级基准',
+      icon: 'ri:bar-chart-grouped-line',
+      addPermission: 'Hr:Grade:Add',
+      editPermission: 'Hr:Grade:Edit',
+      deletePermission: 'Hr:Grade:Delete'
+    }
+  ]
+  const navigationItems = computed<HrEntityNavigationItem[]>(() =>
+    tabs.map((tab) => ({ ...tab, value: tab.entity }))
+  )
+
+  const { confirmAction } = useArtFeedback()
+  const userStore = useUserStore()
+  const { getDictMap, isPlatformSuper } = storeToRefs(userStore)
+  const activeEntity = ref<Entity>('profile')
+  const activeTab = computed(() => tabs.find((tab) => tab.entity === activeEntity.value) ?? tabs[0])
+  const tableQueryRef = ref<ArtTableQueryExpose>()
+  const dialogRef = ref<JobArchitectureDialogExpose>()
+  const tenantOptions = ref<Array<{ label: string; value: string }>>([])
+  const tableState = reactive<{ searchQuery: Api.Hr.JobArchitectureSearchParams }>({
+    searchQuery: { tenantId: '', enabled: undefined, keyword: '' }
+  })
+  const overview = reactive({ total: 0, enabled: 0, references: 0 })
+  const booleanOptions = computed(() =>
+    (getDictMap.value.commonBoolean ?? []).map((item) => ({
+      ...item,
+      label: item.value === 'true' ? '启用' : '停用',
+      value: item.value === 'true'
+    }))
+  )
+  const workspaceTags: BusinessWorkspaceTag[] = [
+    { label: '企业主数据', type: 'primary', effect: 'plain' },
+    { label: '岗位与任职解耦', type: 'success', effect: 'light' },
+    { label: '历史可追溯', type: 'info', effect: 'light' }
+  ]
+  const workspaceMetrics = computed<BusinessWorkspaceMetric[]>(() => [
+    {
+      label: '当前结果',
+      value: overview.total,
+      description: activeTab.value.label,
+      icon: activeTab.value.icon
+    },
+    {
+      label: '本页启用',
+      value: overview.enabled,
+      description: '可用于岗位和异动',
+      icon: 'ri:checkbox-circle-line',
+      tone: 'success'
+    },
+    {
+      label: '本页引用',
+      value: overview.references,
+      description: '岗位或职务引用数',
+      icon: 'ri:links-line',
+      tone: 'info'
+    }
+  ])
+  const searchItems = computed<SearchFormItem[]>(() => [
+    {
+      label: '所属租户',
+      key: 'tenantId',
+      type: 'select',
+      hidden: !isPlatformSuper.value,
+      props: { options: tenantOptions.value, clearable: true, filterable: true }
+    },
+    {
+      label: '状态',
+      key: 'enabled',
+      type: 'select',
+      props: { options: booleanOptions.value, clearable: true }
+    },
+    {
+      label: '关键字',
+      key: 'keyword',
+      type: 'input',
+      props: { clearable: true, placeholder: `${activeTab.value.label}编码或名称` }
+    }
+  ])
+
+  const commonColumns = (): ColumnOption<RecordItem>[] => [
+    ...(isPlatformSuper.value
+      ? [
+          {
+            prop: 'tenant.tenantName',
+            label: '所属租户',
+            minWidth: 160,
+            showOverflowTooltip: true
+          } as ColumnOption<RecordItem>
+        ]
+      : []),
+    {
+      prop: 'enabled',
+      label: '状态',
+      width: 90,
+      formatter: (row) => (
+        <ElTag type={row.enabled ? 'success' : 'info'} effect="plain">
+          {row.enabled ? '启用' : '停用'}
+        </ElTag>
+      )
+    },
+    { prop: 'sort', label: '排序', width: 80, align: 'right' }
+  ]
+
+  const actionColumn = (): ColumnOption<RecordItem> => ({
+    prop: 'operation',
+    label: '操作',
+    width: 120,
+    fixed: 'right',
+    formatter: (row) => (
+      <div class="job-architecture-page__actions">
+        <ArtButtonTable
+          type="edit"
+          permission={activeTab.value.editPermission}
+          onClick={() => openDialog(row)}
+        />
+        <ArtButtonTable
+          type="delete"
+          permission={activeTab.value.deletePermission}
+          onClick={() => void handleDelete(row)}
+        />
+      </div>
+    )
+  })
+
+  const columnsFactory = (): ColumnOption<RecordItem>[] => {
+    if (activeEntity.value === 'family')
+      return [
+        ...commonColumns().slice(0, isPlatformSuper.value ? 1 : 0),
+        { prop: 'familyCode', label: '职族编码', minWidth: 150, showOverflowTooltip: true },
+        { prop: 'familyName', label: '职族名称', minWidth: 200, showOverflowTooltip: true },
+        {
+          prop: 'jobProfileCount',
+          label: '标准职务',
+          width: 110,
+          align: 'right',
+          formatter: (row) => `${(row as Api.Hr.JobFamily).jobProfileCount ?? 0} 个`
+        },
+        ...commonColumns().slice(isPlatformSuper.value ? 1 : 0),
+        actionColumn()
+      ]
+    if (activeEntity.value === 'grade')
+      return [
+        ...commonColumns().slice(0, isPlatformSuper.value ? 1 : 0),
+        { prop: 'gradeCode', label: '职级编码', minWidth: 140, showOverflowTooltip: true },
+        { prop: 'gradeName', label: '职级名称', minWidth: 180, showOverflowTooltip: true },
+        { prop: 'gradeLevel', label: '层级值', width: 100, align: 'right' },
+        {
+          prop: 'jobProfileCount',
+          label: '标准职务',
+          width: 110,
+          align: 'right',
+          formatter: (row) => `${(row as Api.Hr.Grade).jobProfileCount ?? 0} 个`
+        },
+        ...commonColumns().slice(isPlatformSuper.value ? 1 : 0),
+        actionColumn()
+      ]
+    return [
+      ...commonColumns().slice(0, isPlatformSuper.value ? 1 : 0),
+      { prop: 'jobCode', label: '职务编码', minWidth: 150, showOverflowTooltip: true },
+      { prop: 'jobName', label: '标准职务', minWidth: 200, showOverflowTooltip: true },
+      { prop: 'family.familyName', label: '所属职族', minWidth: 160, showOverflowTooltip: true },
+      {
+        prop: 'defaultGrade.gradeName',
+        label: '默认职级',
+        minWidth: 130,
+        showOverflowTooltip: true,
+        formatter: (row) => (row as Api.Hr.JobProfile).defaultGrade?.gradeName ?? '—'
+      },
+      {
+        prop: 'positionCount',
+        label: '关联岗位',
+        width: 110,
+        align: 'right',
+        formatter: (row) => `${(row as Api.Hr.JobProfile).positionCount ?? 0} 个`
+      },
+      ...commonColumns().slice(isPlatformSuper.value ? 1 : 0),
+      actionColumn()
+    ]
+  }
+
+  const headerActions = computed<ArtTableQueryHeaderAction[]>(() => [
+    {
+      type: 'add',
+      label: `新增${activeTab.value.label}`,
+      permission: activeTab.value.addPermission,
+      onClick: () => openDialog()
+    }
+  ])
+  const fetchTableData = (params: TableParams) => {
+    const { from, to } = pageInfoHandler({ current: params.current, size: params.size })
+    return fetchJobArchitectureList(activeEntity.value, { ...params, from, to })
+  }
+  const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
+    overview.total = response.total ?? rows.length
+    overview.enabled = rows.filter((row) => Boolean(row.enabled)).length
+    overview.references = rows.reduce(
+      (total, row) => total + Number(row.positionCount ?? row.jobProfileCount ?? 0),
+      0
+    )
+  }
+  const openDialog = (row?: RecordItem): void =>
+    void dialogRef.value?.handleOpen(activeEntity.value, row)
+  const handleSaveSuccess = (type: DialogType): void =>
+    void (type === 'add'
+      ? tableQueryRef.value?.refreshCreate()
+      : tableQueryRef.value?.refreshUpdate())
+  const handleDelete = async (row: RecordItem): Promise<void> => {
+    if (!row.id) return
+    try {
+      await confirmAction(`确定删除这条${activeTab.value.label}记录吗？`, '删除确认', {
+        confirmButtonText: '删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+        confirmButtonClass: 'el-button--danger'
+      })
+      await deleteJobArchitectureRecord(activeEntity.value, row.id)
+      await tableQueryRef.value?.refreshRemove()
+    } catch {
+      /* 用户取消或服务端依赖校验失败时不追加重复提示。 */
+    }
+  }
+  const handleTabChange = (): void => {
+    Object.assign(tableState.searchQuery, { keyword: '', enabled: undefined })
+    Object.assign(overview, { total: 0, enabled: 0, references: 0 })
+  }
+  const selectEntity = (value: string): void => {
+    if (activeEntity.value === value) return
+    activeEntity.value = value as Entity
+    handleTabChange()
+  }
+  onMounted(async () => {
+    await userStore.ensureDictLoaded('commonBoolean')
+    if (!isPlatformSuper.value) return
+    const response = await fetchGetEnableTenantList()
+    tenantOptions.value = (response.data ?? []).map((tenant) => ({
+      label: `${tenant.tenantName}（${tenant.tenantCode}）`,
+      value: tenant.id!
+    }))
+  })
+</script>
+
+<style scoped lang="scss">
+  .job-architecture-page {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+
+    &__domain-navigation {
+      display: grid;
+      gap: 12px;
+      min-width: 0;
+      padding: 14px;
+      background: linear-gradient(
+        120deg,
+        color-mix(in srgb, var(--theme-color) 5%, var(--art-main-bg-color)),
+        var(--art-main-bg-color) 55%
+      );
+      border: 1px solid color-mix(in srgb, var(--theme-color) 11%, var(--art-card-border));
+      border-radius: calc(var(--el-border-radius-base) + 4px);
+
+      > div {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        min-width: 0;
+      }
+
+      > div > span:last-child {
+        display: grid;
+        min-width: 0;
+      }
+
+      > div strong {
+        font-size: 14px;
+        color: var(--art-text-gray-900);
+      }
+
+      > div small {
+        margin-top: 3px;
+        font-size: 12px;
+        color: var(--art-text-gray-600);
+      }
+    }
+
+    &__domain-icon {
+      display: grid;
+      flex: 0 0 auto;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      color: var(--theme-color);
+      background: color-mix(in srgb, var(--theme-color) 10%, transparent);
+      border-radius: 10px;
+    }
+
+    &__actions {
+      display: flex;
+      align-items: center;
+    }
+
+    :deep(.art-table-query) {
+      flex: 1;
+      min-height: 0;
+    }
+
+    @media (width <= 760px) {
+      &__domain-navigation {
+        padding: 12px;
+      }
+    }
+  }
+</style>

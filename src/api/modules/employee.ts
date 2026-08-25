@@ -20,6 +20,13 @@ interface EmployeeSelectorListPayload {
   fieldAccess?: Api.Hr.EmployeeFieldAccessMap
 }
 
+interface OrganizationPositionDirectoryPayload {
+  positions?: Api.Hr.Position[]
+  employees?: Api.Hr.OrganizationPositionEmployee[]
+  employeeTotal?: number
+  truncated?: boolean
+}
+
 const organizationTreeUtils = new TreeUtils({
   idKey: 'id',
   parentKey: 'parentId',
@@ -116,6 +123,40 @@ export async function fetchEmployeeOrganizationTree(params: { tenantId?: string 
       const sortDiff = (a.sort ?? 0) - (b.sort ?? 0)
       return sortDiff || a.organizationName.localeCompare(b.organizationName, 'zh-CN')
     })
+  }
+}
+
+export async function fetchEmployeeOrganizationOptions(params: { tenantId?: string } = {}) {
+  const result = await fetchEmployeeOrganizationTree(params)
+  return {
+    ...result,
+    data: organizationTreeUtils.treeToList(result.data ?? [])
+  }
+}
+
+export async function fetchOrganizationPositionDirectory(organizationId?: string) {
+  const response = await responseHandle<OrganizationPositionDirectoryPayload>(
+    () =>
+      supabase.rpc('hr_get_organization_position_directory_secure', {
+        p_organization_id: organizationId || null
+      }),
+    { showErrorMessage: true }
+  )
+  const positions = (response.data?.positions ?? [])
+    .filter((position) => Boolean(position.id))
+    .sort(
+      (a, b) =>
+        (a.sort ?? 0) - (b.sort ?? 0) || a.positionName.localeCompare(b.positionName, 'zh-CN')
+    )
+
+  return {
+    data: {
+      positions,
+      employees: response.data?.employees ?? [],
+      employeeTotal: response.data?.employeeTotal ?? 0,
+      truncated: Boolean(response.data?.truncated)
+    } satisfies Api.Hr.OrganizationPositionDirectory,
+    error: response.error
   }
 }
 

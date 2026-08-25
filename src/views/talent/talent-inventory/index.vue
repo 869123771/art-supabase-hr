@@ -6,12 +6,12 @@
     <BusinessWorkspaceHeader
       eyebrow="TALENT INVENTORY"
       title="人才盘点"
-      description="把最近绩效结果与岗位胜任力要求放在同一视图，识别高绩效人才、能力缺口与尚未完成评估的员工。"
+      description="以员工为中心融合最近绩效与岗位胜任力，形成培养、任用与继任决策信号。"
       icon="ri:team-line"
       :tags="[
-        { label: '绩效 × 胜任力', type: 'primary' },
-        { label: '岗位准备度', type: 'success' },
-        { label: '租户安全视图', type: 'info' }
+        { label: '个体人才决策', type: 'primary' },
+        { label: '绩效 × 胜任力', type: 'success' },
+        { label: '发展 / 继任输入', type: 'info' }
       ]"
       :metrics="metrics"
       refreshable
@@ -23,8 +23,8 @@
 
     <ArtSectionCard
       class="talent-inventory-page__workspace"
-      title="人才决策清单"
-      :subtitle="`聚焦高绩效、有能力缺口或尚未完成评估的员工，更新时间 ${generatedAt}`"
+      title="个体人才决策清单"
+      :subtitle="`回答谁值得培养、谁已胜任、谁需补齐评估；更新时间 ${generatedAt}`"
       :loading="loading && !overview"
       :error="errorMessage"
       :empty="Boolean(overview) && !filteredRecords.length"
@@ -53,7 +53,7 @@
       </template>
 
       <div class="talent-inventory-page__decision-strip" aria-label="人才盘点决策摘要">
-        <div>
+        <div class="talent-inventory-page__decision-item is-development">
           <span class="talent-inventory-page__signal-icon is-primary">
             <ArtSvgIcon icon="ri:seedling-line" />
           </span>
@@ -63,7 +63,7 @@
           >
           <p>高绩效且仍有能力提升空间</p>
         </div>
-        <div>
+        <div class="talent-inventory-page__decision-item is-performance">
           <span class="talent-inventory-page__signal-icon is-warning">
             <ArtSvgIcon icon="ri:questionnaire-line" />
           </span>
@@ -73,7 +73,7 @@
           >
           <p>缺少最近绩效结果，暂不宜做人才判断</p>
         </div>
-        <div>
+        <div class="talent-inventory-page__decision-item is-model">
           <span class="talent-inventory-page__signal-icon is-info">
             <ArtSvgIcon icon="ri:node-tree" />
           </span>
@@ -187,7 +187,6 @@
 </template>
 
 <script setup lang="ts">
-  import { ElMessage } from 'element-plus'
   import type { ColumnOption } from '@/types'
   import ArtTable from '@/components/core/tables/art-table/index.vue'
   import BusinessWorkspaceHeader, {
@@ -384,9 +383,8 @@
     errorMessage.value = ''
     try {
       overview.value = await fetchTalentInventory()
-    } catch (error) {
-      errorMessage.value = error instanceof Error ? error.message : '人才盘点数据加载失败'
-      ElMessage.error(errorMessage.value)
+    } catch {
+      errorMessage.value = '人才盘点数据暂时无法加载，请稍后重试'
     } finally {
       loading.value = false
     }
@@ -405,24 +403,6 @@
       min-width: 0;
     }
 
-    &__toolbar {
-      display: flex;
-      gap: 16px;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-
-      > div:first-child {
-        min-width: 240px;
-      }
-    }
-
-    &__toolbar p {
-      margin: 5px 0 0;
-      font-size: 12px;
-      color: var(--art-gray-600);
-    }
-
     &__filters {
       display: flex;
       gap: 10px;
@@ -437,48 +417,60 @@
     &__decision-strip {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--art-space-2);
       margin-bottom: 16px;
-      background: var(--art-gray-100);
+    }
+
+    &__decision-item {
+      display: grid;
+      grid-template-columns: 36px auto minmax(120px, 1fr);
+      gap: 10px;
+      align-items: center;
+      min-width: 0;
+      padding: 13px 14px;
+      border: 1px solid var(--art-border-color);
       border-radius: var(--el-border-radius-base);
 
-      > div {
-        display: grid;
-        grid-template-columns: 36px auto minmax(120px, 1fr);
-        gap: 10px;
-        align-items: center;
-        min-width: 0;
-        padding: 12px 14px;
+      &.is-development {
+        background: color-mix(in srgb, var(--theme-color) 5%, var(--art-main-bg-color));
+        border-color: color-mix(in srgb, var(--theme-color) 16%, var(--art-border-color));
+      }
 
-        + div {
-          border-left: 1px solid var(--art-border-color);
+      &.is-performance {
+        background: color-mix(in srgb, var(--el-color-warning) 7%, var(--art-main-bg-color));
+        border-color: color-mix(in srgb, var(--el-color-warning) 18%, var(--art-border-color));
+      }
+
+      &.is-model {
+        background: color-mix(in srgb, var(--art-gray-500) 5%, var(--art-main-bg-color));
+      }
+
+      > span:nth-child(2) {
+        display: flex;
+        flex-direction: column;
+
+        strong {
+          font-size: 18px;
+          font-variant-numeric: tabular-nums;
+          line-height: 1.1;
+          color: var(--art-gray-900);
         }
 
-        > span:nth-child(2) {
-          display: flex;
-          flex-direction: column;
-
-          strong {
-            font-size: 18px;
-            font-variant-numeric: tabular-nums;
-            line-height: 1.1;
-            color: var(--art-gray-900);
-          }
-
-          small {
-            margin-top: 3px;
-            font-size: 11px;
-            color: var(--art-gray-600);
-          }
+        small {
+          margin-top: 3px;
+          font-size: 11px;
+          font-weight: 600;
+          color: var(--art-gray-700);
         }
+      }
 
-        > p {
-          margin: 0;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          font-size: 12px;
-          color: var(--art-gray-600);
-          white-space: nowrap;
-        }
+      > p {
+        margin: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 12px;
+        color: var(--art-gray-600);
+        white-space: nowrap;
       }
     }
 
@@ -568,22 +560,15 @@
 
   @media only screen and (width <= 1180px) {
     .talent-inventory-page {
-      &__toolbar {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
       &__filters {
         justify-content: space-between;
       }
 
-      &__decision-strip {
-        > div {
-          grid-template-columns: 36px 1fr;
+      &__decision-item {
+        grid-template-columns: 36px 1fr;
 
-          > p {
-            display: none;
-          }
+        > p {
+          display: none;
         }
       }
     }
@@ -607,11 +592,6 @@
 
       &__decision-strip {
         grid-template-columns: 1fr;
-
-        > div + div {
-          border-top: 1px solid var(--art-border-color);
-          border-left: 0;
-        }
       }
     }
   }

@@ -531,7 +531,7 @@
   type EmployeeProfile = Api.Hr.EmployeeProfile
   interface EmployeeProfileForm extends EmployeeProfile {
     driverCarrierId: string
-    driverType: Api.Tms.BasicData.Driver['driverType']
+    driverType: Api.Hr.DriverType
     driverLicenseType: string
     driverLicenseExpireDate: string
   }
@@ -741,12 +741,19 @@
     () => !isEdit.value && selectedPosition.value?.positionKind === 'driver'
   )
   const positionFormOptions = computed<FormItemOption[]>(() =>
-    positionOptions.value.map((position) => ({
-      label: `${position.positionName}（${position.positionCode}）`,
-      value: position.id,
-      disabled:
-        isEdit.value && position.positionKind === 'driver' && position.id !== form.positionId
-    }))
+    positionOptions.value
+      .filter(
+        (position) =>
+          !form.organizationId ||
+          !position.organizationId ||
+          position.organizationId === form.organizationId
+      )
+      .map((position) => ({
+        label: `${position.positionName}（${position.positionCode}）`,
+        value: position.id,
+        disabled:
+          isEdit.value && position.positionKind === 'driver' && position.id !== form.positionId
+      }))
   )
 
   const requiredBaseFields = computed(() => [
@@ -890,27 +897,24 @@
     employmentType: [{ required: true, message: '请选择用工类型', trigger: 'change' }],
     phone: canEditContactDetails.value
       ? [
-          ...(isDriverEmployeeCreate.value
-            ? [{ required: true, message: '司机岗位必须填写手机号码', trigger: 'blur' as const }]
-            : []),
-          { pattern: /^$|^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' }
+          { required: true, message: '请输入手机号码', trigger: 'blur' },
+          { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' }
         ]
       : [],
     gender:
       isDriverEmployeeCreate.value && canEditIdentityDetails.value
         ? [{ required: true, message: '司机岗位必须选择性别', trigger: 'change' }]
         : [],
-    idCardNo:
-      isDriverEmployeeCreate.value && canEditIdentityDetails.value
-        ? [
-            { required: true, message: '司机岗位必须填写身份证号', trigger: 'blur' },
-            {
-              pattern: /(^\d{15}$)|(^\d{17}[\dXx]$)/,
-              message: '请输入正确的身份证号',
-              trigger: 'blur'
-            }
-          ]
-        : [],
+    idCardNo: canEditIdentityDetails.value
+      ? [
+          { required: true, message: '请输入身份证号', trigger: 'blur' },
+          {
+            pattern: /(^\d{15}$)|(^\d{17}[\dXx]$)/,
+            message: '请输入正确的身份证号',
+            trigger: 'blur'
+          }
+        ]
+      : [],
     driverCarrierId: isDriverEmployeeCreate.value
       ? [{ required: true, message: '请选择所属承运商', trigger: 'change' }]
       : [],
@@ -925,8 +929,9 @@
       : [],
     email: canEditContactDetails.value
       ? [
+          { required: true, message: '请输入电子邮箱', trigger: 'blur' },
           {
-            pattern: /^$|^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+            pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
             message: '请输入正确的邮箱地址',
             trigger: 'blur'
           }
@@ -983,13 +988,17 @@
         span: isDesktop.value ? 16 : 24,
         options: organizationFormOptions.value,
         props: {
-          disabled: !form.tenantId,
+          disabled: !form.tenantId || isEdit.value,
           clearable: true,
           checkStrictly: true,
           defaultExpandAll: true,
           filterable: true,
-          placeholder: form.tenantId ? '请选择所属组织' : '请先选择租户'
-        }
+          placeholder: form.tenantId ? '请选择所属组织' : '请先选择租户',
+          onChange: () => {
+            form.positionId = null
+          }
+        },
+        description: isEdit.value ? '组织变更请通过人事异动办理并按生效日期留痕。' : undefined
       },
       {
         label: '员工工号',
@@ -1015,15 +1024,19 @@
         props: {
           filterable: true,
           clearable: true,
+          disabled: isEdit.value,
           placeholder: form.tenantId ? '请选择工作岗位' : '请先选择租户'
         },
-        description: '岗位由 HR「岗位管理」统一维护；司机岗位会触发司机档案联动。'
+        description: isEdit.value
+          ? '岗位变更请通过人事异动办理；原任职将自动保留为历史。'
+          : '岗位由 HR「岗位管理」统一维护；司机岗位会触发司机档案联动。'
       },
       {
         label: '任职状态',
         key: 'employmentStatus',
         type: 'select',
-        props: { options: dict('hrEmploymentStatus') }
+        props: { options: dict('hrEmploymentStatus'), disabled: isEdit.value },
+        description: isEdit.value ? '转正、停复职和离职请通过人事异动办理。' : undefined
       },
       {
         label: '用工类型',
@@ -1076,7 +1089,12 @@
         props: { options: dict('sex'), clearable: true }
       },
       { label: '出生日期', key: 'birthDate', type: 'date', props: dateProps },
-      { label: '身份证号', key: 'idCardNo', type: 'input', props: { maxlength: 18 } },
+      {
+        label: '身份证号',
+        key: 'idCardNo',
+        type: 'input',
+        props: { maxlength: 18, placeholder: '请输入 15 或 18 位身份证号' }
+      },
       {
         label: '民族',
         key: 'ethnicity',
@@ -1111,8 +1129,18 @@
       { label: '合同开始', key: 'contractStartDate', type: 'date', props: dateProps },
       { label: '合同结束', key: 'contractEndDate', type: 'date', props: dateProps },
       { label: '联系信息', key: 'contactSection', type: 'divider', span: 24 },
-      { label: '手机号码', key: 'phone', type: 'input', props: { maxlength: 11 } },
-      { label: '电子邮箱', key: 'email', type: 'input', props: { maxlength: 120 } },
+      {
+        label: '手机号码',
+        key: 'phone',
+        type: 'input',
+        props: { maxlength: 11, placeholder: '请输入 11 位手机号码' }
+      },
+      {
+        label: '电子邮箱',
+        key: 'email',
+        type: 'input',
+        props: { maxlength: 120, placeholder: '请输入常用电子邮箱' }
+      },
       {
         label: '家庭住址',
         key: 'homeAddress',

@@ -3,7 +3,7 @@
     <BusinessWorkspaceHeader
       eyebrow="POSITION CATALOG"
       title="岗位管理"
-      description="统一维护员工任职岗位；系统预置的司机岗位负责衔接员工与司机运营档案。"
+      description="维护组织中的具体编制岗位；每个岗位关联标准职务、职级与任职人数规则。"
       icon="ri:briefcase-4-line"
       :tags="workspaceTags"
       :metrics="workspaceMetrics"
@@ -26,7 +26,7 @@
         rowKey: 'id',
         tableLayout: 'fixed',
         emptyText: '暂无岗位',
-        emptyDescription: '可新增普通岗位；系统司机岗位已自动为每个租户建立。'
+        emptyDescription: '请先维护职务体系，再为组织新增具体岗位。'
       }"
       :on-success="handleTableSuccess"
       focusable
@@ -98,8 +98,9 @@
     }))
   )
   const workspaceTags: BusinessWorkspaceTag[] = [
-    { label: '岗位主数据', type: 'primary', effect: 'plain' },
-    { label: '司机档案联动', type: 'success', effect: 'light' }
+    { label: '组织编制', type: 'primary', effect: 'plain' },
+    { label: '标准职务关联', type: 'success', effect: 'light' },
+    { label: '任职人数控制', type: 'info', effect: 'light' }
   ]
   const workspaceMetrics = computed<BusinessWorkspaceMetric[]>(() => [
     {
@@ -161,6 +162,13 @@
         ]
       : []),
     {
+      prop: 'organization.organizationName',
+      label: '所属组织',
+      minWidth: 170,
+      showOverflowTooltip: true,
+      formatter: (row) => row.organization?.organizationName ?? (row.systemCode ? '系统通用' : '—')
+    },
+    {
       prop: 'positionCode',
       label: '岗位编码',
       minWidth: 150,
@@ -181,6 +189,20 @@
       )
     },
     {
+      prop: 'jobProfile.jobName',
+      label: '标准职务',
+      minWidth: 160,
+      showOverflowTooltip: true,
+      formatter: (row) => row.jobProfile?.jobName ?? '—'
+    },
+    {
+      prop: 'grade.gradeName',
+      label: '职级',
+      width: 120,
+      showOverflowTooltip: true,
+      formatter: (row) => row.grade?.gradeName ?? '—'
+    },
+    {
       prop: 'positionKind',
       label: '业务属性',
       width: 110,
@@ -193,6 +215,13 @@
           {row.positionKind === 'driver' ? '司机岗位' : '普通岗位'}
         </ElTag>
       )
+    },
+    {
+      prop: 'headcountLimit',
+      label: '编制上限',
+      width: 100,
+      align: 'right',
+      formatter: (row) => `${row.headcountLimit ?? 1} 人`
     },
     {
       prop: 'employeeCount',
@@ -239,6 +268,8 @@
             <ArtButtonTable
               type="delete"
               permission="Hr:Position:Delete"
+              disabled={Number(row.employeeCount ?? 0) > 0}
+              label={Number(row.employeeCount ?? 0) > 0 ? '岗位已有在岗人员，不能删除' : '删除'}
               onClick={() => handleDelete(row)}
             />
           )}

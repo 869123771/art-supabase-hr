@@ -1,0 +1,1 @@
+import{k as e,mt as t,v as n}from"./runtime-core.esm-bundler-BV7Lsdgt.js";import{t as r}from"./hr-workspace-page-k6VhvBGs.js";var i=e({name:`HrTalentDevelopment`,__name:`index`,setup(e){let i={view:`Hr:Talent:View`,add:`Hr:Talent:Add`,edit:`Hr:Talent:Edit`,delete:`Hr:Talent:Delete`};return(e,a)=>(t(),n(r,{"workspace-key":`talent`,permissions:i}))}});export{i as default};

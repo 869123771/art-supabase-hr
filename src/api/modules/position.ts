@@ -5,7 +5,7 @@ import type { ApiRequestOptions } from '@/types/api/request'
 type Position = Api.Hr.Position
 type PositionSearchParams = Api.Hr.PositionSearchParams
 type PositionOption = Api.Hr.PositionOption
-type CarrierOption = Api.Tms.BasicData.CarrierOption
+type CarrierOption = Api.Hr.DriverCarrierOption
 
 interface PositionListPayload {
   records: Position[]
@@ -16,8 +16,13 @@ const { supabase, keysToSnakeDeep, responseHandle } = useSupabase()
 
 const pickPositionPayload = (position: Position): Record<string, unknown> => {
   const payload: Record<string, unknown> = {
+    organizationId: position.organizationId ?? null,
+    jobProfileId: position.jobProfileId,
+    gradeId: position.gradeId ?? null,
     positionCode: position.positionCode,
     positionName: position.positionName,
+    headcountLimit: position.headcountLimit,
+    multipleIncumbentsAllowed: position.multipleIncumbentsAllowed,
     enabled: position.enabled,
     sort: position.sort,
     description: position.description ?? null

@@ -55,7 +55,12 @@
       focusable
     />
 
-    <WorkspaceRecordDialog ref="dialogRef" @success="handleDialogSuccess" />
+    <PersonnelChangeDialog
+      v-if="props.workspaceKey === 'personnelChange'"
+      ref="personnelChangeDialogRef"
+      @success="handleDialogSuccess"
+    />
+    <WorkspaceRecordDialog v-else ref="dialogRef" @success="handleDialogSuccess" />
   </div>
 </template>
 
@@ -89,6 +94,7 @@
     submitHrApproval
   } from '@hr/api'
   import WorkspaceRecordDialog from './workspace-record-dialog.vue'
+  import PersonnelChangeDialog from '../personnel/personnel-change/modules/personnel-change-dialog.vue'
   import {
     hrWorkspaceDefinitions,
     type HrWorkspaceDefinition,
@@ -123,6 +129,7 @@
   const { confirmAction } = useArtFeedback()
   const tableQueryRef = ref<ArtTableQueryExpose>()
   const dialogRef = ref<WorkspaceRecordDialogExpose>()
+  const personnelChangeDialogRef = ref<WorkspaceRecordDialogExpose>()
   const workspace = computed(() => hrWorkspaceDefinitions[props.workspaceKey])
   const activeTabKey = ref(workspace.value.tabs[0].key)
   const activeTab = computed(
@@ -230,7 +237,9 @@
     !activeTab.value.approvalBusinessType || ['draft', 'rejected'].includes(getRowStatus(row))
 
   const openDialog = async (record?: Api.Hr.WorkspaceRecord): Promise<void> => {
-    await dialogRef.value?.handleOpen({ workspace: workspace.value, tab: activeTab.value, record })
+    const target =
+      props.workspaceKey === 'personnelChange' ? personnelChangeDialogRef.value : dialogRef.value
+    await target?.handleOpen({ workspace: workspace.value, tab: activeTab.value, record })
   }
 
   const handleDelete = async (row: Api.Hr.WorkspaceRecord): Promise<void> => {
@@ -297,7 +306,6 @@
       label: '操作',
       width: activeTab.value.approvalBusinessType || activeTab.value.canCompleteTask ? 250 : 120,
       fixed: 'right',
-      useSlot: true,
       formatter: (row: Api.Hr.WorkspaceRecord) => (
         <div class="hr-workspace-page__row-actions">
           {canEditRow(row) && (
