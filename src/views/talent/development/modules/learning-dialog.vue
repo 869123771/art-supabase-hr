@@ -150,7 +150,7 @@
     tenantId: isPlatformSuper.value ? undefined : getUserInfo.value.tenantId,
     planCode: '',
     planName: '',
-    trainingType: 'professional',
+    trainingType: 'skill',
     startDate: dayjs().format('YYYY-MM-DD'),
     endDate: dayjs().add(3, 'month').format('YYYY-MM-DD'),
     providerName: null,
@@ -214,6 +214,7 @@
               options: tenantOptions.value,
               props: {
                 filterable: true,
+                disabled: Boolean(form.model.id),
                 placeholder: '请选择所属租户',
                 onChange: handleTenantChange
               }

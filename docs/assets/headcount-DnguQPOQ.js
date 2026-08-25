@@ -1,0 +1,1 @@
+import{k as e,mt as t,v as n}from"./runtime-core.esm-bundler-BV7Lsdgt.js";import{t as r}from"./hr-workspace-page-BezSniW3.js";var i=e({name:`HrHeadcount`,__name:`index`,setup(e){let i={view:`Hr:Headcount:View`,add:`Hr:Headcount:Add`,edit:`Hr:Headcount:Edit`,delete:`Hr:Headcount:Delete`};return(e,a)=>(t(),n(r,{"workspace-key":`headcount`,permissions:i}))}});export{i as default};
