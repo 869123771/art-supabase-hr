@@ -748,9 +748,6 @@ declare namespace Api {
       | 'personnelChange'
       | 'qualification'
       | 'headcount'
-      | 'shift'
-      | 'shiftAssignment'
-      | 'attendance'
       | 'selfServiceRequest'
       | 'trainingPlan'
       | 'trainingEnrollment'
@@ -1438,6 +1435,166 @@ declare namespace Api {
     }
 
     interface LifecycleListResult<TRecord extends LifecycleRecord = LifecycleRecord> {
+      records: TRecord[]
+      total: number
+    }
+
+    type TimeAttendanceEntity = 'record' | 'assignment' | 'correction' | 'period' | 'shift'
+    type TimeAttendanceOptionKind = 'employee' | 'shift' | 'record'
+    type TimeAttendanceExceptionStatus = 'clear' | 'open' | 'resolved' | 'waived'
+    type TimeAttendanceCorrectionStatus =
+      'draft' | 'submitted' | 'approved' | 'rejected' | 'cancelled'
+    type TimeAttendancePeriodStatus = 'open' | 'reviewing' | 'closed'
+    type TimeAttendanceCorrectionAction = 'submit' | 'approve' | 'reject' | 'cancel'
+    type TimeAttendanceRecordAction = 'evaluate' | 'waive' | 'reopen'
+    type TimeAttendancePeriodAction = 'review' | 'close' | 'reopen'
+
+    interface TimeAttendanceReference {
+      id: string
+      tenantId?: string
+      code?: string | null
+      name?: string | null
+      startTime?: string | null
+      endTime?: string | null
+      timeZone?: string | null
+      employeeId?: string | null
+      workDate?: string | null
+      clockInAt?: string | null
+      clockOutAt?: string | null
+      exceptionStatus?: TimeAttendanceExceptionStatus | null
+    }
+
+    interface TimeAttendanceOverview {
+      activeShiftCount: number
+      todayAssignmentCount: number
+      openExceptionCount: number
+      pendingCorrectionCount: number
+      reviewingPeriodCount: number
+      monthCompletionRate: number
+    }
+
+    interface TimeAttendanceShift {
+      id?: string
+      tenantId?: string
+      shiftCode: string
+      shiftName: string
+      shiftType: string
+      startTime: string
+      endTime: string
+      breakMinutes: number
+      crossDay: boolean
+      enabled: boolean
+      timeZone: string
+      lateGraceMinutes: number
+      earlyLeaveGraceMinutes: number
+      remark?: string | null
+      usageCount?: number
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface TimeAttendanceAssignment {
+      id?: string
+      tenantId?: string
+      employeeId: string
+      shiftId: string
+      workDate: string
+      assignmentStatus: 'scheduled' | 'worked' | 'leave' | 'cancelled'
+      remark?: string | null
+      employee?: TimeAttendanceReference
+      shift?: TimeAttendanceReference
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface TimeAttendanceDailyRecord {
+      id?: string
+      tenantId?: string
+      employeeId: string
+      shiftId?: string | null
+      workDate: string
+      clockInAt?: string | null
+      clockOutAt?: string | null
+      workMinutes: number
+      overtimeMinutes: number
+      scheduledMinutes: number
+      lateMinutes: number
+      earlyLeaveMinutes: number
+      absenceMinutes: number
+      payableMinutes: number
+      attendanceStatus: string
+      exceptionStatus: TimeAttendanceExceptionStatus
+      source: string
+      sourceReference?: string | null
+      valuationNote?: string | null
+      remark?: string | null
+      lockedAt?: string | null
+      lockedBy?: string | null
+      pendingCorrection?: boolean
+      employee?: TimeAttendanceReference
+      shift?: TimeAttendanceReference | null
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface TimeAttendanceCorrection {
+      id?: string
+      tenantId?: string
+      correctionNo?: string
+      attendanceRecordId: string
+      employeeId?: string
+      requestedClockInAt?: string | null
+      requestedClockOutAt?: string | null
+      reason: string
+      proofUrls: string[]
+      status: TimeAttendanceCorrectionStatus
+      submittedAt?: string | null
+      reviewedAt?: string | null
+      reviewedBy?: string | null
+      reviewComment?: string | null
+      originalSnapshot?: Record<string, unknown>
+      employee?: TimeAttendanceReference
+      record?: TimeAttendanceReference | null
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface TimeAttendancePeriod {
+      id?: string
+      tenantId?: string
+      periodMonth: string
+      status: TimeAttendancePeriodStatus
+      recordCount: number
+      exceptionCount: number
+      totalScheduledMinutes: number
+      totalPayableMinutes: number
+      totalOvertimeMinutes: number
+      reviewedAt?: string | null
+      reviewedBy?: string | null
+      closedAt?: string | null
+      closedBy?: string | null
+      closeNote?: string | null
+      createTime?: string
+      updateTime?: string
+    }
+
+    type TimeAttendanceRecord =
+      | TimeAttendanceShift
+      | TimeAttendanceAssignment
+      | TimeAttendanceDailyRecord
+      | TimeAttendanceCorrection
+      | TimeAttendancePeriod
+
+    interface TimeAttendanceSearchParams extends Api.Common.CommonSearchParams {
+      keyword?: string
+      tenantId?: string
+      status?: string
+      periodMonth?: string
+    }
+
+    interface TimeAttendanceListResult<
+      TRecord extends TimeAttendanceRecord = TimeAttendanceRecord
+    > {
       records: TRecord[]
       total: number
     }

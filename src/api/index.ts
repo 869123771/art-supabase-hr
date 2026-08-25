@@ -71,6 +71,17 @@ export {
   transitionLifecycleTemplate
 } from '@hr/api/modules/lifecycle'
 
+export {
+  deleteTimeAttendanceRecord,
+  fetchTimeAttendanceOptions,
+  fetchTimeAttendanceOverview,
+  fetchTimeAttendanceRecords,
+  saveTimeAttendanceRecord,
+  transitionTimeAttendanceCorrection,
+  transitionTimeAttendanceDailyRecord,
+  transitionTimeAttendancePeriod
+} from '@hr/api/modules/attendance'
+
 export { fetchWorkforceRiskOverview } from '@hr/api/modules/workforce-risk'
 export {
   deleteWorkforcePlanningRecord,

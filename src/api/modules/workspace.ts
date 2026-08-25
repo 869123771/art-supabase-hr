@@ -47,28 +47,6 @@ const workspaceTransportConfigs: Record<WorkspaceEntity, WorkspaceTransportConfi
     searchColumns: ['remark'],
     orderColumn: 'effective_from'
   },
-  shift: {
-    table: 'hr_shift',
-    select: '*',
-    searchColumns: ['shift_code', 'shift_name'],
-    orderColumn: 'shift_code'
-  },
-  shiftAssignment: {
-    table: 'hr_shift_assignment',
-    select: '*, shift:hr_shift!hr_shift_assignment_shift_fkey(id,shift_code,shift_name)',
-    searchColumns: ['remark'],
-    statusColumn: 'assignment_status',
-    employeeColumn: 'employee_id',
-    orderColumn: 'work_date'
-  },
-  attendance: {
-    table: 'hr_attendance_record',
-    select: '*, shift:hr_shift!hr_attendance_record_shift_fkey(id,shift_code,shift_name)',
-    searchColumns: ['remark'],
-    statusColumn: 'attendance_status',
-    employeeColumn: 'employee_id',
-    orderColumn: 'work_date'
-  },
   selfServiceRequest: {
     table: 'hr_self_service_request',
     select: '*',
