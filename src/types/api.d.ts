@@ -304,6 +304,641 @@ declare namespace Api {
       amountAccess: boolean
     }
 
+    type CompensationReviewEntity = 'cycle' | 'item' | 'budget'
+    type CompensationReviewCycleStatus =
+      'draft' | 'open' | 'calibrating' | 'approved' | 'effected' | 'cancelled'
+    type CompensationReviewItemStatus =
+      'pending' | 'recommended' | 'calibrated' | 'approved' | 'effected' | 'excluded'
+    type CompensationReviewCycleAction = 'open' | 'calibrate' | 'approve' | 'effect' | 'cancel'
+
+    interface CompensationReviewCycle {
+      id?: string
+      tenantId?: string
+      cycleCode: string
+      cycleName: string
+      reviewYear: number
+      effectiveDate: string
+      recommendationDueDate: string
+      calibrationDueDate: string
+      scopeOrganizationId?: string | null
+      scopeOrganizationName?: string | null
+      currencyCode: string
+      defaultBudgetPercent: number
+      guidelineMinPercent: number
+      guidelineMaxPercent: number
+      status: CompensationReviewCycleStatus
+      description?: string | null
+      decisionNote?: string | null
+      employeeCount?: number
+      pendingCount?: number
+      budgetAmount?: ProtectedAmount
+      proposedIncreaseAmount?: ProtectedAmount
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface CompensationReviewItem {
+      id?: string
+      tenantId?: string
+      cycleId: string
+      cycleName?: string
+      cycleStatus?: CompensationReviewCycleStatus
+      employeeId: string
+      employeeNo?: string
+      employeeName?: string
+      organizationId?: string | null
+      organizationName?: string | null
+      currentCompensationId: string
+      currentGradeId?: string | null
+      gradeName?: string | null
+      currentBaseAmount: ProtectedAmount
+      proposedBaseAmount: ProtectedAmount
+      increaseAmount?: ProtectedAmount
+      increasePercent?: number | null
+      performanceLevel?: string | null
+      status: CompensationReviewItemStatus
+      recommendationReason?: string | null
+      recommendedBy?: string | null
+      recommendedAt?: string | null
+      calibrationNote?: string | null
+      calibratedBy?: string | null
+      calibratedAt?: string | null
+      exclusionReason?: string | null
+      newCompensationId?: string | null
+      outOfGuideline?: boolean
+      exclude?: boolean
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface CompensationReviewBudget {
+      id?: string
+      tenantId?: string
+      cycleId: string
+      cycleName?: string
+      organizationId?: string | null
+      organizationName?: string | null
+      budgetAmount: ProtectedAmount
+      usedAmount?: ProtectedAmount
+      remainingAmount?: ProtectedAmount
+      utilizationPercent?: number | null
+      employeeCount?: number
+      source?: 'auto' | 'manual'
+      note?: string | null
+      cycleStatus?: CompensationReviewCycleStatus
+      createTime?: string
+      updateTime?: string
+    }
+
+    type CompensationReviewRecord =
+      CompensationReviewCycle | CompensationReviewItem | CompensationReviewBudget
+
+    interface CompensationReviewSearchParams extends Api.Common.CommonSearchParams {
+      tenantId?: string
+      cycleId?: string
+      keyword?: string
+      status?: string
+    }
+
+    interface CompensationReviewReference {
+      id: string
+      tenantId?: string
+      code?: string
+      name?: string
+      status?: CompensationReviewCycleStatus
+      effectiveDate?: string
+    }
+
+    interface CompensationReviewOverview {
+      cycleCount: number
+      amountAccess: boolean
+      selectedCycle: CompensationReviewCycle | null
+      eligibleCount: number
+      pendingCount: number
+      recommendedCount: number
+      calibratedCount: number
+      approvedCount: number
+      effectedCount: number
+      excludedCount: number
+      outOfGuidelineCount: number
+      budgetAmount: number | null
+      proposedIncreaseAmount: number | null
+      budgetUtilization: number | null
+    }
+
+    interface CompensationReviewListResult<
+      TRecord extends CompensationReviewRecord = CompensationReviewRecord
+    > {
+      records: TRecord[]
+      total: number
+      amountAccess: boolean
+    }
+
+    type ContingentWorkforceEntity = 'engagement' | 'worker' | 'vendor' | 'control'
+    type ExternalVendorStatus = 'draft' | 'active' | 'suspended' | 'expired' | 'inactive'
+    type ExternalWorkerStatus = 'candidate' | 'ready' | 'active' | 'inactive' | 'blocked'
+    type ExternalEngagementStatus =
+      'draft' | 'pending_review' | 'active' | 'offboarding' | 'ended' | 'cancelled'
+    type ExternalControlStatus = 'pending' | 'completed' | 'waived' | 'failed'
+    type ExternalWorkerType = 'outsourced' | 'dispatch' | 'contractor' | 'consultant' | 'temporary'
+    type ContingentTransitionKind = 'vendor' | 'worker' | 'engagement'
+
+    interface ContingentWorkforceReference {
+      id: string
+      tenantId?: string
+      code?: string
+      name: string
+      status?: string
+      extra?: string | null
+      vendorId?: string | null
+      organizationId?: string | null
+    }
+
+    interface ExternalVendor {
+      id?: string
+      tenantId?: string
+      vendorCode: string
+      vendorName: string
+      registrationNo?: string | null
+      contactName?: string | null
+      contactPhone?: string | null
+      contactEmail?: string | null
+      serviceScope?: string | null
+      contractNo?: string | null
+      contractStartDate?: string | null
+      contractEndDate?: string | null
+      complianceStatus: 'pending' | 'verified' | 'rejected' | 'expired'
+      riskLevel: 'low' | 'medium' | 'high'
+      status: ExternalVendorStatus
+      note?: string | null
+      activeEngagementCount?: number
+      workerCount?: number
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface ExternalWorker {
+      id?: string
+      tenantId?: string
+      workerNo: string
+      workerName: string
+      workerType: ExternalWorkerType
+      vendorId?: string | null
+      vendorName?: string | null
+      vendorWorkerNo?: string | null
+      phone?: string | null
+      email?: string | null
+      identityCheckStatus: 'pending' | 'passed' | 'failed' | 'expired'
+      status: ExternalWorkerStatus
+      note?: string | null
+      activeEngagementCount?: number
+      nextEndDate?: string | null
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface ExternalEngagement {
+      id?: string
+      tenantId?: string
+      engagementNo: string
+      workerId: string
+      workerNo?: string
+      workerName?: string
+      workerType?: ExternalWorkerType
+      vendorId?: string | null
+      vendorName?: string | null
+      organizationId: string
+      organizationName?: string
+      positionId?: string | null
+      positionName?: string | null
+      sponsorEmployeeId: string
+      sponsorEmployeeName?: string
+      serviceTitle: string
+      workLocation?: string | null
+      startDate: string
+      endDate: string
+      accessExpiryDate: string
+      actualExitDate?: string | null
+      fte: number
+      billingRate?: ProtectedAmount | null
+      billingUnit?: 'hour' | 'day' | 'month' | 'fixed' | null
+      currencyCode?: string | null
+      complianceStatus: 'pending' | 'cleared' | 'blocked' | 'expired'
+      status: ExternalEngagementStatus
+      activationNote?: string | null
+      endReason?: string | null
+      version: number
+      pendingControlCount?: number
+      controlCount?: number
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface ExternalEngagementControl {
+      id?: string
+      tenantId?: string
+      engagementId: string
+      engagementNo?: string
+      engagementStatus?: ExternalEngagementStatus
+      workerName?: string
+      controlType:
+        | 'identity'
+        | 'contract'
+        | 'nda'
+        | 'insurance'
+        | 'safety_training'
+        | 'access_badge'
+        | 'system_account'
+        | 'equipment'
+        | 'other'
+      controlName: string
+      required: boolean
+      status: ExternalControlStatus
+      dueDate?: string | null
+      completedAt?: string | null
+      completedBy?: string | null
+      evidenceReference?: string | null
+      note?: string | null
+      createTime?: string
+      updateTime?: string
+    }
+
+    type ContingentWorkforceRecord =
+      ExternalVendor | ExternalWorker | ExternalEngagement | ExternalEngagementControl
+
+    interface ContingentWorkforceSearchParams extends Api.Common.CommonSearchParams {
+      tenantId?: string
+      engagementId?: string
+      keyword?: string
+      status?: string
+      from?: number
+      to?: number
+    }
+
+    interface ContingentWorkforceOverview {
+      piiAccess: boolean
+      costAccess: boolean
+      activeVendorCount: number
+      activeWorkerCount: number
+      activeEngagementCount: number
+      pendingReviewCount: number
+      pendingControlCount: number
+      endingSoonCount: number
+      accessExpiringCount: number
+      blockedCount: number
+    }
+
+    interface ContingentWorkforceListResult<
+      TRecord extends ContingentWorkforceRecord = ContingentWorkforceRecord
+    > {
+      records: TRecord[]
+      total: number
+      piiAccess: boolean
+      costAccess: boolean
+    }
+
+    type PolicyAcknowledgementEntity = 'policy' | 'receipt'
+    type HrPolicyStatus = 'draft' | 'published' | 'retired' | 'cancelled'
+    type HrPolicyReceiptStatus = 'pending' | 'overdue' | 'acknowledged' | 'waived'
+
+    interface HrPolicyDocument {
+      id?: string
+      tenantId?: string
+      policyCode: string
+      policyTitle: string
+      category: string
+      versionNo: number
+      effectiveDate: string
+      acknowledgementDueDays: number
+      audienceType: 'all' | 'organization' | 'employment_type'
+      audienceOrganizationId?: string | null
+      audienceOrganizationName?: string | null
+      audienceEmploymentType?: string | null
+      documentReference: string
+      contentSummary: string
+      status: HrPolicyStatus
+      supersedesPolicyId?: string | null
+      supersedesPolicyTitle?: string | null
+      publishedAt?: string | null
+      publishedBy?: string | null
+      decisionNote?: string | null
+      receiptCount?: number
+      acknowledgedCount?: number
+      waivedCount?: number
+      overdueCount?: number
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface HrPolicyReceipt {
+      id?: string
+      tenantId?: string
+      policyId: string
+      policyCode?: string
+      policyTitle?: string
+      policyVersionNo?: number
+      policyStatus?: HrPolicyStatus
+      documentReference?: string
+      employeeId: string
+      employeeNo?: string
+      employeeName?: string
+      organizationName?: string | null
+      jobTitle?: string | null
+      deliveredAt?: string
+      dueDate: string
+      status: HrPolicyReceiptStatus
+      storedStatus?: Exclude<HrPolicyReceiptStatus, 'overdue'>
+      acknowledgedAt?: string | null
+      acknowledgedBy?: string | null
+      acknowledgementNote?: string | null
+      evidenceReference?: string | null
+      waivedAt?: string | null
+      waivedBy?: string | null
+      waiverReason?: string | null
+      createTime?: string
+      updateTime?: string
+    }
+
+    type PolicyAcknowledgementRecord = HrPolicyDocument | HrPolicyReceipt
+
+    interface PolicyAcknowledgementReference {
+      id: string
+      tenantId?: string
+      code?: string
+      name: string
+      status?: string
+      effectiveDate?: string
+    }
+
+    interface PolicyAcknowledgementSearchParams extends Api.Common.CommonSearchParams {
+      tenantId?: string
+      policyId?: string
+      keyword?: string
+      status?: string
+      from?: number
+      to?: number
+    }
+
+    interface PolicyAcknowledgementOverview {
+      draftPolicyCount: number
+      publishedPolicyCount: number
+      scheduledPolicyCount: number
+      receiptCount: number
+      acknowledgedCount: number
+      pendingCount: number
+      overdueCount: number
+      completionRate: number
+      evidenceAccess: boolean
+    }
+
+    interface PolicyAcknowledgementListResult<
+      TRecord extends PolicyAcknowledgementRecord = PolicyAcknowledgementRecord
+    > {
+      records: TRecord[]
+      total: number
+      evidenceAccess: boolean
+    }
+
+    type OrganizationDesignEntity = 'scenario' | 'change'
+    type OrganizationDesignStatus =
+      'draft' | 'impact_review' | 'approved' | 'rejected' | 'handed_off' | 'cancelled'
+    type OrganizationDesignRisk = 'unassessed' | 'low' | 'medium' | 'high' | 'critical'
+    type OrganizationChangeType = 'create' | 'rename' | 'reparent' | 'inactivate'
+
+    interface OrganizationDesignScenario {
+      id?: string
+      tenantId?: string
+      scenarioCode: string
+      scenarioName: string
+      objective: string
+      effectiveDate: string
+      ownerEmployeeId?: string | null
+      ownerEmployeeName?: string | null
+      ownerEmployeeNo?: string | null
+      status: OrganizationDesignStatus
+      riskLevel: OrganizationDesignRisk
+      submissionNote?: string | null
+      decisionNote?: string | null
+      baselineCapturedAt?: string | null
+      submittedAt?: string | null
+      submittedBy?: string | null
+      decidedAt?: string | null
+      decidedBy?: string | null
+      handedOffAt?: string | null
+      handedOffBy?: string | null
+      version: number
+      changeCount?: number
+      impactedEmployeeCount?: number
+      impactedPositionCount?: number
+      impactedSecurityUserCount?: number
+      impactedScopeCount?: number
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface OrganizationDesignChange {
+      id?: string
+      tenantId?: string
+      scenarioId: string
+      scenarioCode?: string
+      scenarioName?: string
+      scenarioStatus?: OrganizationDesignStatus
+      changeType: OrganizationChangeType
+      organizationId?: string | null
+      currentParentId?: string | null
+      currentCode?: string | null
+      currentName?: string | null
+      currentType?: string | null
+      proposedParentId?: string | null
+      proposedParentName?: string | null
+      proposedCode?: string | null
+      proposedName?: string | null
+      proposedType?: string | null
+      proposedStatus?: string | null
+      rationale: string
+      sequence: number
+      impactedEmployeeCount?: number
+      impactedPositionCount?: number
+      impactedRequisitionCount?: number
+      impactedSecurityUserCount?: number
+      impactedScopeCount?: number
+      impactCapturedAt?: string | null
+      createTime?: string
+      updateTime?: string
+    }
+
+    type OrganizationDesignRecord = OrganizationDesignScenario | OrganizationDesignChange
+
+    interface OrganizationDesignReference {
+      id: string
+      tenantId?: string
+      code?: string
+      name: string
+      parentId?: string | null
+      organizationId?: string | null
+      organizationType?: string
+      status?: string
+      effectiveDate?: string
+    }
+
+    interface OrganizationDesignSearchParams extends Api.Common.CommonSearchParams {
+      tenantId?: string
+      scenarioId?: string
+      keyword?: string
+      status?: string
+      from?: number
+      to?: number
+    }
+
+    interface OrganizationDesignOverview {
+      draftCount: number
+      reviewCount: number
+      approvedCount: number
+      handoffCount: number
+      highRiskCount: number
+      changeCount: number
+      impactedEmployeeCount: number
+      impactedSecurityUserCount: number
+    }
+
+    interface OrganizationDesignListResult<
+      TRecord extends OrganizationDesignRecord = OrganizationDesignRecord
+    > {
+      records: TRecord[]
+      total: number
+    }
+
+    type InternalMobilityEntity = 'opportunity' | 'application'
+    type InternalOpportunityType = 'permanent' | 'rotation' | 'project' | 'gig'
+    type InternalOpportunityStatus = 'draft' | 'open' | 'paused' | 'closed' | 'cancelled'
+    type InternalMobilityApplicationStatus =
+      | 'draft'
+      | 'submitted'
+      | 'under_review'
+      | 'shortlisted'
+      | 'offered'
+      | 'accepted'
+      | 'rejected'
+      | 'withdrawn'
+      | 'converted'
+    type InternalMobilityWorkMode = 'onsite' | 'hybrid' | 'remote'
+    type InternalMobilityManagerAwareness = 'not_informed' | 'informed' | 'supported'
+
+    interface InternalMobilityOpportunity {
+      id?: string
+      tenantId?: string
+      opportunityCode: string
+      opportunityTitle: string
+      opportunityType: InternalOpportunityType
+      organizationId: string
+      organizationName?: string
+      positionId?: string | null
+      positionName?: string | null
+      hiringManagerEmployeeId: string
+      hiringManagerName?: string
+      capacity: number
+      workLocation?: string | null
+      workMode: InternalMobilityWorkMode
+      expectedStartDate: string
+      expectedEndDate?: string | null
+      applicationOpenDate: string
+      applicationCloseDate: string
+      minTenureMonths: number
+      roleSummary: string
+      requiredSkills: string
+      eligibilityNotes?: string | null
+      status: InternalOpportunityStatus
+      publishedAt?: string | null
+      publishedBy?: string | null
+      decisionNote?: string | null
+      version: number
+      applicationCount?: number
+      shortlistedCount?: number
+      acceptedCount?: number
+      myApplicationId?: string | null
+      myApplicationStatus?: InternalMobilityApplicationStatus | null
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface InternalMobilityApplication {
+      id?: string
+      tenantId?: string
+      opportunityId: string
+      opportunityCode?: string
+      opportunityTitle?: string
+      opportunityType?: InternalOpportunityType
+      opportunityStatus?: InternalOpportunityStatus
+      targetOrganizationName?: string
+      targetPositionName?: string | null
+      employeeId?: string
+      employeeNo?: string
+      employeeName?: string
+      currentOrganizationId?: string
+      currentOrganizationName?: string
+      currentPositionId?: string | null
+      currentPositionName?: string | null
+      currentJobTitle?: string | null
+      motivation: string
+      relevantExperience?: string | null
+      preferredStartDate?: string | null
+      managerAwareness: InternalMobilityManagerAwareness
+      status: InternalMobilityApplicationStatus
+      submittedAt?: string | null
+      reviewedAt?: string | null
+      reviewedBy?: string | null
+      assessmentScore?: number | null
+      assessmentNote?: string | null
+      decisionAt?: string | null
+      decisionBy?: string | null
+      decisionNote?: string | null
+      acceptedAt?: string | null
+      acceptedBy?: string | null
+      personnelChangeId?: string | null
+      createTime?: string
+      updateTime?: string
+    }
+
+    type InternalMobilityRecord = InternalMobilityOpportunity | InternalMobilityApplication
+
+    interface InternalMobilityReference {
+      id: string
+      tenantId?: string
+      code?: string
+      name: string
+      organizationId?: string | null
+      status?: string
+    }
+
+    interface InternalMobilitySearchParams extends Api.Common.CommonSearchParams {
+      tenantId?: string
+      opportunityId?: string
+      keyword?: string
+      status?: string
+      from?: number
+      to?: number
+    }
+
+    interface InternalMobilityOverview {
+      openOpportunityCount: number
+      closingSoonCount: number
+      applicationCount: number
+      activeApplicationCount: number
+      offerCount: number
+      convertedCount: number
+      myEmployeeId?: string | null
+      manageAccess: boolean
+    }
+
+    interface InternalMobilityListResult<
+      TRecord extends InternalMobilityRecord = InternalMobilityRecord
+    > {
+      records: TRecord[]
+      total: number
+      manageAccess: boolean
+      myEmployeeId?: string | null
+    }
+
     type AbsenceEntity = 'request' | 'balance' | 'policy' | 'type' | 'ledger'
     type LeaveUnit = 'day' | 'hour'
     type LeavePolicyScope = 'all' | 'organization' | 'employee' | 'grade'
@@ -1699,6 +2334,588 @@ declare namespace Api {
       total: number
     }
 
+    type EmployeeRelationEntity = 'case' | 'action'
+    type EmployeeRelationCaseStatus =
+      | 'draft'
+      | 'reported'
+      | 'triaged'
+      | 'investigating'
+      | 'action_required'
+      | 'resolved'
+      | 'closed'
+      | 'cancelled'
+    type EmployeeRelationActionStatus = 'planned' | 'in_progress' | 'completed' | 'cancelled'
+    type EmployeeRelationDueStatus = 'clear' | 'on_track' | 'due_soon' | 'overdue'
+    type EmployeeRelationCaseAction =
+      | 'submit'
+      | 'triage'
+      | 'start_investigation'
+      | 'require_action'
+      | 'resolve'
+      | 'close'
+      | 'reopen'
+      | 'cancel'
+      | 'comment'
+    type EmployeeRelationActionAction = 'start' | 'complete' | 'cancel'
+
+    interface EmployeeRelationReference {
+      id: string
+      tenantId?: string
+      employeeNo?: string | null
+      employeeName?: string | null
+      jobTitle?: string | null
+      organizationName?: string | null
+      positionName?: string | null
+    }
+
+    interface EmployeeRelationOverview {
+      openCaseCount: number
+      criticalCaseCount: number
+      unassignedCaseCount: number
+      overdueCaseCount: number
+      overdueActionCount: number
+      resolvedMonthCount: number
+      sensitiveAccess: boolean
+    }
+
+    interface EmployeeRelationCaseSummary {
+      id: string
+      caseNo: string
+      title: string
+      caseType: string
+      status: EmployeeRelationCaseStatus
+      severity: string
+    }
+
+    interface EmployeeRelationAction {
+      id?: string
+      tenantId?: string
+      caseId: string
+      actionType: string
+      title: string
+      ownerEmployeeId: string
+      dueDate: string
+      status: EmployeeRelationActionStatus
+      startedAt?: string | null
+      completedAt?: string | null
+      completionNote?: string | null
+      remark?: string | null
+      relationCase?: EmployeeRelationCaseSummary
+      ownerEmployee?: EmployeeRelationReference
+      dueStatus?: EmployeeRelationDueStatus
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface EmployeeRelationEvent {
+      id: string
+      tenantId?: string
+      caseId: string
+      eventType: string
+      fromStatus?: EmployeeRelationCaseStatus | null
+      toStatus?: EmployeeRelationCaseStatus | null
+      actorEmployeeId?: string | null
+      comment?: string | null
+      eventData?: Record<string, unknown>
+      actor?: EmployeeRelationReference | null
+      createBy?: string | null
+      createTime: string
+    }
+
+    interface EmployeeRelationCase {
+      id?: string
+      tenantId?: string
+      caseNo: string
+      caseType: string
+      title: string
+      subjectEmployeeId: string
+      reporterEmployeeId?: string | null
+      anonymousReport: boolean
+      source: string
+      severity: string
+      confidentialityLevel: string
+      status: EmployeeRelationCaseStatus
+      ownerEmployeeId?: string | null
+      reportedAt?: string | null
+      targetResolutionDate?: string | null
+      triagedAt?: string | null
+      investigationStartedAt?: string | null
+      resolvedAt?: string | null
+      closedAt?: string | null
+      allegationSummary?: string
+      findingsSummary?: string | null
+      outcome?: string | null
+      resolutionSummary?: string | null
+      attachmentUrls?: string[]
+      externalReference?: string | null
+      remark?: string | null
+      subjectEmployee?: EmployeeRelationReference
+      reporterEmployee?: EmployeeRelationReference | null
+      ownerEmployee?: EmployeeRelationReference | null
+      actions?: EmployeeRelationAction[]
+      events?: EmployeeRelationEvent[]
+      sensitiveRestricted?: boolean
+      dueStatus?: EmployeeRelationDueStatus
+      openActionCount?: number
+      createTime?: string
+      updateTime?: string
+    }
+
+    type EmployeeRelationRecord = EmployeeRelationCase | EmployeeRelationAction
+
+    interface EmployeeRelationSearchParams extends Api.Common.CommonSearchParams {
+      keyword?: string
+      status?: string
+      caseType?: string
+      severity?: string
+      tenantId?: string
+    }
+
+    interface EmployeeRelationListResult<
+      TRecord extends EmployeeRelationRecord = EmployeeRelationRecord
+    > {
+      records: TRecord[]
+      total: number
+    }
+
+    interface EmployeeRelationCaseActionPayload {
+      ownerEmployeeId?: string
+      targetResolutionDate?: string
+      severity?: string
+      confidentialityLevel?: string
+      findingsSummary?: string
+      outcome?: string
+      resolutionSummary?: string
+      comment?: string
+    }
+
+    type BenefitEntity = 'plan' | 'enrollment' | 'event'
+    type BenefitRecordKind = BenefitEntity | 'option'
+    type BenefitPlanStatus = 'draft' | 'active' | 'inactive' | 'cancelled'
+    type BenefitEnrollmentStatus = 'draft' | 'pending' | 'active' | 'waived' | 'ended' | 'cancelled'
+    type BenefitLifeEventStatus = 'open' | 'processed' | 'expired' | 'cancelled'
+    type BenefitDueStatus = 'clear' | 'due_soon' | 'expiring' | 'expired'
+    type BenefitTransitionAction =
+      | 'activate'
+      | 'deactivate'
+      | 'reactivate'
+      | 'submit'
+      | 'approve'
+      | 'reject'
+      | 'end'
+      | 'process'
+      | 'cancel'
+
+    interface BenefitReference {
+      id: string
+      tenantId?: string
+      employeeNo?: string | null
+      employeeName?: string | null
+      jobTitle?: string | null
+      organizationName?: string | null
+      positionName?: string | null
+      planCode?: string | null
+      planName?: string | null
+      planType?: string | null
+      optionCode?: string | null
+      optionName?: string | null
+      coverageLevel?: string | null
+      eventType?: string | null
+      eventDate?: string | null
+      currencyCode?: string | null
+      status?: string | null
+    }
+
+    interface BenefitOverview {
+      activePlanCount: number
+      activeEnrollmentCount: number
+      pendingEnrollmentCount: number
+      openEventCount: number
+      expiringEventCount: number
+      monthlyEmployeeContribution?: number | null
+      monthlyEmployerContribution?: number | null
+      amountVisible: boolean
+    }
+
+    interface BenefitPlan {
+      id?: string
+      tenantId?: string
+      planCode: string
+      planName: string
+      planType: string
+      providerName?: string | null
+      enrollmentMethod: 'automatic' | 'election'
+      coverageScope: 'employee' | 'employee_family'
+      currencyCode: string
+      effectiveFrom: string
+      effectiveTo?: string | null
+      status: BenefitPlanStatus
+      description?: string | null
+      optionCount?: number
+      activeEnrollmentCount?: number
+      options?: BenefitOption[]
+      events?: BenefitAuditEvent[]
+      amountVisible?: boolean
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface BenefitOption {
+      id?: string
+      tenantId?: string
+      planId: string
+      optionCode: string
+      optionName: string
+      coverageLevel: string
+      contributionType: 'fixed' | 'salary_rate'
+      employeeContribution?: number | null
+      employerContribution?: number | null
+      employeeRate?: number | null
+      employerRate?: number | null
+      payComponentId?: string | null
+      enabled: boolean
+      sort: number
+      description?: string | null
+      plan?: BenefitReference
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface BenefitLifeEvent {
+      id?: string
+      tenantId?: string
+      employeeId: string
+      eventType: string
+      eventDate: string
+      enrollmentWindowEnd: string
+      status: BenefitLifeEventStatus
+      evidenceUrls: string[]
+      evidenceRestricted?: boolean
+      remark?: string | null
+      processedAt?: string | null
+      dueStatus?: BenefitDueStatus
+      employee?: BenefitReference
+      enrollments?: Array<{
+        id: string
+        enrollmentNo: string
+        status: BenefitEnrollmentStatus
+        planId: string
+        planName: string
+        optionName: string
+      }>
+      events?: BenefitAuditEvent[]
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface BenefitEnrollment {
+      id?: string
+      tenantId?: string
+      employeeId: string
+      planId: string
+      optionId: string
+      lifeEventId?: string | null
+      enrollmentNo: string
+      coverageFrom: string
+      coverageTo?: string | null
+      status: BenefitEnrollmentStatus
+      waiverReason?: string | null
+      employeeContribution?: number | null
+      employerContribution?: number | null
+      currencyCode: string
+      payrollSyncStatus: string
+      approvedBy?: string | null
+      approvedAt?: string | null
+      endedAt?: string | null
+      remark?: string | null
+      dueStatus?: BenefitDueStatus
+      employee?: BenefitReference
+      plan?: BenefitReference
+      option?: BenefitReference
+      lifeEvent?: BenefitReference | null
+      events?: BenefitAuditEvent[]
+      amountVisible?: boolean
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface BenefitAuditEvent {
+      id: string
+      tenantId: string
+      entityType: BenefitRecordKind
+      entityId: string
+      eventType: string
+      fromStatus?: string | null
+      toStatus?: string | null
+      summary: string
+      payload: Record<string, unknown>
+      actorUserId?: string | null
+      actorName?: string | null
+      createTime: string
+    }
+
+    type BenefitRecord = BenefitPlan | BenefitEnrollment | BenefitLifeEvent
+
+    interface BenefitSearchParams extends Api.Common.CommonSearchParams {
+      keyword?: string
+      status?: string
+      planType?: string
+      tenantId?: string
+      from?: number
+      to?: number
+    }
+
+    interface BenefitListResult<TRecord extends BenefitRecord = BenefitRecord> {
+      records: TRecord[]
+      total: number
+      amountVisible?: boolean
+    }
+
+    interface BenefitPayrollInput {
+      enrollmentId: string
+      enrollmentNo: string
+      tenantId: string
+      employeeId: string
+      employeeNo: string
+      employeeName: string
+      planId: string
+      planCode: string
+      planName: string
+      planType: string
+      optionId: string
+      optionCode: string
+      optionName: string
+      payComponentId?: string | null
+      employeeContribution: number
+      employerContribution: number
+      currencyCode: string
+      coverageFrom: string
+      coverageTo?: string | null
+    }
+
+    type EmployeeExperienceEntity = 'my' | 'survey' | 'insight' | 'action'
+    type EmployeeExperienceRecordKind = 'survey' | 'question' | 'action'
+    type EmployeeExperienceSurveyStatus = 'draft' | 'scheduled' | 'open' | 'closed' | 'cancelled'
+    type EmployeeExperienceParticipantStatus = 'invited' | 'completed' | 'declined'
+    type EmployeeExperienceAvailability = 'available' | 'completed' | 'expired' | 'unavailable'
+    type EmployeeExperienceActionStatus = 'planned' | 'in_progress' | 'completed' | 'cancelled'
+    type EmployeeExperienceDueStatus = 'clear' | 'due_soon' | 'overdue'
+    type EmployeeExperienceRiskLevel = 'healthy' | 'medium' | 'high'
+    type EmployeeExperienceTransitionAction =
+      'launch' | 'open' | 'close' | 'cancel' | 'start' | 'complete'
+
+    interface EmployeeExperienceOverview {
+      openSurveyCount: number
+      myPendingCount: number
+      participantCount: number
+      completedCount: number
+      responseRate?: number | null
+      lowDimensionCount: number
+      openActionCount: number
+      overdueActionCount: number
+      insightsVisible: boolean
+      commentsVisible: boolean
+      respondVisible: boolean
+    }
+
+    interface EmployeeExperienceReference {
+      id: string
+      tenantId?: string
+      surveyCode?: string | null
+      surveyName?: string | null
+      surveyType?: string | null
+      organizationName?: string | null
+      employeeNo?: string | null
+      employeeName?: string | null
+      jobTitle?: string | null
+    }
+
+    interface EmployeeExperienceQuestion {
+      id?: string
+      tenantId?: string
+      surveyId: string
+      dimension: string
+      questionText: string
+      answerType: 'rating_5' | 'enps_11' | 'open_text'
+      required: boolean
+      enabled: boolean
+      sort: number
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface EmployeeExperienceEvent {
+      id: string
+      tenantId: string
+      entityType: 'survey' | 'action'
+      entityId: string
+      eventType: string
+      fromStatus?: string | null
+      toStatus?: string | null
+      summary: string
+      payload: Record<string, unknown>
+      actorUserId?: string | null
+      actorName?: string | null
+      createTime: string
+    }
+
+    interface EmployeeExperienceSurvey {
+      id?: string
+      tenantId?: string
+      surveyCode: string
+      surveyName: string
+      surveyType: string
+      cadence: string
+      audienceType: 'all_active' | 'organization'
+      audienceOrganizationId?: string | null
+      audienceOrganizationName?: string | null
+      minimumGroupSize: number
+      startDate: string
+      endDate: string
+      status: EmployeeExperienceSurveyStatus
+      description?: string | null
+      launchedAt?: string | null
+      closedAt?: string | null
+      questionCount?: number
+      participantCount?: number
+      completedCount?: number
+      responseRate?: number
+      audienceOrganization?: EmployeeExperienceReference | null
+      questions?: EmployeeExperienceQuestion[]
+      events?: EmployeeExperienceEvent[]
+      createTime?: string
+      updateTime?: string
+    }
+
+    interface EmployeeExperienceMySurvey {
+      id: string
+      tenantId: string
+      surveyId: string
+      surveyCode: string
+      surveyName: string
+      surveyType: string
+      cadence: string
+      status: EmployeeExperienceParticipantStatus
+      assignedOn: string
+      completedOn?: string | null
+      startDate: string
+      endDate: string
+      description?: string | null
+      minimumGroupSize: number
+      questionCount: number
+      availability: EmployeeExperienceAvailability
+      survey?: EmployeeExperienceSurvey
+      questions?: EmployeeExperienceQuestion[]
+      privacyNote?: string
+    }
+
+    interface EmployeeExperienceInsight {
+      surveyId: string
+      tenantId: string
+      surveyCode: string
+      surveyName: string
+      surveyType: string
+      surveyStatus: EmployeeExperienceSurveyStatus
+      minimumGroupSize: number
+      dimension: string
+      respondentCount: number
+      questionCount: number
+      scorePercent: number
+      riskLevel: EmployeeExperienceRiskLevel
+      actionCount: number
+    }
+
+    interface EmployeeExperienceQuestionScore {
+      questionId: string
+      questionText: string
+      answerType: 'rating_5' | 'enps_11'
+      respondentCount: number
+      scorePercent: number
+    }
+
+    interface EmployeeExperienceOrganizationScore {
+      organizationId: string
+      organizationName: string
+      respondentCount: number
+      scorePercent: number
+    }
+
+    interface EmployeeExperienceComment {
+      questionText: string
+      text: string
+      submittedAt: string
+    }
+
+    interface EmployeeExperienceInsightDetail extends EmployeeExperienceSurvey {
+      dimension: string
+      respondentCount: number
+      privacyThresholdMet: boolean
+      questionScores: EmployeeExperienceQuestionScore[]
+      organizationScores: EmployeeExperienceOrganizationScore[]
+      commentsRestricted: boolean
+      comments: EmployeeExperienceComment[]
+      actions: EmployeeExperienceAction[]
+    }
+
+    interface EmployeeExperienceAction {
+      id?: string
+      tenantId?: string
+      surveyId: string
+      organizationId?: string | null
+      dimension: string
+      title: string
+      ownerEmployeeId: string
+      dueDate: string
+      status: EmployeeExperienceActionStatus
+      successMeasure: string
+      progressNote?: string | null
+      resultSummary?: string | null
+      startedAt?: string | null
+      completedAt?: string | null
+      surveyCode?: string
+      surveyName?: string
+      organizationName?: string | null
+      ownerEmployeeNo?: string
+      ownerEmployeeName?: string
+      ownerJobTitle?: string | null
+      dueStatus?: EmployeeExperienceDueStatus
+      survey?: EmployeeExperienceReference
+      organization?: EmployeeExperienceReference | null
+      ownerEmployee?: EmployeeExperienceReference
+      events?: EmployeeExperienceEvent[]
+      createTime?: string
+      updateTime?: string
+    }
+
+    type EmployeeExperienceRecord =
+      | EmployeeExperienceMySurvey
+      | EmployeeExperienceSurvey
+      | EmployeeExperienceInsight
+      | EmployeeExperienceAction
+
+    interface EmployeeExperienceSearchParams extends Api.Common.CommonSearchParams {
+      keyword?: string
+      status?: string
+      surveyType?: string
+      tenantId?: string
+      from?: number
+      to?: number
+    }
+
+    interface EmployeeExperienceListResult<
+      TRecord extends EmployeeExperienceRecord = EmployeeExperienceRecord
+    > {
+      records: TRecord[]
+      total: number
+      privacyNote?: string
+    }
+
+    interface EmployeeExperienceAnswerInput {
+      questionId: string
+      numericScore?: number
+      textAnswer?: string
+    }
+
     type TimeAttendanceEntity = 'record' | 'assignment' | 'correction' | 'period' | 'shift'
     type TimeAttendanceOptionKind = 'employee' | 'shift' | 'record'
     type TimeAttendanceExceptionStatus = 'clear' | 'open' | 'resolved' | 'waived'
@@ -2441,6 +3658,69 @@ declare namespace Api {
       unassessedEmployeeCount: number
       records: SkillMatrixEmployee[]
       competencies: SkillMatrixCompetency[]
+    }
+
+    interface PeopleAnalyticsSummary {
+      openingHeadcount: number
+      endingHeadcount: number
+      endingFte: number
+      hires: number
+      exits: number
+      netChange: number
+      turnoverRate: number
+      averageTenureYears: number
+      dataCompletenessRate: number
+    }
+
+    interface PeopleAnalyticsFlowPoint {
+      month: string
+      headcount: number
+      hires: number
+      exits: number
+    }
+
+    interface PeopleAnalyticsOrganizationCohort {
+      name: string
+      headcount: number
+      fte: number
+      share: number
+      protected: boolean
+    }
+
+    interface PeopleAnalyticsEmploymentCohort {
+      key: string
+      headcount: number
+      share: number
+      protected: boolean
+    }
+
+    interface PeopleAnalyticsTenureCohort {
+      key: string
+      label: string
+      headcount: number
+      share: number
+    }
+
+    interface PeopleAnalyticsDataQualityItem {
+      key: string
+      label: string
+      completeCount: number
+      totalCount: number
+      rate: number
+    }
+
+    interface PeopleAnalyticsOverview {
+      asOfDate: string
+      periodStartDate: string
+      periodMonths: number
+      privacyThreshold: number
+      generatedAt: string
+      overview: PeopleAnalyticsSummary
+      flowTrend: PeopleAnalyticsFlowPoint[]
+      organizationDistribution: PeopleAnalyticsOrganizationCohort[]
+      employmentDistribution: PeopleAnalyticsEmploymentCohort[]
+      tenureDistribution: PeopleAnalyticsTenureCohort[]
+      dataQuality: PeopleAnalyticsDataQualityItem[]
     }
   }
 }

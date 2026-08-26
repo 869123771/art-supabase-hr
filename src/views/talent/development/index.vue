@@ -37,6 +37,7 @@
             v-if="index < journeyStages.length - 1"
             class="learning-page__connector"
             icon="ri:arrow-right-line"
+            aria-hidden="true"
           />
         </article>
       </div>
@@ -1144,7 +1145,18 @@
       height: 36px;
       color: var(--theme-color);
       background: color-mix(in srgb, var(--theme-color) 10%, transparent);
-      border-radius: 10px;
+      border-radius: var(--art-control-radius);
+    }
+
+    &__journey-icon {
+      width: 40px;
+      height: 40px;
+      background: color-mix(in srgb, var(--theme-color) 9%, var(--art-main-bg-color));
+      border: 1px solid color-mix(in srgb, var(--theme-color) 12%, transparent);
+
+      :deep(.art-svg-icon) {
+        font-size: 18px;
+      }
     }
 
     &__governance-badge {
@@ -1163,16 +1175,17 @@
     &__journey {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
+      gap: 24px;
 
       article {
         position: relative;
         display: grid;
-        grid-template-columns: 26px 36px minmax(0, 1fr);
-        gap: 9px;
+        grid-template-columns: 22px 40px minmax(0, 1fr);
+        gap: 12px;
         align-items: center;
         min-width: 0;
-        padding: 12px;
+        min-height: 68px;
+        padding: 13px 16px;
         background: color-mix(in srgb, var(--art-main-bg-color) 96%, var(--theme-color));
         border: 1px solid var(--art-card-border);
         border-radius: calc(var(--el-border-radius-base) + 2px);
@@ -1211,17 +1224,42 @@
     &__connector {
       position: absolute;
       top: 50%;
-      right: -17px;
+      right: -22px;
       z-index: 1;
       display: grid;
       place-items: center;
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
+      font-size: 16px;
       color: var(--theme-color);
-      background: var(--art-main-bg-color);
-      border: 1px solid var(--art-card-border);
-      border-radius: 50%;
+      pointer-events: none;
       transform: translateY(-50%);
+    }
+
+    &__control-deck :deep(.hr-entity-navigation) {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
+
+      &.is-compact button {
+        grid-template-columns: 40px minmax(0, 1fr) 18px;
+        gap: 12px;
+        min-height: 64px;
+        padding: 11px 14px;
+      }
+
+      .hr-entity-navigation__icon {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--art-control-radius);
+
+        .art-svg-icon {
+          font-size: 19px;
+        }
+      }
+
+      .hr-entity-navigation__arrow {
+        justify-self: end;
+      }
     }
 
     &__control-note {
@@ -1291,12 +1329,28 @@
     }
   }
 
-  @media only screen and (width <= 1199px) {
-    .learning-page__journey {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+  @media only screen and (width <= 1599px) {
+    .learning-page__control-deck :deep(.hr-entity-navigation) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
 
-      article:nth-child(2) .learning-page__connector {
-        display: none;
+  @media only screen and (width <= 1199px) {
+    .learning-page {
+      &__journey {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+        article:nth-child(2) .learning-page__connector {
+          display: none;
+        }
+      }
+    }
+  }
+
+  @media only screen and (width <= 899px) {
+    .learning-page {
+      &__control-deck :deep(.hr-entity-navigation) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
   }
@@ -1320,6 +1374,14 @@
 
         article .learning-page__connector {
           display: none;
+        }
+      }
+
+      &__control-deck :deep(.hr-entity-navigation) {
+        grid-template-columns: 1fr;
+
+        &.is-compact button {
+          min-height: 62px;
         }
       }
     }

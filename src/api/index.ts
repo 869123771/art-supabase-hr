@@ -42,6 +42,15 @@ export {
 } from '@hr/api/modules/compensation'
 
 export {
+  deleteCompensationReviewRecord,
+  fetchCompensationReviewOptions,
+  fetchCompensationReviewOverview,
+  fetchCompensationReviewRecords,
+  saveCompensationReviewRecord,
+  transitionCompensationReviewCycle
+} from '@hr/api/modules/compensation-review'
+
+export {
   actLeaveRequest,
   adjustLeaveBalance,
   deleteAbsenceRecord,
@@ -101,7 +110,37 @@ export {
   transitionComplianceRecord
 } from '@hr/api/modules/compliance'
 
+export {
+  deleteEmployeeRelationRecord,
+  fetchEmployeeRelationCaseDetail,
+  fetchEmployeeRelationsOverview,
+  fetchEmployeeRelationsRecords,
+  saveEmployeeRelationRecord,
+  transitionEmployeeRelationAction,
+  transitionEmployeeRelationCase
+} from '@hr/api/modules/employee-relations'
+
+export {
+  fetchBenefitDetail,
+  fetchBenefitPayrollInputs,
+  fetchBenefitPlanOptions,
+  fetchBenefitRecords,
+  fetchBenefitsOverview,
+  saveBenefitRecord,
+  transitionBenefitRecord
+} from '@hr/api/modules/benefits'
+
+export {
+  fetchEmployeeExperienceDetail,
+  fetchEmployeeExperienceOverview,
+  fetchEmployeeExperienceRecords,
+  saveEmployeeExperienceRecord,
+  submitEmployeeExperienceResponse,
+  transitionEmployeeExperienceRecord
+} from '@hr/api/modules/employee-experience'
+
 export { fetchWorkforceRiskOverview } from '@hr/api/modules/workforce-risk'
+export { fetchPeopleAnalyticsOverview } from '@hr/api/modules/people-analytics'
 export {
   deleteWorkforcePlanningRecord,
   fetchWorkforcePlanningOptions,
@@ -139,6 +178,44 @@ export {
   transitionPerformanceCycle,
   transitionPerformanceReview
 } from '@hr/api/modules/performance'
+
+export {
+  deleteContingentWorkforceRecord,
+  fetchContingentWorkforceOptions,
+  fetchContingentWorkforceOverview,
+  fetchContingentWorkforceRecords,
+  saveContingentWorkforceRecord,
+  transitionContingentWorkforceRecord
+} from '@hr/api/modules/contingent-workforce'
+
+export {
+  deletePolicyDocument,
+  fetchPolicyAcknowledgementOptions,
+  fetchPolicyAcknowledgementOverview,
+  fetchPolicyAcknowledgementRecords,
+  savePolicyDocument,
+  transitionPolicyAcknowledgement
+} from '@hr/api/modules/policy-acknowledgement'
+
+export {
+  deleteOrganizationDesignRecord,
+  fetchOrganizationDesignOptions,
+  fetchOrganizationDesignOverview,
+  fetchOrganizationDesignRecords,
+  saveOrganizationDesignChange,
+  saveOrganizationDesignScenario,
+  transitionOrganizationDesign
+} from '@hr/api/modules/organization-design'
+
+export {
+  deleteInternalMobilityRecord,
+  fetchInternalMobilityOptions,
+  fetchInternalMobilityOverview,
+  fetchInternalMobilityRecords,
+  saveInternalMobilityApplication,
+  saveInternalMobilityOpportunity,
+  transitionInternalMobility
+} from '@hr/api/modules/internal-mobility'
 
 export {
   cancelRecruitmentInterview,

@@ -14,83 +14,69 @@
       <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
     </BusinessWorkspaceHeader>
 
-    <section class="succession-page__control-deck" aria-labelledby="succession-control-title">
-      <header class="succession-page__control-heading">
+    <section class="succession-page__command-center" aria-labelledby="succession-control-title">
+      <header class="succession-page__command-heading">
         <div>
           <span class="succession-page__section-icon" aria-hidden="true">
-            <ArtSvgIcon icon="ri:flow-chart" />
+            <ArtSvgIcon icon="ri:route-line" />
           </span>
           <span>
+            <small>SUCCESSION CONTROL CENTER</small>
             <strong id="succession-control-title">关键岗位继任闭环</strong>
-            <small>从岗位风险识别，到候选梯队建设，再到发展行动验收</small>
+            <em>识别业务连续性风险，建立候选梯队，并用可验收行动推进准备度</em>
           </span>
         </div>
         <span class="succession-page__governance-badge">
           <ArtSvgIcon icon="ri:shield-keyhole-line" />
-          HR 授权数据
+          仅限授权 HR 管理者
         </span>
       </header>
 
-      <div class="succession-page__journey" aria-label="继任管理业务流程">
-        <template v-for="(stage, index) in journeyStages" :key="stage.title">
-          <article :class="`is-${stage.tone}`">
-            <span class="succession-page__journey-index">0{{ index + 1 }}</span>
-            <span class="succession-page__journey-icon">
-              <ArtSvgIcon :icon="stage.icon" />
+      <nav class="succession-page__stage-switcher" aria-label="继任管理工作视图">
+        <button
+          v-for="(stage, index) in journeyStages"
+          :key="stage.entity"
+          type="button"
+          :class="[`is-${stage.tone}`, { 'is-active': activeEntity === stage.entity }]"
+          :aria-current="activeEntity === stage.entity ? 'step' : undefined"
+          @click="selectStage(stage.entity)"
+        >
+          <span class="succession-page__stage-index">0{{ index + 1 }}</span>
+          <span class="succession-page__stage-icon" aria-hidden="true">
+            <ArtSvgIcon :icon="stage.icon" />
+          </span>
+          <span class="succession-page__stage-copy">
+            <span>
+              <strong>{{ stage.title }}</strong>
+              <em>{{ stage.signal }}</em>
             </span>
-            <div>
-              <span class="succession-page__journey-title">
-                <strong>{{ stage.title }}</strong>
-                <em>{{ stage.signal }}</em>
-              </span>
-              <small>{{ stage.description }}</small>
-            </div>
-          </article>
-          <span
-            v-if="index < journeyStages.length - 1"
-            class="succession-page__connector"
-            aria-hidden="true"
-          >
-            <ArtSvgIcon icon="ri:arrow-right-line" />
+            <small>{{ stage.description }}</small>
           </span>
-        </template>
-      </div>
+          <span class="succession-page__stage-arrow" aria-hidden="true">
+            <ArtSvgIcon icon="ri:arrow-right-s-line" />
+          </span>
+        </button>
+      </nav>
 
-      <HrEntityNavigation
-        v-model="activeEntity"
-        :items="navigationItems"
-        navigation-label="继任管理分类"
-        compact
-        @change="handleTabChange"
-      />
-
-      <div class="succession-page__view-context" aria-live="polite">
-        <div class="succession-page__view-intro">
-          <span class="succession-page__view-icon" aria-hidden="true">
-            <ArtSvgIcon :icon="activeTab.icon" />
-          </span>
-          <span>
-            <small>当前工作视图</small>
-            <strong>{{ activeTab.label }}</strong>
-            <em>{{ activeTab.description }}</em>
-          </span>
-        </div>
+      <footer class="succession-page__active-context" aria-live="polite">
+        <span>
+          <ArtSvgIcon :icon="activeTab.icon" />
+          当前：<strong>{{ activeTab.label }}</strong>
+          <em>{{ activeTab.description }}</em>
+        </span>
         <dl>
-          <div>
-            <dt>当前结果</dt>
-            <dd>{{ tableTotal }}</dd>
-          </div>
+          <div
+            ><dt>当前结果</dt><dd>{{ tableTotal }}</dd></div
+          >
           <div :class="`is-${activeAttention.tone}`">
-            <dt>{{ activeAttention.label }}</dt>
-            <dd>{{ activeAttention.value }}</dd>
+            <dt>{{ activeAttention.label }}</dt
+            ><dd>{{ activeAttention.value }}</dd>
           </div>
         </dl>
-      </div>
-
-      <footer class="succession-page__control-note">
-        <ArtSvgIcon icon="ri:information-line" />
-        继任数据仅授权 HR
-        管理者；现任任职者不能被提名为同岗位继任人，所有评审与退出动作均保留审计记录。
+        <p>
+          <ArtSvgIcon icon="ri:information-line" />
+          现任任职者不能提名为同岗位继任人，评审、退出与任用全程留痕。
+        </p>
       </footer>
     </section>
 
@@ -146,9 +132,6 @@
     fetchSuccessionRecords,
     reviewSuccessionCandidate
   } from '@hr/api'
-  import HrEntityNavigation, {
-    type HrEntityNavigationItem
-  } from '@hr/views/shared/hr-entity-navigation.vue'
   import SuccessionDialog from './modules/succession-dialog.vue'
 
   defineOptions({ name: 'HrSuccession' })
@@ -191,12 +174,6 @@
       icon: 'ri:route-line'
     }
   ]
-  const navigationItems: HrEntityNavigationItem[] = tabs.map((tab) => ({
-    value: tab.entity,
-    label: tab.label,
-    description: tab.description,
-    icon: tab.icon
-  }))
   const userStore = useUserStore()
   const { getDictMap, isPlatformSuper } = storeToRefs(userStore)
   const { hasAuth } = useAuth()
@@ -257,6 +234,7 @@
   const journeyStages = computed<
     Array<{
       title: string
+      entity: Entity
       description: string
       signal: string
       icon: string
@@ -264,6 +242,7 @@
     }>
   >(() => [
     {
+      entity: 'plan',
       title: '识别关键岗位',
       description: '关键度 · 空缺风险 · 业务影响',
       signal: `${overview.criticalPositionCount} 个岗位`,
@@ -271,6 +250,7 @@
       tone: overview.criticalPositionCount ? 'primary' : 'info'
     },
     {
+      entity: 'candidate',
       title: '建立继任梯队',
       description: '准备度 · 潜力 · 留任风险',
       signal: overview.uncoveredPlanCount
@@ -280,6 +260,7 @@
       tone: overview.uncoveredPlanCount ? 'warning' : overview.readyNowCount ? 'success' : 'info'
     },
     {
+      entity: 'action',
       title: '推动发展行动',
       description: '负责人 · 时限 · 成果复盘',
       signal: overview.overdueActionCount ? `${overview.overdueActionCount} 项逾期` : '进度正常',
@@ -793,6 +774,11 @@
     Object.assign(tableState.searchQuery, { keyword: '', status: '' })
     tableTotal.value = 0
   }
+  const selectStage = (entity: Entity) => {
+    if (activeEntity.value === entity) return
+    activeEntity.value = entity
+    handleTabChange()
+  }
   onMounted(async () => {
     await Promise.all(
       [
@@ -825,28 +811,28 @@
     gap: 12px;
     min-width: 0;
 
-    &__control-deck {
+    &__command-center {
       position: relative;
-      padding: 18px;
+      padding: 16px 18px 13px;
       overflow: hidden;
       background:
         radial-gradient(
-          circle at 96% 8%,
-          color-mix(in srgb, var(--theme-color) 9%, transparent),
-          transparent 30%
+          circle at 100% 0%,
+          color-mix(in srgb, var(--theme-color) 8%, transparent),
+          transparent 34%
         ),
         var(--art-main-bg-color);
-      border: 1px solid color-mix(in srgb, var(--theme-color) 10%, var(--art-card-border));
-      border-radius: calc(var(--el-border-radius-base) + 6px);
-      box-shadow: 0 10px 30px color-mix(in srgb, var(--art-gray-900) 4%, transparent);
+      border: 1px solid color-mix(in srgb, var(--theme-color) 13%, var(--art-card-border));
+      border-radius: calc(var(--el-border-radius-base) + 5px);
+      box-shadow: 0 8px 24px color-mix(in srgb, var(--art-gray-900) 3.5%, transparent);
     }
 
-    &__control-heading {
+    &__command-heading {
       display: flex;
       gap: 16px;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
+      margin-bottom: 13px;
 
       > div {
         display: flex;
@@ -861,19 +847,32 @@
       }
 
       strong {
-        font-size: 15px;
+        margin-top: 1px;
+        font-size: 16px;
+        line-height: 1.35;
         color: var(--art-text-gray-900);
       }
 
       small {
-        margin-top: 3px;
-        font-size: 12px;
+        font-size: 9px;
+        font-weight: 750;
+        color: var(--theme-color);
+        letter-spacing: 0.1em;
+      }
+
+      em {
+        margin-top: 2px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 11px;
+        font-style: normal;
         color: var(--art-text-gray-600);
+        white-space: nowrap;
       }
     }
 
     &__section-icon,
-    &__journey-icon {
+    &__stage-icon {
       display: grid;
       flex: 0 0 auto;
       place-items: center;
@@ -883,9 +882,9 @@
     }
 
     &__section-icon {
-      width: 38px;
-      height: 38px;
-      border-radius: 11px;
+      width: 42px;
+      height: 42px;
+      border-radius: calc(var(--el-border-radius-base) + 4px);
 
       :deep(.art-svg-icon) {
         font-size: 19px;
@@ -907,52 +906,89 @@
       border-radius: 999px;
     }
 
-    &__journey {
+    &__stage-switcher {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr) 30px minmax(0, 1fr);
-      gap: 8px;
-      align-items: center;
-      padding: 14px;
-      background: color-mix(in srgb, var(--theme-color) 2.5%, var(--art-main-bg-color));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0;
+      overflow: hidden;
+      background: color-mix(in srgb, var(--theme-color) 2%, var(--art-main-bg-color));
       border: 1px solid var(--art-card-border);
-      border-radius: calc(var(--el-border-radius-base) + 3px);
+      border-radius: calc(var(--el-border-radius-base) + 2px);
 
-      article {
+      button {
         position: relative;
         display: grid;
-        grid-template-columns: 38px minmax(0, 1fr);
-        gap: 11px;
+        grid-template-columns: 30px 36px minmax(0, 1fr) 18px;
+        gap: 8px;
         align-items: center;
         min-width: 0;
-        min-height: 58px;
-        padding: 7px 10px 7px 8px;
-        background: color-mix(in srgb, var(--art-main-bg-color) 94%, transparent);
-        border: 1px solid transparent;
-        border-radius: 10px;
+        min-height: 70px;
+        padding: 9px 11px;
+        font: inherit;
+        color: inherit;
+        text-align: left;
+        cursor: pointer;
+        background: transparent;
+        border: 0;
+        border-right: 1px solid var(--art-card-border);
+        transition:
+          background-color 0.18s ease,
+          box-shadow 0.18s ease;
 
-        &.is-warning {
-          background: color-mix(in srgb, var(--el-color-warning) 6%, var(--art-main-bg-color));
-          border-color: color-mix(in srgb, var(--el-color-warning) 18%, transparent);
+        &:last-child {
+          border-right: 0;
         }
 
-        &.is-danger {
-          background: color-mix(in srgb, var(--el-color-danger) 5%, var(--art-main-bg-color));
-          border-color: color-mix(in srgb, var(--el-color-danger) 16%, transparent);
+        &:hover {
+          background: color-mix(in srgb, var(--theme-color) 4%, var(--art-main-bg-color));
         }
 
-        &.is-success {
-          background: color-mix(in srgb, var(--el-color-success) 5%, var(--art-main-bg-color));
-          border-color: color-mix(in srgb, var(--el-color-success) 16%, transparent);
+        &:focus-visible {
+          z-index: 1;
+          outline: 2px solid var(--theme-color);
+          outline-offset: -2px;
+        }
+
+        &.is-active {
+          z-index: 1;
+          background: color-mix(in srgb, var(--theme-color) 7%, var(--art-main-bg-color));
+          box-shadow: inset 0 -3px 0 var(--theme-color);
+        }
+
+        &.is-active.is-warning {
+          background: color-mix(in srgb, var(--el-color-warning) 8%, var(--art-main-bg-color));
+          box-shadow: inset 0 -3px 0 var(--el-color-warning);
+        }
+
+        &.is-active.is-danger {
+          background: color-mix(in srgb, var(--el-color-danger) 7%, var(--art-main-bg-color));
+          box-shadow: inset 0 -3px 0 var(--el-color-danger);
         }
       }
+    }
 
-      article > div {
-        display: grid;
+    &__stage-index {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--art-text-gray-500);
+      letter-spacing: 0.06em;
+    }
+
+    &__stage-copy {
+      display: grid;
+      min-width: 0;
+
+      > span {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: space-between;
         min-width: 0;
       }
 
       strong,
-      small {
+      small,
+      em {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -964,27 +1000,18 @@
       }
 
       small {
-        margin-top: 4px;
+        margin-top: 3px;
         font-size: 11px;
         color: var(--art-text-gray-600);
       }
-    }
-
-    &__journey-title {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      justify-content: space-between;
-      min-width: 0;
 
       em {
         flex: 0 0 auto;
-        padding: 2px 7px;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        max-width: 110px;
+        padding: 2px 6px;
         font-size: 10px;
         font-style: normal;
-        font-weight: 650;
+        font-weight: 700;
         color: var(--theme-color);
         white-space: nowrap;
         background: color-mix(in srgb, var(--theme-color) 9%, var(--art-main-bg-color));
@@ -992,70 +1019,71 @@
       }
     }
 
-    &__journey-index {
-      position: absolute;
-      top: -7px;
-      left: 29px;
-      z-index: 1;
-      font-size: 9px;
-      font-weight: 800;
-      color: var(--theme-color);
-      letter-spacing: 0.05em;
-    }
-
-    &__journey-icon {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
+    &__stage-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: calc(var(--el-border-radius-base) + 2px);
 
       :deep(.art-svg-icon) {
-        font-size: 18px;
+        font-size: 17px;
       }
     }
 
-    &__connector {
+    &__stage-arrow {
       display: grid;
       place-items: center;
-      color: color-mix(in srgb, var(--theme-color) 55%, var(--art-text-gray-500));
+      color: var(--art-text-gray-500);
 
       :deep(.art-svg-icon) {
-        font-size: 18px;
+        font-size: 16px;
       }
     }
 
-    :deep(.hr-entity-navigation) {
-      margin-top: 12px;
-    }
-
-    &__view-context {
-      display: flex;
-      gap: 18px;
+    &__active-context {
+      display: grid;
+      grid-template-columns: minmax(220px, auto) auto minmax(260px, 1fr);
+      gap: 16px;
       align-items: center;
-      justify-content: space-between;
       min-width: 0;
-      padding: 11px 13px;
-      margin-top: 10px;
-      background: color-mix(in srgb, var(--theme-color) 3.5%, var(--art-main-bg-color));
-      border: 1px solid color-mix(in srgb, var(--theme-color) 12%, var(--art-card-border));
-      border-radius: 10px;
+      padding-top: 10px;
+
+      > span {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        min-width: 0;
+        font-size: 12px;
+        color: var(--art-text-gray-600);
+
+        :deep(.art-svg-icon) {
+          flex: 0 0 auto;
+          color: var(--theme-color);
+        }
+
+        strong {
+          flex: 0 0 auto;
+          color: var(--art-text-gray-900);
+        }
+
+        em {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          font-style: normal;
+          white-space: nowrap;
+        }
+      }
 
       dl {
         display: flex;
-        flex: 0 0 auto;
         gap: 8px;
         margin: 0;
       }
 
       dl > div {
-        display: grid;
-        grid-template-columns: auto auto;
-        gap: 7px;
-        align-items: baseline;
-        min-width: 104px;
-        padding: 7px 10px;
-        background: var(--art-main-bg-color);
-        border: 1px solid var(--art-card-border);
-        border-radius: 8px;
+        display: flex;
+        gap: 5px;
+        align-items: center;
+        white-space: nowrap;
 
         &.is-warning dd {
           color: var(--el-color-warning-dark-2);
@@ -1077,80 +1105,29 @@
 
       dd {
         margin: 0;
-        font-size: 17px;
+        font-size: 14px;
         font-weight: 700;
         color: var(--art-text-gray-900);
       }
-    }
 
-    &__view-intro {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      min-width: 0;
-
-      > span:last-child {
+      p {
         display: flex;
-        gap: 8px;
-        align-items: baseline;
+        gap: 6px;
+        align-items: center;
+        justify-content: flex-end;
         min-width: 0;
-      }
-
-      small {
-        flex: 0 0 auto;
-        font-size: 10px;
-        font-weight: 700;
-        color: var(--theme-color);
-        letter-spacing: 0.06em;
-      }
-
-      strong {
-        flex: 0 0 auto;
-        font-size: 13px;
-        color: var(--art-text-gray-900);
-      }
-
-      em {
+        margin: 0;
         overflow: hidden;
         text-overflow: ellipsis;
-        font-size: 12px;
-        font-style: normal;
+        font-size: 11px;
         color: var(--art-text-gray-600);
         white-space: nowrap;
-      }
-    }
 
-    &__view-icon {
-      display: grid;
-      flex: 0 0 auto;
-      place-items: center;
-      width: 32px;
-      height: 32px;
-      color: var(--theme-color);
-      background: color-mix(in srgb, var(--theme-color) 10%, transparent);
-      border-radius: 9px;
-
-      :deep(.art-svg-icon) {
-        font-size: 16px;
-      }
-    }
-
-    &__control-note {
-      display: flex;
-      gap: 7px;
-      align-items: flex-start;
-      padding-top: 11px;
-      margin-top: 12px;
-      font-size: 11px;
-      line-height: 1.55;
-      color: var(--art-text-gray-600);
-      border-top: 1px dashed var(--art-card-border);
-
-      :deep(.art-svg-icon) {
-        flex: 0 0 auto;
-        margin-top: 1px;
-        font-size: 14px;
-        color: var(--theme-color);
+        :deep(.art-svg-icon) {
+          flex: 0 0 auto;
+          font-size: 13px;
+          color: var(--theme-color);
+        }
       }
     }
 
@@ -1210,49 +1187,69 @@
     }
   }
 
-  @media only screen and (width <= 900px) {
+  @media only screen and (width <= 1100px) {
     .succession-page {
-      &__control-heading {
-        align-items: flex-start;
-      }
+      &__active-context {
+        grid-template-columns: minmax(220px, 1fr) auto;
 
-      &__journey {
-        grid-template-columns: 1fr;
-
-        .succession-page__connector {
+        p {
           display: none;
         }
-
-        article:not(:first-child) {
-          padding-top: 10px;
-          border-top: 1px solid var(--art-card-border);
-        }
       }
+    }
+  }
 
-      &__view-context {
+  @media only screen and (width <= 900px) {
+    .succession-page {
+      &__command-heading {
         align-items: flex-start;
       }
 
-      &__view-intro > span:last-child {
-        display: grid;
-        gap: 2px;
+      &__stage-switcher button {
+        grid-template-columns: 26px 34px minmax(0, 1fr);
+
+        .succession-page__stage-arrow {
+          display: none;
+        }
       }
     }
   }
 
   @media only screen and (width <= 767px) {
     .succession-page {
-      &__control-deck {
+      &__command-center {
         padding: 14px;
       }
 
-      &__control-heading {
+      &__command-heading {
         flex-direction: column;
+
+        em {
+          white-space: normal;
+        }
       }
 
-      &__view-context {
-        flex-direction: column;
-        align-items: stretch;
+      &__stage-switcher {
+        grid-template-columns: 1fr;
+
+        button {
+          min-height: 62px;
+          border-right: 0;
+          border-bottom: 1px solid var(--art-card-border);
+
+          &:last-child {
+            border-bottom: 0;
+          }
+
+          &.is-active {
+            box-shadow: inset 3px 0 0 var(--theme-color);
+          }
+        }
+      }
+
+      &__active-context {
+        grid-template-columns: 1fr;
+        gap: 8px;
 
         dl {
           display: grid;

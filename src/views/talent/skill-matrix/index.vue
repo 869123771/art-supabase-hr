@@ -23,11 +23,15 @@
 
     <ArtSectionCard
       class="skill-matrix-page__analysis"
-      title="组织能力风险排行"
-      :subtitle="`优先处理缺口人数多、评估覆盖不足的能力项，更新时间 ${generatedAt}`"
+      :title="overview?.competencies.length ? '组织能力风险排行' : '能力数据就绪度'"
+      :subtitle="
+        overview?.competencies.length
+          ? `优先处理缺口人数多、评估覆盖不足的能力项，更新时间 ${generatedAt}`
+          : '补齐岗位能力标准与员工评估后，系统将自动生成组织能力风险排序。'
+      "
       :loading="loading && !overview"
       :error="errorMessage"
-      :min-height="230"
+      :min-height="200"
       @retry="loadOverview"
     >
       <template #actions>
@@ -119,72 +123,72 @@
         </div>
 
         <section v-else class="skill-matrix-page__setup-state" aria-labelledby="setup-title">
-          <div class="skill-matrix-page__setup-intro">
-            <span class="skill-matrix-page__setup-icon" aria-hidden="true">
-              <ArtSvgIcon icon="ri:route-line" />
-            </span>
-            <div>
-              <span class="skill-matrix-page__setup-eyebrow">CAPABILITY DATA SETUP</span>
-              <h2 id="setup-title">完成能力模型闭环后，自动形成风险排行</h2>
-              <p>
-                技能矩阵只分析岗位能力要求与员工能力评估，不读取绩效结论。当前可先补齐岗位标准，再开展员工评估。
-              </p>
-              <div class="skill-matrix-page__setup-summary" aria-label="能力数据准备概览">
-                <span
-                  ><strong>{{ overview.employeeCount }}</strong
-                  ><small>在盘员工</small></span
-                >
-                <span
-                  ><strong>{{ overview.modelledEmployeeCount }}</strong
-                  ><small>岗位已建模</small></span
-                >
-                <span
-                  ><strong>{{ overview.assessedEmployeeCount }}</strong
-                  ><small>评估已完成</small></span
-                >
+          <header class="skill-matrix-page__setup-header">
+            <div class="skill-matrix-page__setup-intro">
+              <span class="skill-matrix-page__setup-icon" aria-hidden="true">
+                <ArtSvgIcon icon="ri:radar-line" />
+              </span>
+              <div>
+                <span class="skill-matrix-page__setup-eyebrow">CAPABILITY READINESS</span>
+                <h2 id="setup-title">当前还没有可分析的岗位能力数据</h2>
+                <p>技能矩阵只读取岗位能力要求与员工评估，不混入绩效结论。</p>
               </div>
-              <ElButton type="primary" @click="goToCapabilityConfig">
-                前往培训与能力
-                <ArtSvgIcon icon="ri:arrow-right-line" />
-              </ElButton>
             </div>
-          </div>
+            <ElButton type="primary" @click="goToCapabilityConfig">
+              配置岗位能力
+              <ArtSvgIcon icon="ri:arrow-right-line" />
+            </ElButton>
+          </header>
 
-          <ol class="skill-matrix-page__setup-steps" aria-label="技能矩阵数据准备步骤">
-            <li>
-              <span>01</span>
-              <div>
-                <span class="skill-matrix-page__step-heading">
-                  <strong>配置岗位能力要求</strong>
-                  <ElTag type="warning" effect="light" round>当前步骤</ElTag>
-                </span>
-                <small>
-                  {{ overview.modelledEmployeeCount }} /
-                  {{ overview.employeeCount }} 人已具备岗位模型
-                </small>
-              </div>
-            </li>
-            <li>
-              <span>02</span>
-              <div>
-                <span class="skill-matrix-page__step-heading">
-                  <strong>完成员工能力评估</strong>
-                  <ElTag type="info" effect="plain" round>待推进</ElTag>
-                </span>
-                <small>{{ overview.assessedEmployeeCount }} 人已有有效评估</small>
-              </div>
-            </li>
-            <li>
-              <span>03</span>
-              <div>
-                <span class="skill-matrix-page__step-heading">
-                  <strong>查看组织能力风险</strong>
-                  <ElTag type="success" effect="plain" round>自动生成</ElTag>
-                </span>
-                <small>系统按缺口人数与评估覆盖自动排序</small>
-              </div>
-            </li>
-          </ol>
+          <div class="skill-matrix-page__setup-body">
+            <dl class="skill-matrix-page__setup-summary" aria-label="能力数据准备概览">
+              <div
+                ><dt>在盘员工</dt><dd>{{ overview.employeeCount }}</dd></div
+              >
+              <div
+                ><dt>岗位已建模</dt><dd>{{ overview.modelledEmployeeCount }}</dd></div
+              >
+              <div
+                ><dt>评估已完成</dt><dd>{{ overview.assessedEmployeeCount }}</dd></div
+              >
+            </dl>
+
+            <ol class="skill-matrix-page__setup-steps" aria-label="技能矩阵数据准备步骤">
+              <li>
+                <span>01</span>
+                <div>
+                  <span class="skill-matrix-page__step-heading">
+                    <strong>定义岗位标准</strong>
+                    <ElTag type="warning" effect="light" round>当前</ElTag>
+                  </span>
+                  <small
+                    >{{ overview.modelledEmployeeCount }} /
+                    {{ overview.employeeCount }} 人已匹配模型</small
+                  >
+                </div>
+              </li>
+              <li>
+                <span>02</span>
+                <div>
+                  <span class="skill-matrix-page__step-heading">
+                    <strong>完成能力评估</strong>
+                    <ElTag type="info" effect="plain" round>待推进</ElTag>
+                  </span>
+                  <small>{{ overview.assessedEmployeeCount }} 人已有有效评估</small>
+                </div>
+              </li>
+              <li>
+                <span>03</span>
+                <div>
+                  <span class="skill-matrix-page__step-heading">
+                    <strong>生成风险排序</strong>
+                    <ElTag type="success" effect="plain" round>自动</ElTag>
+                  </span>
+                  <small>按缺口人数与评估覆盖自动排序</small>
+                </div>
+              </li>
+            </ol>
+          </div>
         </section>
       </template>
     </ArtSectionCard>
@@ -533,70 +537,70 @@
     }
 
     &__setup-state {
-      display: grid;
-      grid-template-columns: minmax(340px, 0.9fr) minmax(420px, 1.1fr);
-      gap: clamp(22px, 3vw, 42px);
-      align-items: stretch;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
       min-height: 0;
-      padding: clamp(18px, 2vw, 26px);
+      padding: 16px 18px;
       overflow: hidden;
       background:
         radial-gradient(
-          circle at 4% 2%,
-          color-mix(in srgb, var(--theme-color) 9%, transparent),
-          transparent 30%
+          circle at 100% 0%,
+          color-mix(in srgb, var(--theme-color) 8%, transparent),
+          transparent 34%
         ),
-        linear-gradient(
-          135deg,
-          color-mix(in srgb, var(--theme-color) 4%, var(--art-main-bg-color)),
-          var(--art-main-bg-color)
-        );
+        color-mix(in srgb, var(--theme-color) 2.5%, var(--art-main-bg-color));
       border: 1px solid color-mix(in srgb, var(--theme-color) 12%, var(--art-border-color));
       border-radius: calc(var(--el-border-radius-base) + 3px);
     }
 
+    &__setup-header {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 0;
+
+      .el-button {
+        flex: 0 0 auto;
+      }
+    }
+
     &__setup-intro {
       display: grid;
-      grid-template-columns: 52px minmax(0, 1fr);
-      gap: var(--art-space-4);
-      align-items: start;
+      grid-template-columns: 42px minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
       min-width: 0;
 
       h2 {
-        margin: 5px 0 0;
-        font-size: clamp(17px, 1.35vw, 21px);
+        margin: 1px 0 0;
+        font-size: 15px;
         line-height: 1.35;
         color: var(--art-gray-900);
       }
 
       p {
-        max-width: 560px;
-        margin: 8px 0 12px;
-        font-size: 13px;
-        line-height: 1.65;
+        margin: 3px 0 0;
+        font-size: 11px;
+        line-height: 1.5;
         color: var(--art-gray-600);
-      }
-
-      .el-button svg {
-        width: 15px;
-        height: 15px;
-        margin-left: 4px;
       }
     }
 
     &__setup-icon {
       display: grid;
       place-items: center;
-      width: 52px;
-      height: 52px;
+      width: 42px;
+      height: 42px;
       color: var(--theme-color);
       background: color-mix(in srgb, var(--theme-color) 11%, transparent);
       border: 1px solid color-mix(in srgb, var(--theme-color) 16%, transparent);
-      border-radius: calc(var(--el-border-radius-base) * 1.5);
+      border-radius: calc(var(--el-border-radius-base) + 4px);
 
       svg {
-        width: 24px;
-        height: 24px;
+        width: 20px;
+        height: 20px;
       }
     }
 
@@ -607,67 +611,88 @@
       letter-spacing: 0.1em;
     }
 
+    &__setup-body {
+      display: grid;
+      grid-template-columns: minmax(240px, 0.72fr) minmax(520px, 1.8fr);
+      gap: 12px;
+      min-width: 0;
+    }
+
     &__setup-summary {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 1px;
-      max-width: 430px;
-      margin-bottom: 14px;
+      gap: 0;
+      margin: 0;
       overflow: hidden;
-      background: var(--art-border-color);
       border: 1px solid var(--art-border-color);
-      border-radius: var(--el-border-radius-base);
+      border-radius: calc(var(--el-border-radius-base) + 1px);
 
-      span {
+      div {
         display: grid;
         gap: 2px;
-        padding: 8px 10px;
-        background: color-mix(in srgb, var(--theme-color) 2%, var(--art-gray-100));
+        min-width: 0;
+        padding: 10px 11px;
+        background: color-mix(in srgb, var(--theme-color) 1.5%, var(--art-main-bg-color));
+        border-right: 1px solid var(--art-border-color);
+
+        &:last-child {
+          border-right: 0;
+        }
       }
 
-      strong {
-        font-size: 16px;
-        font-variant-numeric: tabular-nums;
-        color: var(--art-gray-900);
-      }
-
-      small {
+      dt {
+        overflow: hidden;
+        text-overflow: ellipsis;
         font-size: 10px;
         color: var(--art-gray-600);
+        white-space: nowrap;
+      }
+
+      dd {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 750;
+        font-variant-numeric: tabular-nums;
+        color: var(--art-gray-900);
       }
     }
 
     &__setup-steps {
       display: grid;
-      gap: 8px;
-      align-content: center;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0;
       min-width: 0;
       padding: 0;
       margin: 0;
+      overflow: hidden;
       list-style: none;
+      border: 1px solid var(--art-border-color);
+      border-radius: calc(var(--el-border-radius-base) + 1px);
 
       li {
         position: relative;
         display: grid;
-        grid-template-columns: 34px minmax(0, 1fr);
-        gap: var(--art-space-3);
+        grid-template-columns: 30px minmax(0, 1fr);
+        gap: 9px;
         align-items: center;
         min-width: 0;
-        padding: 11px 12px;
-        background: color-mix(in srgb, var(--theme-color) 2%, var(--art-gray-100));
-        border: 1px solid color-mix(in srgb, var(--theme-color) 11%, var(--art-border-color));
-        border-radius: calc(var(--el-border-radius-base) + 1px);
+        padding: 8px 10px;
+        background: var(--art-main-bg-color);
+        border-right: 1px solid var(--art-border-color);
 
         &:first-child {
           background: color-mix(in srgb, var(--theme-color) 5%, var(--art-main-bg-color));
-          border-color: color-mix(in srgb, var(--theme-color) 26%, var(--art-border-color));
+        }
+
+        &:last-child {
+          border-right: 0;
         }
 
         > span {
           display: grid;
           place-items: center;
-          width: 34px;
-          height: 34px;
+          width: 30px;
+          height: 30px;
           font-size: 11px;
           font-weight: 700;
           font-variant-numeric: tabular-nums;
@@ -689,12 +714,13 @@
         }
 
         strong {
-          font-size: 13px;
+          font-size: 12px;
           color: var(--art-gray-800);
         }
 
         small {
-          margin-top: 4px;
+          margin-top: 3px;
+          font-size: 10px;
           color: var(--art-gray-600);
         }
       }
@@ -702,7 +728,7 @@
 
     &__step-heading {
       display: flex !important;
-      gap: 10px;
+      gap: 6px;
       align-items: center;
       min-width: 0;
 
@@ -712,6 +738,9 @@
 
       .el-tag {
         flex: 0 0 auto;
+        height: 20px;
+        padding: 0 6px;
+        font-size: 10px;
       }
     }
 
@@ -996,12 +1025,8 @@
   @media only screen and (width <= 900px) {
     .skill-matrix-page {
       &__analysis-grid,
-      &__setup-state {
+      &__setup-body {
         grid-template-columns: 1fr;
-      }
-
-      &__setup-state {
-        gap: var(--art-space-5);
       }
 
       &__priority {
@@ -1090,6 +1115,10 @@
         padding: var(--art-space-4);
       }
 
+      &__setup-header {
+        align-items: flex-start;
+      }
+
       &__setup-intro {
         grid-template-columns: 42px minmax(0, 1fr);
       }
@@ -1104,8 +1133,18 @@
         }
       }
 
-      &__setup-steps li {
-        grid-template-columns: 32px minmax(0, 1fr);
+      &__setup-steps {
+        grid-template-columns: 1fr;
+
+        li {
+          grid-template-columns: 32px minmax(0, 1fr);
+          border-right: 0;
+          border-bottom: 1px solid var(--art-border-color);
+
+          &:last-child {
+            border-bottom: 0;
+          }
+        }
       }
 
       &__competency-progress {
@@ -1116,6 +1155,29 @@
 
   @media only screen and (width <= 480px) {
     .skill-matrix-page {
+      &__setup-header {
+        flex-direction: column;
+
+        .el-button {
+          width: 100%;
+        }
+      }
+
+      &__setup-summary {
+        grid-template-columns: 1fr;
+
+        div {
+          grid-template-columns: minmax(0, 1fr) auto;
+          align-items: center;
+          border-right: 0;
+          border-bottom: 1px solid var(--art-border-color);
+
+          &:last-child {
+            border-bottom: 0;
+          }
+        }
+      }
+
       &__coverage dl {
         grid-template-columns: 1fr;
 
