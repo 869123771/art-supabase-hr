@@ -1,0 +1,1 @@
+import{o as e}from"./style-CFT17Jlv.js";import{c as t}from"./art-form-Cap-8Nj4.js";function n(n,r){return n&&n.length?t(n,e(r,2)):[]}export{n as t};
