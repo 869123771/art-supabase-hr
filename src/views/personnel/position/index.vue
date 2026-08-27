@@ -254,13 +254,6 @@
         ]
       : []),
     {
-      prop: 'organization.organizationName',
-      label: '所属组织',
-      minWidth: 170,
-      showOverflowTooltip: true,
-      formatter: (row) => row.organization?.organizationName ?? '—'
-    },
-    {
       prop: 'positionCode',
       label: '岗位编码',
       minWidth: 150,

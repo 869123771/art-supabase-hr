@@ -78,10 +78,10 @@
     type HrEntityNavigationItem
   } from '../../shared/hr-entity-navigation.vue'
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { useTenantScopeStore } from '@/store/modules/tenantScope'
   import { useUserStore } from '@/store/modules/user'
   import { pageInfoHandler } from '@/utils/table/tableUtils'
   import type { ColumnOption, DialogType } from '@/types'
-  import { fetchGetEnableTenantList } from '@/api/system-manage'
   import { deleteJobArchitectureRecord, fetchJobArchitectureList } from '@hr/api'
   import JobArchitectureDialog from './modules/job-architecture-dialog.vue'
 
@@ -142,14 +142,15 @@
   const { confirmAction } = useArtFeedback()
   const userStore = useUserStore()
   const { getDictMap, isPlatformSuper } = storeToRefs(userStore)
+  const { effectiveTenantId } = storeToRefs(useTenantScopeStore())
   const activeEntity = ref<Entity>('profile')
   const activeTab = computed(() => tabs.find((tab) => tab.entity === activeEntity.value) ?? tabs[0])
   const tableQueryRef = ref<ArtTableQueryExpose>()
   const dialogRef = ref<JobArchitectureDialogExpose>()
-  const tenantOptions = ref<Array<{ label: string; value: string }>>([])
   const tableState = reactive<{ searchQuery: Api.Hr.JobArchitectureSearchParams }>({
-    searchQuery: { tenantId: '', enabled: undefined, keyword: '' }
+    searchQuery: { enabled: undefined, keyword: '' }
   })
+  const selectedTenantId = computed(() => effectiveTenantId.value ?? '')
   const overview = reactive({ total: 0, enabled: 0, references: 0 })
   const booleanOptions = computed(() =>
     (getDictMap.value.commonBoolean ?? []).map((item) => ({
@@ -186,13 +187,6 @@
     }
   ])
   const searchItems = computed<SearchFormItem[]>(() => [
-    {
-      label: '所属租户',
-      key: 'tenantId',
-      type: 'select',
-      hidden: !isPlatformSuper.value,
-      props: { options: tenantOptions.value, clearable: true, filterable: true }
-    },
     {
       label: '状态',
       key: 'enabled',
@@ -318,7 +312,12 @@
   ])
   const fetchTableData = (params: TableParams) => {
     const { from, to } = pageInfoHandler({ current: params.current, size: params.size })
-    return fetchJobArchitectureList(activeEntity.value, { ...params, from, to })
+    return fetchJobArchitectureList(activeEntity.value, {
+      ...params,
+      tenantId: selectedTenantId.value || undefined,
+      from,
+      to
+    })
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
     overview.total = response.total ?? rows.length
@@ -358,15 +357,7 @@
     activeEntity.value = value as Entity
     handleTabChange()
   }
-  onMounted(async () => {
-    await userStore.ensureDictLoaded('commonBoolean')
-    if (!isPlatformSuper.value) return
-    const response = await fetchGetEnableTenantList()
-    tenantOptions.value = (response.data ?? []).map((tenant) => ({
-      label: `${tenant.tenantName}（${tenant.tenantCode}）`,
-      value: tenant.id!
-    }))
-  })
+  onMounted(() => userStore.ensureDictLoaded('commonBoolean'))
 </script>
 
 <style scoped lang="scss">
