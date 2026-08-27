@@ -107,12 +107,10 @@ export async function deleteEmployee(id: string) {
 }
 
 export async function fetchEmployeeOrganizationTree(params: { tenantId?: string } = {}) {
-  if (!params.tenantId) return { data: [], error: null }
-
   const response = await responseHandle<OrganizationScopeFilterItem[]>(
     () =>
       supabase.rpc('hr_list_employee_organization_scope_secure', {
-        p_tenant_id: params.tenantId
+        p_tenant_id: params.tenantId || null
       }),
     { showErrorMessage: true }
   )
@@ -120,8 +118,12 @@ export async function fetchEmployeeOrganizationTree(params: { tenantId?: string 
   return {
     ...response,
     data: organizationTreeUtils.listToTree(response.data ?? [], (a, b) => {
+      const tenantDiff = (a.tenant?.tenantName ?? '').localeCompare(
+        b.tenant?.tenantName ?? '',
+        'zh-CN'
+      )
       const sortDiff = (a.sort ?? 0) - (b.sort ?? 0)
-      return sortDiff || a.organizationName.localeCompare(b.organizationName, 'zh-CN')
+      return tenantDiff || sortDiff || a.organizationName.localeCompare(b.organizationName, 'zh-CN')
     })
   }
 }

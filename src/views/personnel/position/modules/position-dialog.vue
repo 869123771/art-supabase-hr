@@ -11,25 +11,7 @@
       label-position="top"
       :show-reset="false"
       :show-submit="false"
-    >
-      <template #positionKind>
-        <div
-          class="position-dialog__kind-summary"
-          :class="{ 'is-driver': positionKindMeta.kind === 'driver' }"
-        >
-          <span class="position-dialog__kind-icon" aria-hidden="true">
-            <ArtSvgIcon :icon="positionKindMeta.icon" />
-          </span>
-          <div class="position-dialog__kind-copy">
-            <strong>{{ positionKindMeta.label }}</strong>
-            <span>{{ positionKindMeta.description }}</span>
-          </div>
-          <ElTag :type="positionKindMeta.tagType" effect="plain" round>
-            {{ positionKindMeta.badge }}
-          </ElTag>
-        </div>
-      </template>
-    </ArtForm>
+    />
   </ArtDialog>
 </template>
 
@@ -37,24 +19,19 @@
   import type { FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
-  import ArtForm, {
-    type FormItem,
-    type FormItemOption
-  } from '@/components/core/forms/art-form/index.vue'
-  import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
-  import {
-    addPosition,
-    editPosition,
-    fetchEmployeeOrganizationOptions,
-    fetchJobArchitectureOptions
-  } from '@hr/api'
-  import { fetchGetEnableTenantList } from '@/api/system-manage'
-  import { useUserStore } from '@/store/modules/user'
+  import ArtForm, { type FormItem } from '@/components/core/forms/art-form/index.vue'
+  import { addPosition, editPosition, fetchJobArchitectureOptions } from '@hr/api'
+  import { fetchGetEnableOrganizationTree } from '@/api/system-manage'
+  import { useTenantScopeStore } from '@/store/modules/tenantScope'
   import { useDocumentNumberRule } from '@/hooks/core/useDocumentNumberRule'
 
   defineOptions({ name: 'HrPositionDialog' })
 
   type Position = Api.Hr.Position
+
+  interface PositionDialogDefaults {
+    organizationId?: string
+  }
 
   interface DialogExposeForm {
     validate: () => Promise<boolean>
@@ -63,20 +40,17 @@
   }
 
   const emit = defineEmits<{ (event: 'success', type: 'add' | 'edit'): void }>()
-  const { getUserInfo, isPlatformSuper } = storeToRefs(useUserStore())
+  const { effectiveTenantId } = storeToRefs(useTenantScopeStore())
   const dialogRef = ref<ArtDialogExpose<Position | undefined>>()
   const formRef = ref<DialogExposeForm>()
-  const tenantOptions = ref<FormItemOption[]>([])
 
   const createInitialForm = (): Position => ({
-    tenantId: isPlatformSuper.value ? undefined : getUserInfo.value.tenantId,
+    tenantId: effectiveTenantId.value ?? undefined,
     organizationId: null,
     jobProfileId: '',
     gradeId: null,
     positionCode: '',
     positionName: '',
-    positionKind: 'standard',
-    systemCode: null,
     enabled: true,
     headcountLimit: 1,
     multipleIncumbentsAllowed: false,
@@ -85,25 +59,9 @@
   })
   const form = reactive<Position>(createInitialForm())
   const positionNumber = useDocumentNumberRule('hr.position')
-  const isSystemPosition = computed(() => Boolean(form.systemCode))
-  const positionKindMeta = computed(() => {
-    const isDriver = form.positionKind === 'driver'
-    return {
-      kind: isDriver ? ('driver' as const) : ('standard' as const),
-      label: isDriver ? '司机岗位' : '普通岗位',
-      description: isDriver
-        ? '系统唯一司机岗位；员工选择后会同步创建司机运营档案。'
-        : '用于员工任职和花名册管理，不触发司机档案联动。',
-      icon: isDriver ? 'ri:steering-2-line' : 'ri:briefcase-4-line',
-      tagType: isDriver ? ('success' as const) : ('info' as const),
-      badge: isSystemPosition.value ? '系统预置' : form.id ? '创建后固定' : '系统默认'
-    }
-  })
 
   const formRules = computed<FormRules<Position>>(() => ({
-    tenantId: isPlatformSuper.value
-      ? [{ required: true, message: '请选择所属租户', trigger: 'change' }]
-      : [],
+    tenantId: [{ required: true, message: '请先在顶部选择所属租户', trigger: 'change' }],
     positionCode: [
       ...(form.id || positionNumber.manualRequired(false)
         ? [{ required: true, message: '请输入岗位编码', trigger: 'blur' as const }]
@@ -118,9 +76,7 @@
       { required: true, message: '请输入岗位名称', trigger: 'blur' },
       { min: 2, max: 50, message: '岗位名称应为 2-50 个字符', trigger: 'blur' }
     ],
-    organizationId: [
-      { required: !isSystemPosition.value, message: '请选择所属组织', trigger: 'change' }
-    ],
+    organizationId: [{ required: true, message: '请选择所属组织', trigger: 'change' }],
     jobProfileId: [{ required: true, message: '请选择标准职务', trigger: 'change' }],
     headcountLimit: [{ required: true, message: '请输入编制上限', trigger: 'change' }],
     sort: [{ required: true, message: '请输入排序值', trigger: 'change' }],
@@ -132,37 +88,28 @@
     {
       label: '所属租户',
       key: 'tenantId',
-      type: 'select',
-      span: 24,
-      hidden: !isPlatformSuper.value,
-      options: tenantOptions.value,
-      props: {
-        filterable: true,
-        disabled: Boolean(form.id),
-        placeholder: '请选择所属租户',
-        onChange: () => {
-          form.organizationId = null
-          form.jobProfileId = ''
-          form.gradeId = null
-          void Promise.all([
-            positionNumber.loadRule(),
-            formRef.value?.reloadOptions('organizationId'),
-            formRef.value?.reloadOptions('jobProfileId'),
-            formRef.value?.reloadOptions('gradeId')
-          ])
-        }
-      }
+      type: 'input',
+      hidden: true
     },
     {
       label: '所属组织',
       key: 'organizationId',
-      type: 'select',
-      hidden: isSystemPosition.value,
+      type: 'treeSelect',
       immediate: false,
-      api: async () => (await fetchEmployeeOrganizationOptions({ tenantId: form.tenantId })).data,
+      api: async () =>
+        (await fetchGetEnableOrganizationTree({ tenantId: form.tenantId })).data ?? [],
       valueField: 'id',
+      labelField: 'organizationName',
+      childrenField: 'children',
       labelFn: (option) => `${option.organizationName ?? ''} · ${option.organizationCode ?? ''}`,
-      props: { filterable: true, placeholder: '请选择岗位所属组织' }
+      props: {
+        filterable: true,
+        checkStrictly: true,
+        defaultExpandAll: true,
+        renderAfterExpand: false,
+        placeholder: '请选择岗位所属组织'
+      },
+      description: '按组织树选择岗位归属；保存后可在主列表左侧组织导航中筛选。'
     },
     {
       label: '标准职务',
@@ -190,8 +137,7 @@
       type: 'input',
       props: {
         maxlength: 32,
-        ...positionNumber.inputProps(Boolean(form.id), '如 DRIVER', true),
-        disabled: isSystemPosition.value || positionNumber.inputProps(Boolean(form.id), '').disabled
+        ...positionNumber.inputProps(Boolean(form.id), '如 POS-SALES', true)
       },
       description: positionNumber.description.value
     },
@@ -200,13 +146,6 @@
       key: 'positionName',
       type: 'input',
       props: { maxlength: 50, placeholder: '请输入岗位名称' }
-    },
-    {
-      label: '业务属性',
-      key: 'positionKind',
-      type: 'text',
-      span: 24,
-      help: '业务属性由岗位创建来源确定。司机岗位由系统为每个租户预置，不能手工新增或转换。'
     },
     {
       label: '排序',
@@ -247,7 +186,6 @@
       key: 'enabled',
       type: 'switch',
       props: {
-        disabled: form.systemCode === 'driver',
         activeText: '启用',
         inactiveText: '停用',
         inlinePrompt: true
@@ -285,29 +223,25 @@
     }
   }
 
-  const handleOpen = async (row?: Position): Promise<void> => {
+  const handleOpen = async (
+    row?: Position,
+    defaults: PositionDialogDefaults = {}
+  ): Promise<void> => {
     await resetForm()
-    if (row) replaceForm({ ...createInitialForm(), ...structuredClone(toRaw(row)) })
+    if (row) {
+      replaceForm({ ...createInitialForm(), ...structuredClone(toRaw(row)) })
+    } else if (defaults.organizationId) {
+      form.organizationId = defaults.organizationId
+    }
     await positionNumber.loadRule()
     await dialogRef.value?.handleOpen(row, {
       title: row ? '编辑岗位' : '新增岗位',
-      subtitle: row
-        ? '维护岗位名称、排序与启用状态；业务属性保持不变'
-        : '创建普通任职岗位；司机岗位由系统自动预置',
+      subtitle: row ? '维护岗位归属、任职规则与启用状态' : '创建组织中的具体任职岗位',
       confirmText: row ? '保存更改' : '创建岗位',
       contentMaxHeight: 'calc(100vh - 184px)',
-      loading: isPlatformSuper.value && !tenantOptions.value.length,
-      loadingText: '正在加载租户选项…',
       onOpen: async (_openRow, api) => {
         api.setLoading(true)
         try {
-          if (isPlatformSuper.value && !tenantOptions.value.length) {
-            const response = await fetchGetEnableTenantList()
-            tenantOptions.value = (response.data ?? []).map((tenant) => ({
-              label: `${tenant.tenantName}（${tenant.tenantCode}）`,
-              value: tenant.id!
-            }))
-          }
           await Promise.all([
             formRef.value?.reloadOptions('organizationId'),
             formRef.value?.reloadOptions('jobProfileId'),
@@ -324,78 +258,3 @@
 
   defineExpose({ handleOpen, handleClose: () => dialogRef.value?.handleClose() })
 </script>
-
-<style scoped lang="scss">
-  .position-dialog {
-    &__kind-summary {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      width: 100%;
-      min-width: 0;
-      padding: 12px 14px;
-      background: var(--art-gray-100);
-      border: 1px solid var(--el-border-color-lighter);
-      border-radius: var(--el-border-radius-base);
-
-      &.is-driver {
-        background: color-mix(in srgb, var(--el-color-success) 8%, var(--default-box-color));
-
-        .position-dialog__kind-icon {
-          color: var(--el-color-success);
-          background: var(--el-color-success-light-9);
-        }
-      }
-
-      > .el-tag {
-        flex: none;
-        margin-left: auto;
-      }
-    }
-
-    &__kind-icon {
-      display: inline-flex;
-      flex: 0 0 38px;
-      align-items: center;
-      justify-content: center;
-      width: 38px;
-      height: 38px;
-      color: var(--theme-color);
-      background: color-mix(in srgb, var(--theme-color) 10%, var(--default-box-color));
-      border-radius: var(--el-border-radius-base);
-
-      :deep(svg) {
-        width: 18px;
-        height: 18px;
-      }
-    }
-
-    &__kind-copy {
-      display: grid;
-      flex: 1;
-      min-width: 0;
-
-      strong {
-        line-height: 1.5;
-        color: var(--el-text-color-primary);
-      }
-
-      span {
-        margin-top: 2px;
-        font-size: 12px;
-        line-height: 1.5;
-        color: var(--el-text-color-secondary);
-      }
-    }
-
-    @media (width <= 600px) {
-      &__kind-summary {
-        flex-wrap: wrap;
-
-        > .el-tag {
-          margin-left: 50px;
-        }
-      }
-    }
-  }
-</style>

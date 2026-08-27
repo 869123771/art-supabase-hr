@@ -484,7 +484,7 @@
     <ArtStickyActionBar class="hr-profile-page__footer">
       <template #summary>
         <span class="hr-profile-page__save-hint">
-          带 <b>*</b> 的信息为必填项；司机岗位保存时将同时创建司机档案。
+          带 <b>*</b> 的信息为必填项；岗位仅用于记录员工的组织任职关系。
         </span>
       </template>
       <ElButton :disabled="page.saving" @click="goBack">取消</ElButton>
@@ -509,12 +509,7 @@
   import EmployeeContractsTab from './modules/employee-contracts-tab.vue'
   import HistorySection from './modules/history-section.vue'
   import HistoryCard from './modules/history-card.vue'
-  import {
-    fetchEmployeeDriverCarrierOptions,
-    fetchEmployeeProfile,
-    fetchPositionOptions,
-    saveEmployeeProfile
-  } from '@hr/api'
+  import { fetchEmployeeProfile, fetchPositionOptions, saveEmployeeProfile } from '@hr/api'
   import { fetchGetEnableOrganizationTree, fetchGetEnableTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
   import { useDocumentNumberRule } from '@/hooks/core/useDocumentNumberRule'
@@ -529,12 +524,7 @@
 
   type Employee = Api.Hr.Employee
   type EmployeeProfile = Api.Hr.EmployeeProfile
-  interface EmployeeProfileForm extends EmployeeProfile {
-    driverCarrierId: string
-    driverType: Api.Hr.DriverType
-    driverLicenseType: string
-    driverLicenseExpireDate: string
-  }
+  type EmployeeProfileForm = EmployeeProfile
   type HistoryTabName = 'contracts' | 'educations' | 'workExperiences' | 'trainings' | 'rewards'
   type TabName = 'basic' | 'historyOverview' | HistoryTabName
 
@@ -561,7 +551,6 @@
   const tenantFormOptions = ref<FormItemOption[]>([])
   const organizationFormOptions = ref<FormItemOption[]>([])
   const positionOptions = ref<Api.Hr.PositionOption[]>([])
-  const driverCarrierOptions = ref<FormItemOption[]>([])
   const employeeNumber = useDocumentNumberRule('hr.employee')
   const contractNumber = useDocumentNumberRule('hr.employee_contract')
   const historyValidationErrors = reactive<Record<string, string>>({})
@@ -664,10 +653,6 @@
   })
   const createProfile = (): EmployeeProfileForm => ({
     ...createEmployee(),
-    driverCarrierId: '',
-    driverType: 'primary',
-    driverLicenseType: '',
-    driverLicenseExpireDate: '',
     contracts: [],
     educations: [],
     workExperiences: [],
@@ -737,9 +722,6 @@
   const selectedPosition = computed(() =>
     positionOptions.value.find((item) => item.id === form.positionId)
   )
-  const isDriverEmployeeCreate = computed(
-    () => !isEdit.value && selectedPosition.value?.positionKind === 'driver'
-  )
   const positionFormOptions = computed<FormItemOption[]>(() =>
     positionOptions.value
       .filter(
@@ -750,9 +732,7 @@
       )
       .map((position) => ({
         label: `${position.positionName}（${position.positionCode}）`,
-        value: position.id,
-        disabled:
-          isEdit.value && position.positionKind === 'driver' && position.id !== form.positionId
+        value: position.id
       }))
   )
 
@@ -850,24 +830,9 @@
     positionOptions.value = response.data ?? []
   }
 
-  const loadDriverCarrierOptions = async (): Promise<void> => {
-    if (!form.tenantId || !isDriverEmployeeCreate.value) {
-      driverCarrierOptions.value = []
-      return
-    }
-    const response = await fetchEmployeeDriverCarrierOptions(form.tenantId)
-    driverCarrierOptions.value = (response.data ?? []).map((carrier) => ({
-      label: carrier.carrierCode
-        ? `${carrier.companyName}（${carrier.carrierCode}）`
-        : carrier.companyName,
-      value: carrier.id
-    }))
-  }
-
   const handleTenantChange = (): void => {
     form.organizationId = null
     form.positionId = null
-    form.driverCarrierId = ''
     void loadOrganizationOptions()
     void loadPositionOptions()
     void Promise.all([employeeNumber.loadRule(), contractNumber.loadRule()])
@@ -901,10 +866,6 @@
           { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' }
         ]
       : [],
-    gender:
-      isDriverEmployeeCreate.value && canEditIdentityDetails.value
-        ? [{ required: true, message: '司机岗位必须选择性别', trigger: 'change' }]
-        : [],
     idCardNo: canEditIdentityDetails.value
       ? [
           { required: true, message: '请输入身份证号', trigger: 'blur' },
@@ -914,18 +875,6 @@
             trigger: 'blur'
           }
         ]
-      : [],
-    driverCarrierId: isDriverEmployeeCreate.value
-      ? [{ required: true, message: '请选择所属承运商', trigger: 'change' }]
-      : [],
-    driverType: isDriverEmployeeCreate.value
-      ? [{ required: true, message: '请选择司机类型', trigger: 'change' }]
-      : [],
-    driverLicenseType: isDriverEmployeeCreate.value
-      ? [{ required: true, message: '请选择驾照类型', trigger: 'change' }]
-      : [],
-    driverLicenseExpireDate: isDriverEmployeeCreate.value
-      ? [{ required: true, message: '请选择驾照有效期', trigger: 'change' }]
       : [],
     email: canEditContactDetails.value
       ? [
@@ -1029,7 +978,7 @@
         },
         description: isEdit.value
           ? '岗位变更请通过人事异动办理；原任职将自动保留为历史。'
-          : '岗位由 HR「岗位管理」统一维护；司机岗位会触发司机档案联动。'
+          : '岗位由 HR「岗位管理」统一维护，仅记录员工的组织任职关系。'
       },
       {
         label: '任职状态',
@@ -1043,43 +992,6 @@
         key: 'employmentType',
         type: 'select',
         props: { options: dict('hrEmploymentType') }
-      },
-      {
-        label: '司机任职资料',
-        key: 'driverSection',
-        type: 'divider',
-        span: 24,
-        hidden: !isDriverEmployeeCreate.value
-      },
-      {
-        label: '所属承运商',
-        key: 'driverCarrierId',
-        type: 'select',
-        span: isDesktop.value ? 16 : 24,
-        hidden: !isDriverEmployeeCreate.value,
-        options: driverCarrierOptions.value,
-        props: { filterable: true, clearable: true, placeholder: '请选择同租户承运商' }
-      },
-      {
-        label: '司机类型',
-        key: 'driverType',
-        type: 'radioGroup',
-        hidden: !isDriverEmployeeCreate.value,
-        props: { options: dict('tmsDriverType') }
-      },
-      {
-        label: '驾照类型',
-        key: 'driverLicenseType',
-        type: 'select',
-        hidden: !isDriverEmployeeCreate.value,
-        props: { options: dict('tmsDriverLicenseType'), clearable: true }
-      },
-      {
-        label: '驾照有效期',
-        key: 'driverLicenseExpireDate',
-        type: 'date',
-        hidden: !isDriverEmployeeCreate.value,
-        props: dateProps
       },
       { label: '个人身份', key: 'identitySection', type: 'divider', span: 24 },
       {
@@ -1214,9 +1126,7 @@
       'hrTrainingType',
       'hrTrainingResult',
       'hrRewardType',
-      'hrRewardLevel',
-      'tmsDriverType',
-      'tmsDriverLicenseType'
+      'hrRewardLevel'
     ]
     await Promise.all(codes.map((code) => userStore.ensureDictLoaded(code)))
   }
@@ -1465,10 +1375,6 @@
       'workExperiences',
       'trainings',
       'rewards',
-      'driverCarrierId',
-      'driverType',
-      'driverLicenseType',
-      'driverLicenseExpireDate',
       'tenant',
       'organization',
       'account',
@@ -1530,15 +1436,7 @@
     page.saving = true
     try {
       const payload: Api.Hr.EmployeeProfilePayload = {
-        employee: normalizeEmployee(),
-        driver: isDriverEmployeeCreate.value
-          ? {
-              carrierId: form.driverCarrierId,
-              driverType: form.driverType,
-              licenseType: form.driverLicenseType,
-              licenseExpireDate: form.driverLicenseExpireDate
-            }
-          : null
+        employee: normalizeEmployee()
       }
       if (canEditCareerRecords.value) {
         payload.contracts = structuredClone(toRaw(form.contracts))
@@ -1567,11 +1465,6 @@
 
   watch(selectedPosition, (position) => {
     if (position) form.jobTitle = position.positionName
-    if (!isDriverEmployeeCreate.value) {
-      form.driverCarrierId = ''
-      return
-    }
-    void loadDriverCarrierOptions()
   })
 
   onMounted(() => void initializePage())

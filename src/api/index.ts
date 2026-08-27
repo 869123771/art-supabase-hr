@@ -13,8 +13,8 @@ export {
   addPosition,
   deletePosition,
   editPosition,
-  fetchEmployeeDriverCarrierOptions,
   fetchPositionList,
+  fetchPositionOrganizationTree,
   fetchPositionOptions
 } from '@hr/api/modules/position'
 

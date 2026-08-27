@@ -15,55 +15,57 @@
     </BusinessWorkspaceHeader>
 
     <div class="hr-roster-page__workspace">
-      <aside v-if="isDesktopOrganizationLayout" class="hr-roster-page__organization-panel">
-        <OrganizationScopeFilter
-          scope-type="employee"
-          :data="organizationTree"
-          :loading="organizationFilterLoading"
-          :selected-key="selectedOrganizationKey"
-          :include-descendants="includeDescendantOrganizations"
-          :tenant-id="selectedTenantId"
-          :tenant-options="tenantOptions"
-          :show-tenant-select="isPlatformSuper"
-          @select="handleOrganizationSelect"
-          @refresh="loadOrganizationTree"
-          @update:include-descendants="handleIncludeDescendantsChange"
-          @update:tenant-id="handleTenantChange"
-        />
-      </aside>
-      <div class="hr-roster-page__table-workspace">
-        <section
-          v-if="!isDesktopOrganizationLayout"
-          class="hr-roster-page__mobile-scope art-card-xs"
-        >
-          <span aria-hidden="true"><ArtSvgIcon icon="ri:node-tree" /></span
-          ><div
-            ><small>当前组织范围</small><strong>{{ selectedOrganizationLabel }}</strong></div
+      <ArtWorkspaceSplitter :breakpoint="1200" narrow-mode="hide">
+        <template #primary>
+          <aside v-if="isDesktopOrganizationLayout" class="hr-roster-page__organization-panel">
+            <OrganizationScopeFilter
+              scope-type="employee"
+              :data="organizationTree"
+              :loading="organizationFilterLoading"
+              :selected-key="selectedOrganizationKey"
+              :include-descendants="includeDescendantOrganizations"
+              :global-scope="isAllTenants"
+              @select="handleOrganizationSelect"
+              @refresh="loadOrganizationTree"
+              @update:include-descendants="handleIncludeDescendantsChange"
+            />
+          </aside>
+        </template>
+        <div class="hr-roster-page__table-workspace">
+          <section
+            v-if="!isDesktopOrganizationLayout"
+            class="hr-roster-page__mobile-scope art-card-xs"
           >
-          <ElButton type="primary" plain @click="openOrganizationDrawer"
-            ><ArtSvgIcon icon="ri:filter-3-line" />组织筛选</ElButton
-          >
-        </section>
-        <ArtTableQuery
-          :key="tablePermissionKey"
-          ref="tableQueryRef"
-          v-model="searchForm"
-          :search-items="searchItems"
-          :api-fn="fetchTableData"
-          :columns-factory="columnsFactory"
-          :header-actions="headerActions"
-          header-actions-placement="workspace"
-          :search-bar-props="{ span: 6, labelWidth: 82 }"
-          :table-props="{
-            rowKey: 'id',
-            tableLayout: 'fixed',
-            emptyText: '暂无员工档案',
-            emptyDescription: '可切换组织范围或新增员工档案。'
-          }"
-          :on-success="handleTableSuccess"
-          focusable
-        />
-      </div>
+            <span aria-hidden="true"><ArtSvgIcon icon="ri:node-tree" /></span
+            ><div
+              ><small>当前组织范围</small><strong>{{ selectedOrganizationLabel }}</strong></div
+            >
+            <ElButton type="primary" plain @click="openOrganizationDrawer"
+              ><ArtSvgIcon icon="ri:filter-3-line" />组织筛选</ElButton
+            >
+          </section>
+          <ArtTableQuery
+            :key="tablePermissionKey"
+            ref="tableQueryRef"
+            v-model="searchForm"
+            :search-items="searchItems"
+            :api-fn="fetchTableData"
+            :columns-factory="columnsFactory"
+            :header-actions="headerActions"
+            header-actions-placement="workspace"
+            :search-bar-props="{ span: 6, labelWidth: 82 }"
+            :table-props="{
+              rowKey: 'id',
+              tableLayout: 'fixed',
+              emptyText: '暂无员工档案',
+              emptyDescription: '可切换组织范围或新增员工档案。'
+            }"
+            :on-success="handleTableSuccess"
+            focusable
+            focus-scope-selector=".hr-roster-page__workspace"
+          />
+        </div>
+      </ArtWorkspaceSplitter>
     </div>
     <ArtDrawer ref="organizationDrawerRef">
       <OrganizationScopeFilter
@@ -73,13 +75,10 @@
         :loading="organizationFilterLoading"
         :selected-key="selectedOrganizationKey"
         :include-descendants="includeDescendantOrganizations"
-        :tenant-id="selectedTenantId"
-        :tenant-options="tenantOptions"
-        :show-tenant-select="isPlatformSuper"
+        :global-scope="isAllTenants"
         @select="handleOrganizationSelect"
         @refresh="loadOrganizationTree"
         @update:include-descendants="handleIncludeDescendantsChange"
-        @update:tenant-id="handleTenantChange"
       />
     </ArtDrawer>
   </div>
@@ -103,6 +102,7 @@
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import ArtDrawer from '@/components/core/drawers/art-drawer/index.vue'
+  import ArtWorkspaceSplitter from '@/components/core/layouts/art-workspace-splitter/index.vue'
   import type { ArtDrawerExpose } from '@/components/core/drawers/art-drawer/types'
   import OrganizationScopeFilter from '@/views/system/shared/organization-scope-filter.vue'
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
@@ -111,7 +111,7 @@
   import { pageInfoHandler } from '@/utils/table/tableUtils'
   import TreeUtils from '@/utils/tree'
   import { useUserStore } from '@/store/modules/user'
-  import { fetchGetEnableTenantList } from '@/api/system-manage'
+  import { useTenantScopeStore } from '@/store/modules/tenantScope'
   import { deleteEmployee, fetchEmployeeList, fetchEmployeeOrganizationTree } from '@hr/api'
 
   defineOptions({ name: 'HrEmployeeRoster' })
@@ -121,7 +121,6 @@
   type EmployeeFieldAccessMap = Api.Hr.EmployeeFieldAccessMap
   type TableParams = SearchParams & Pick<Api.Common.PaginationParams, 'current' | 'size'>
   type Organization = Api.SystemManage.OrganizationScopeFilterItem
-  type Tenant = Api.SystemManage.TenantListItem
   interface OverviewRow {
     employmentStatus?: unknown
     account?: { id?: unknown } | null
@@ -132,7 +131,8 @@
   const router = useRouter()
   const route = useRoute()
   const userStore = useUserStore()
-  const { getDictMap, getUserInfo, isPlatformSuper } = storeToRefs(userStore)
+  const { getDictMap } = storeToRefs(userStore)
+  const { effectiveTenantId, isAllTenants } = storeToRefs(useTenantScopeStore())
   const { confirmAction } = useArtFeedback()
   const organizationTreeUtils = new TreeUtils({
     idKey: 'id',
@@ -143,9 +143,8 @@
   const organizationDrawerRef = ref<ArtDrawerExpose<Record<string, never>>>()
   const isDesktopOrganizationLayout = useMediaQuery('(min-width: 1201px)')
   const organizationTree = ref<Organization[]>([])
-  const tenantOptions = ref<Tenant[]>([])
   const organizationFilterLoading = ref(false)
-  const selectedTenantId = ref(getUserInfo.value.tenantId ?? '')
+  const selectedTenantId = computed(() => effectiveTenantId.value ?? '')
   const selectedOrganizationKey = ref(ALL_ORGANIZATIONS_KEY)
   const includeDescendantOrganizations = ref(true)
   const listFieldAccess = ref<EmployeeFieldAccessMap>({})
@@ -292,6 +291,20 @@
       dict: { code: 'hrEmploymentStatus', display: 'auto' }
     },
     {
+      prop: 'tenant',
+      label: '所属租户',
+      minWidth: 180,
+      formatter: (row: Employee) =>
+        h('div', { class: 'hr-roster-cell' }, [
+          h('div', null, [
+            h('strong', { title: row.tenant?.tenantName }, row.tenant?.tenantName || '--'),
+            row.tenant?.tenantCode
+              ? h('small', { title: row.tenant.tenantCode }, row.tenant.tenantCode)
+              : null
+          ])
+        ])
+    },
+    {
       prop: 'organization',
       label: '所属组织',
       minWidth: 170,
@@ -390,7 +403,7 @@
     const { from, to } = pageInfoHandler({ current: params.current, size: params.size })
     const result = await fetchEmployeeList({
       ...params,
-      tenantId: selectedTenantId.value || getUserInfo.value.tenantId,
+      tenantId: selectedTenantId.value || undefined,
       organizationIds: selectedOrganizationIds.value,
       organizationUnassigned: selectedOrganizationKey.value === UNASSIGNED_ORGANIZATION_KEY,
       from,
@@ -426,12 +439,6 @@
   }
   const handleIncludeDescendantsChange = (value: boolean): void => {
     includeDescendantOrganizations.value = value
-    void tableQueryRef.value?.refreshData()
-  }
-  const handleTenantChange = async (tenantId: string): Promise<void> => {
-    selectedTenantId.value = tenantId
-    selectedOrganizationKey.value = ALL_ORGANIZATIONS_KEY
-    await loadOrganizationTree()
     void tableQueryRef.value?.refreshData()
   }
   const openOrganizationDrawer = (): void => {
@@ -479,15 +486,6 @@
     await Promise.all(
       ['hrEmploymentStatus', 'hrEmploymentType'].map((code) => userStore.ensureDictLoaded(code))
     )
-    if (isPlatformSuper.value) {
-      const response = await fetchGetEnableTenantList()
-      tenantOptions.value = response.data ?? []
-      if (
-        !selectedTenantId.value ||
-        !tenantOptions.value.some((item) => item.id === selectedTenantId.value)
-      )
-        selectedTenantId.value = tenantOptions.value[0]?.id ?? ''
-    }
     await loadOrganizationTree()
   })
 </script>
@@ -500,10 +498,8 @@
     min-width: 0;
 
     &__workspace {
-      display: grid;
       flex: 1;
-      grid-template-columns: 264px minmax(0, 1fr);
-      gap: 12px;
+      width: 100%;
       min-width: 0;
       min-height: 0;
     }
@@ -602,30 +598,6 @@
       display: flex;
       gap: 2px;
       align-items: center;
-    }
-
-    @media (width <= 1200px) {
-      &__workspace {
-        display: flex;
-        flex-direction: column;
-      }
-    }
-  }
-
-  :global(.art-table-focus-page .hr-roster-page__workspace) {
-    display: grid !important;
-    grid-template-columns: 264px minmax(0, 1fr) !important;
-    gap: 12px !important;
-  }
-
-  :global(.art-table-focus-page .hr-roster-page__organization-panel.art-table-focus-hidden) {
-    display: block !important;
-  }
-
-  @media (width <= 1200px) {
-    :global(.art-table-focus-page .hr-roster-page__workspace) {
-      display: flex !important;
-      flex-direction: column !important;
     }
   }
 </style>

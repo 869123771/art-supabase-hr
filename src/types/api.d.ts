@@ -2,8 +2,6 @@ declare namespace Api {
   namespace Hr {
     type EmploymentStatus = 'probation' | 'active' | 'leave' | 'terminated'
     type EmploymentType = 'full_time' | 'part_time' | 'intern' | 'contractor'
-    type PositionKind = 'standard' | 'driver'
-    type DriverType = 'primary' | 'secondary'
     type JobArchitectureEntity = 'family' | 'grade' | 'profile'
     type EmployeeFieldKey =
       | 'contactDetails'
@@ -20,8 +18,6 @@ declare namespace Api {
       tenant?: Pick<SystemManage.TenantListItem, 'id' | 'tenantCode' | 'tenantName'> | null
       positionCode: string
       positionName: string
-      positionKind?: PositionKind
-      systemCode?: string | null
       organizationId?: string | null
       organization?: Pick<
         SystemManage.OrganizationListItem,
@@ -47,6 +43,7 @@ declare namespace Api {
       Pick<Position, 'tenantId' | 'enabled'> &
         Api.Common.CommonSearchParams & {
           keyword?: string
+          organizationIds?: string[]
         }
     >
 
@@ -55,8 +52,6 @@ declare namespace Api {
       tenantId: string
       positionCode: string
       positionName: string
-      positionKind: PositionKind
-      systemCode?: string | null
       organizationId?: string | null
       jobProfileId: string
       jobProfile?: Pick<JobProfile, 'id' | 'jobCode' | 'jobName'> | null
@@ -1182,20 +1177,6 @@ declare namespace Api {
       truncated: boolean
     }
 
-    interface EmployeeDriverInput {
-      carrierId: string
-      driverType: DriverType
-      licenseType: string
-      licenseExpireDate: string
-    }
-
-    interface DriverCarrierOption {
-      id: string
-      carrierCode?: string
-      companyName: string
-      enabled?: boolean
-    }
-
     interface EmployeeAccount {
       id: string
       userEmail: string
@@ -1358,7 +1339,6 @@ declare namespace Api {
 
     interface EmployeeProfilePayload {
       employee: Employee
-      driver?: EmployeeDriverInput | null
       contracts?: EmployeeContract[]
       educations?: EmployeeEducation[]
       workExperiences?: EmployeeWorkExperience[]

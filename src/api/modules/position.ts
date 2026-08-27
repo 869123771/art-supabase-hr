@@ -1,11 +1,12 @@
 import { useSupabase } from '@/hooks'
 import { withRequestOptions } from '@/api/providers/supabase/query'
 import type { ApiRequestOptions } from '@/types/api/request'
+import TreeUtils from '@/utils/tree'
 
 type Position = Api.Hr.Position
 type PositionSearchParams = Api.Hr.PositionSearchParams
 type PositionOption = Api.Hr.PositionOption
-type CarrierOption = Api.Hr.DriverCarrierOption
+type OrganizationScopeFilterItem = Api.SystemManage.OrganizationScopeFilterItem
 
 interface PositionListPayload {
   records: Position[]
@@ -13,6 +14,11 @@ interface PositionListPayload {
 }
 
 const { supabase, keysToSnakeDeep, responseHandle } = useSupabase()
+const organizationTreeUtils = new TreeUtils({
+  idKey: 'id',
+  parentKey: 'parentId',
+  childrenKey: 'children'
+})
 
 const pickPositionPayload = (position: Position): Record<string, unknown> => {
   const payload: Record<string, unknown> = {
@@ -41,7 +47,8 @@ export async function fetchPositionList(params: PositionSearchParams, options?: 
           p_to: Math.max(params.to ?? from + 19, from),
           p_keyword: String(params.keyword ?? '').trim() || null,
           p_enabled: params.enabled ?? null,
-          p_tenant_id: params.tenantId || null
+          p_tenant_id: params.tenantId || null,
+          p_organization_ids: params.organizationIds?.length ? params.organizationIds : null
         }),
         options
       ),
@@ -55,6 +62,28 @@ export async function fetchPositionList(params: PositionSearchParams, options?: 
   }
 }
 
+export async function fetchPositionOrganizationTree(params: { tenantId?: string } = {}) {
+  const response = await responseHandle<OrganizationScopeFilterItem[]>(
+    () =>
+      supabase.rpc('hr_list_position_organization_scope_secure', {
+        p_tenant_id: params.tenantId || null
+      }),
+    { showErrorMessage: true }
+  )
+
+  return {
+    ...response,
+    data: organizationTreeUtils.listToTree(response.data ?? [], (a, b) => {
+      const tenantDiff = (a.tenant?.tenantName ?? '').localeCompare(
+        b.tenant?.tenantName ?? '',
+        'zh-CN'
+      )
+      const sortDiff = (a.sort ?? 0) - (b.sort ?? 0)
+      return tenantDiff || sortDiff || a.organizationName.localeCompare(b.organizationName, 'zh-CN')
+    })
+  }
+}
+
 export async function fetchPositionOptions(
   params: { tenantId?: string; includeDisabled?: boolean },
   options?: ApiRequestOptions
@@ -65,22 +94,6 @@ export async function fetchPositionOptions(
         supabase.rpc('hr_list_position_options_secure', {
           p_tenant_id: params.tenantId || null,
           p_include_disabled: params.includeDisabled ?? false
-        }),
-        options
-      ),
-    { showErrorMessage: true }
-  )
-}
-
-export async function fetchEmployeeDriverCarrierOptions(
-  tenantId?: string,
-  options?: ApiRequestOptions
-) {
-  return await responseHandle<CarrierOption[]>(
-    () =>
-      withRequestOptions(
-        supabase.rpc('hr_list_driver_carrier_options_secure', {
-          p_tenant_id: tenantId || null
         }),
         options
       ),
