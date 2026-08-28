@@ -350,10 +350,6 @@
       type: 'add',
       label: '新增岗位',
       permission: 'Hr:Position:Add',
-      disabled: isPlatformSuper.value && !selectedTenantId.value,
-      buttonProps: {
-        title: isPlatformSuper.value && !selectedTenantId.value ? '请先在顶部选择具体租户' : ''
-      },
       onClick: () => openDialog()
     }
   ])

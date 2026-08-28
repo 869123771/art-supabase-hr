@@ -104,7 +104,7 @@
             :error="directoryState.error"
             :empty="!directoryState.loading && !directoryState.error && !filteredPositions.length"
             empty-title="当前组织暂无岗位"
-            empty-description="岗位会根据员工任职、有效岗位编制及已维护业务记录显示。"
+            empty-description="请先在 HR / 岗位管理中为当前组织新增并启用岗位。"
             :min-height="280"
             @retry="loadDirectory"
           >

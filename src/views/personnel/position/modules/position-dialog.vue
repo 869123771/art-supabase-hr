@@ -22,7 +22,7 @@
   import ArtForm, { type FormItem } from '@/components/core/forms/art-form/index.vue'
   import { addPosition, editPosition, fetchJobArchitectureOptions } from '@hr/api'
   import { fetchGetEnableOrganizationTree } from '@/api/system-manage'
-  import { useTenantScopeStore } from '@/store/modules/tenantScope'
+  import { useTenantScopeFormPolicy } from '@/hooks/core/useTenantScopeFormPolicy'
   import { useDocumentNumberRule } from '@/hooks/core/useDocumentNumberRule'
 
   defineOptions({ name: 'HrPositionDialog' })
@@ -40,7 +40,7 @@
   }
 
   const emit = defineEmits<{ (event: 'success', type: 'add' | 'edit'): void }>()
-  const { effectiveTenantId } = storeToRefs(useTenantScopeStore())
+  const { effectiveTenantId } = useTenantScopeFormPolicy()
   const dialogRef = ref<ArtDialogExpose<Position | undefined>>()
   const formRef = ref<DialogExposeForm>()
 
@@ -61,7 +61,7 @@
   const positionNumber = useDocumentNumberRule('hr.position')
 
   const formRules = computed<FormRules<Position>>(() => ({
-    tenantId: [{ required: true, message: '请先在顶部选择所属租户', trigger: 'change' }],
+    tenantId: [{ required: true, message: '当前账号未绑定有效租户', trigger: 'change' }],
     positionCode: [
       ...(form.id || positionNumber.manualRequired(false)
         ? [{ required: true, message: '请输入岗位编码', trigger: 'blur' as const }]
