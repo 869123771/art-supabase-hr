@@ -1,100 +1,102 @@
 <template>
-  <div
-    v-auth="'Hr:Attendance:View'"
-    class="attendance-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="TIME & ATTENDANCE CONTROL"
-      title="考勤与工时"
-      description="把班次、排班、打卡事实、日工时核算、异常修正与月度封账连接为可审计的薪资输入链。"
-      icon="ri:calendar-check-line"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
-    </BusinessWorkspaceHeader>
+  <ArtPermissionGuard permission="Hr:Attendance:View">
+    <div class="attendance-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="TIME & ATTENDANCE CONTROL"
+        title="考勤与工时"
+        description="把班次、排班、打卡事实、日工时核算、异常修正与月度封账连接为可审计的薪资输入链。"
+        icon="ri:calendar-check-line"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+      >
+        <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
+      </BusinessWorkspaceHeader>
 
-    <section class="attendance-page__control" aria-labelledby="attendance-control-title">
-      <header class="attendance-page__heading">
-        <div>
-          <span class="attendance-page__section-icon"
-            ><ArtSvgIcon icon="ri:timer-flash-line"
-          /></span>
-          <span>
-            <strong id="attendance-control-title">工时核算控制链</strong>
-            <small>计划工时、实际打卡与异常处理分层管理，封账后形成稳定的薪资核算输入</small>
+      <section class="attendance-page__control" aria-labelledby="attendance-control-title">
+        <header class="attendance-page__heading">
+          <div>
+            <span class="attendance-page__section-icon"
+              ><ArtSvgIcon icon="ri:timer-flash-line"
+            /></span>
+            <span>
+              <strong id="attendance-control-title">工时核算控制链</strong>
+              <small>计划工时、实际打卡与异常处理分层管理，封账后形成稳定的薪资核算输入</small>
+            </span>
+          </div>
+          <span class="attendance-page__governance">
+            <ArtSvgIcon icon="ri:lock-2-line" />异常清零 · 期间封账
           </span>
-        </div>
-        <span class="attendance-page__governance">
-          <ArtSvgIcon icon="ri:lock-2-line" />异常清零 · 期间封账
-        </span>
-      </header>
+        </header>
 
-      <ol class="attendance-page__rail" aria-label="考勤工时处理阶段">
-        <li v-for="(stage, index) in controlStages" :key="stage.label" :class="stage.state">
-          <span class="attendance-page__rail-index">0{{ index + 1 }}</span>
-          <span class="attendance-page__rail-icon"><ArtSvgIcon :icon="stage.icon" /></span>
-          <div
-            ><strong>{{ stage.label }}</strong
-            ><small>{{ stage.description }}</small></div
-          >
-          <b>{{ stage.value }}</b>
-        </li>
-      </ol>
+        <ol class="attendance-page__rail" aria-label="考勤工时处理阶段">
+          <li v-for="(stage, index) in controlStages" :key="stage.label" :class="stage.state">
+            <span class="attendance-page__rail-index">0{{ index + 1 }}</span>
+            <span class="attendance-page__rail-icon"><ArtSvgIcon :icon="stage.icon" /></span>
+            <div
+              ><strong>{{ stage.label }}</strong
+              ><small>{{ stage.description }}</small></div
+            >
+            <b>{{ stage.value }}</b>
+          </li>
+        </ol>
 
-      <HrEntityNavigation
-        v-model="activeEntity"
-        :items="navigationItems"
-        navigation-label="考勤工时管理分类"
-        compact
-        @change="handleTabChange"
+        <HrEntityNavigation
+          v-model="activeEntity"
+          :items="navigationItems"
+          navigation-label="考勤工时管理分类"
+          compact
+          @change="handleTabChange"
+        />
+        <footer class="attendance-page__note">
+          <ArtSvgIcon icon="ri:information-line" />
+          打卡记录保存后自动按班次时区和宽限规则核算；已封账期间只能由平台超级管理员重新开放，不能直接篡改。
+        </footer>
+      </section>
+
+      <ArtTableQuery
+        :key="activeEntity"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 76, showExpand: false }"
+        :table-props="{
+          rowKey: 'id',
+          tableLayout: 'fixed',
+          emptyText: `暂无${activeTab.label}`,
+          emptyDescription: activeTab.emptyDescription
+        }"
+        focusable
       />
-      <footer class="attendance-page__note">
-        <ArtSvgIcon icon="ri:information-line" />
-        打卡记录保存后自动按班次时区和宽限规则核算；已封账期间只能由平台超级管理员重新开放，不能直接篡改。
-      </footer>
-    </section>
 
-    <ArtTableQuery
-      :key="activeEntity"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 76, showExpand: false }"
-      :table-props="{
-        rowKey: 'id',
-        tableLayout: 'fixed',
-        emptyText: `暂无${activeTab.label}`,
-        emptyDescription: activeTab.emptyDescription
-      }"
-      focusable
-    />
-
-    <AttendanceDialog ref="dialogRef" @success="handleSaveSuccess" />
-  </div>
+      <AttendanceDialog ref="dialogRef" @success="handleSaveSuccess" />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
   import dayjs from 'dayjs'
-  import { ElButton, ElTag } from 'element-plus'
+  import { ElTag } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
     ArtTableQueryExpose,
     ArtTableQueryHeaderAction
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
+  import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
+  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
-  import { useAuth } from '@/hooks/core/useAuth'
   import { useUserStore } from '@/store/modules/user'
   import { pageInfoHandler } from '@/utils/table/tableUtils'
   import type { ColumnOption, DialogType } from '@/types'
@@ -177,7 +179,6 @@
 
   const userStore = useUserStore()
   const { getDictMap, isPlatformSuper } = storeToRefs(userStore)
-  const { hasAuth } = useAuth()
   const { confirmAction, promptText } = useArtFeedback()
   const activeEntity = ref<Entity>('record')
   const activeTab = computed(() => tabs.find((tab) => tab.value === activeEntity.value) ?? tabs[0]!)
@@ -324,10 +325,7 @@
   const dictLabel = (code: string, value?: string | null) =>
     getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
   const identity = (title?: string | null, subtitle?: string | null) => (
-    <div class="attendance-page__identity">
-      <strong>{title || '--'}</strong>
-      <small>{subtitle || '--'}</small>
-    </div>
+    <HrTableIdentityCell primary={title} secondary={subtitle} />
   )
   const minuteText = (minutes?: number | null) => {
     const value = Number(minutes ?? 0)
@@ -608,114 +606,98 @@
     actionColumn()
   ]
 
-  const actionButton = (
-    label: string,
-    type: 'primary' | 'success' | 'warning' | 'danger',
-    permission: string,
-    handler: () => void
-  ) =>
-    hasAuth(permission) ? (
-      <ElButton link type={type} onClick={handler}>
-        {label}
-      </ElButton>
-    ) : null
-
-  const transitionButtons = (row: RecordItem) => {
-    if (!row.id) return null
+  const transitionActions = (row: RecordItem): ButtonMoreItem[] => {
+    if (!row.id) return []
+    const actions: ButtonMoreItem[] = []
     if (activeEntity.value === 'record') {
       const item = row as Api.Hr.TimeAttendanceDailyRecord
-      if (item.lockedAt) return null
-      return (
-        <>
-          {actionButton(
-            '重新核算',
-            'primary',
-            'Hr:Attendance:Evaluate',
-            () => void handleRecordAction(item, 'evaluate')
-          )}
-          {!item.pendingCorrection
-            ? actionButton('发起修正', 'warning', 'Hr:Attendance:Add', () =>
-                openDialog('correction', undefined, { attendanceRecordId: item.id })
-              )
-            : null}
-          {item.exceptionStatus === 'open'
-            ? actionButton(
-                '豁免',
-                'warning',
-                'Hr:Attendance:ReviewCorrection',
-                () => void handleRecordAction(item, 'waive')
-              )
-            : null}
-          {['resolved', 'waived'].includes(item.exceptionStatus)
-            ? actionButton(
-                '重新打开',
-                'warning',
-                'Hr:Attendance:ReviewCorrection',
-                () => void handleRecordAction(item, 'reopen')
-              )
-            : null}
-        </>
-      )
+      if (item.lockedAt) return actions
+      actions.push({
+        key: 'evaluate',
+        label: '重新核算',
+        icon: 'ri:refresh-line',
+        auth: 'Hr:Attendance:Evaluate'
+      })
+      if (!item.pendingCorrection)
+        actions.push({
+          key: 'create_correction',
+          label: '发起修正',
+          icon: 'ri:file-edit-line',
+          auth: 'Hr:Attendance:Add'
+        })
+      if (item.exceptionStatus === 'open')
+        actions.push({
+          key: 'waive',
+          label: '豁免异常',
+          icon: 'ri:shield-check-line',
+          auth: 'Hr:Attendance:ReviewCorrection'
+        })
+      if (['resolved', 'waived'].includes(item.exceptionStatus))
+        actions.push({
+          key: 'reopen_record',
+          label: '重新打开异常',
+          icon: 'ri:arrow-go-back-line',
+          auth: 'Hr:Attendance:ReviewCorrection'
+        })
     }
     if (activeEntity.value === 'correction') {
       const item = row as Api.Hr.TimeAttendanceCorrection
       if (['draft', 'rejected'].includes(item.status))
-        return actionButton(
-          '提交审核',
-          'primary',
-          'Hr:Attendance:Edit',
-          () => void handleCorrectionAction(item, 'submit')
+        actions.push({
+          key: 'submit_correction',
+          label: '提交审核',
+          icon: 'ri:send-plane-line',
+          auth: 'Hr:Attendance:Edit'
+        })
+      if (item.status === 'submitted') {
+        actions.push(
+          {
+            key: 'approve_correction',
+            label: '批准修正',
+            icon: 'ri:checkbox-circle-line',
+            auth: 'Hr:Attendance:ReviewCorrection'
+          },
+          {
+            key: 'reject_correction',
+            label: '驳回修正',
+            icon: 'ri:close-circle-line',
+            color: 'var(--el-color-danger)',
+            auth: 'Hr:Attendance:ReviewCorrection'
+          },
+          {
+            key: 'cancel_correction',
+            label: '取消修正',
+            icon: 'ri:arrow-go-back-line',
+            auth: 'Hr:Attendance:Edit'
+          }
         )
-      if (item.status === 'submitted')
-        return (
-          <>
-            {actionButton(
-              '批准',
-              'success',
-              'Hr:Attendance:ReviewCorrection',
-              () => void handleCorrectionAction(item, 'approve')
-            )}
-            {actionButton(
-              '驳回',
-              'danger',
-              'Hr:Attendance:ReviewCorrection',
-              () => void handleCorrectionAction(item, 'reject')
-            )}
-            {actionButton(
-              '取消',
-              'warning',
-              'Hr:Attendance:Edit',
-              () => void handleCorrectionAction(item, 'cancel')
-            )}
-          </>
-        )
-      return null
+      }
     }
     if (activeEntity.value === 'period') {
       const item = row as Api.Hr.TimeAttendancePeriod
       if (item.status === 'open')
-        return actionButton(
-          '进入核对',
-          'primary',
-          'Hr:Attendance:ClosePeriod',
-          () => void handlePeriodAction(item, 'review')
-        )
+        actions.push({
+          key: 'review_period',
+          label: '进入核对',
+          icon: 'ri:search-eye-line',
+          auth: 'Hr:Attendance:ClosePeriod'
+        })
       if (item.status === 'reviewing')
-        return actionButton(
-          '确认封账',
-          'success',
-          'Hr:Attendance:ClosePeriod',
-          () => void handlePeriodAction(item, 'close')
-        )
+        actions.push({
+          key: 'close_period',
+          label: '确认封账',
+          icon: 'ri:lock-2-line',
+          auth: 'Hr:Attendance:ClosePeriod'
+        })
       if (item.status === 'closed' && isPlatformSuper.value)
-        return actionButton(
-          '重新开放',
-          'warning',
-          'Hr:Attendance:ClosePeriod',
-          () => void handlePeriodAction(item, 'reopen')
-        )
+        actions.push({
+          key: 'reopen_period',
+          label: '重新开放',
+          icon: 'ri:lock-unlock-line',
+          auth: 'Hr:Attendance:ClosePeriod'
+        })
     }
-    return null
+    return actions
   }
 
   const canEdit = (row: RecordItem) => {
@@ -742,11 +724,10 @@
   const actionColumn = (): ColumnOption<RecordItem> => ({
     prop: 'action',
     label: '操作',
-    width: activeEntity.value === 'record' || activeEntity.value === 'correction' ? 330 : 230,
+    width: 112,
     fixed: 'right',
     formatter: (row) => (
-      <div class="attendance-page__actions">
-        {transitionButtons(row)}
+      <HrTableActions>
         {canEdit(row) ? (
           <ArtButtonTable
             type="edit"
@@ -754,16 +735,56 @@
             onClick={() => openDialog(activeEntity.value, row)}
           />
         ) : null}
-        {canDelete(row) ? (
-          <ArtButtonTable
-            type="delete"
-            permission="Hr:Attendance:Delete"
-            onClick={() => void handleDelete(row)}
-          />
-        ) : null}
-      </div>
+        <ArtButtonMore
+          list={() => [
+            ...transitionActions(row),
+            ...(canDelete(row)
+              ? [
+                  {
+                    key: 'delete',
+                    label: '删除记录',
+                    icon: 'ri:delete-bin-5-line',
+                    color: 'var(--el-color-danger)',
+                    auth: 'Hr:Attendance:Delete'
+                  }
+                ]
+              : [])
+          ]}
+          onClick={(item: ButtonMoreItem) => void handleMoreAction(item, row)}
+        />
+      </HrTableActions>
     )
   })
+
+  const handleMoreAction = async (item: ButtonMoreItem, row: RecordItem): Promise<void> => {
+    if (!row.id) return
+    if (item.key === 'delete') return await handleDelete(row)
+    if (activeEntity.value === 'record') {
+      const record = row as Api.Hr.TimeAttendanceDailyRecord
+      if (item.key === 'create_correction')
+        return openDialog('correction', undefined, { attendanceRecordId: record.id })
+      if (item.key === 'evaluate') return await handleRecordAction(record, 'evaluate')
+      if (item.key === 'waive') return await handleRecordAction(record, 'waive')
+      if (item.key === 'reopen_record') return await handleRecordAction(record, 'reopen')
+    }
+    if (activeEntity.value === 'correction') {
+      const correction = row as Api.Hr.TimeAttendanceCorrection
+      if (item.key === 'submit_correction')
+        return await handleCorrectionAction(correction, 'submit')
+      if (item.key === 'approve_correction')
+        return await handleCorrectionAction(correction, 'approve')
+      if (item.key === 'reject_correction')
+        return await handleCorrectionAction(correction, 'reject')
+      if (item.key === 'cancel_correction')
+        return await handleCorrectionAction(correction, 'cancel')
+    }
+    if (activeEntity.value === 'period') {
+      const period = row as Api.Hr.TimeAttendancePeriod
+      if (item.key === 'review_period') return await handlePeriodAction(period, 'review')
+      if (item.key === 'close_period') return await handlePeriodAction(period, 'close')
+      if (item.key === 'reopen_period') return await handlePeriodAction(period, 'reopen')
+    }
+  }
 
   const headerActions = computed<ArtTableQueryHeaderAction[]>(() => [
     {

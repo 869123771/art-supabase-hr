@@ -1,91 +1,90 @@
 <template>
-  <div
-    v-auth="'Hr:SelfService:View'"
-    class="service-delivery-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="EMPLOYEE SERVICE DELIVERY"
-      title="员工服务交付"
-      description="以统一服务目录承接员工诉求，用明确处理人、SLA 与不可变沟通轨迹闭环每一次服务交付。"
-      icon="ri:customer-service-2-line"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
-    </BusinessWorkspaceHeader>
+  <ArtPermissionGuard permission="Hr:SelfService:View">
+    <div class="service-delivery-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="EMPLOYEE SERVICE DELIVERY"
+        title="员工服务交付"
+        description="以统一服务目录承接员工诉求，用明确处理人、SLA 与不可变沟通轨迹闭环每一次服务交付。"
+        icon="ri:customer-service-2-line"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+      >
+        <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
+      </BusinessWorkspaceHeader>
 
-    <section
-      class="service-delivery-page__control"
-      aria-labelledby="service-delivery-control-title"
-    >
-      <header class="service-delivery-page__heading">
-        <div>
-          <span class="service-delivery-page__section-icon">
-            <ArtSvgIcon icon="ri:route-line" />
-          </span>
-          <span>
-            <strong id="service-delivery-control-title">服务交付控制链</strong>
-            <small>服务入口、受理责任、员工补充与解决确认保持同一条可审计轨迹</small>
-          </span>
-        </div>
-        <span class="service-delivery-page__governance">
-          <ArtSvgIcon icon="ri:shield-check-line" />租户隔离 · SLA 留痕
-        </span>
-      </header>
-
-      <ol class="service-delivery-page__rail" aria-label="员工服务交付阶段">
-        <li v-for="(stage, index) in deliveryStages" :key="stage.label" :class="stage.state">
-          <span class="service-delivery-page__rail-index">0{{ index + 1 }}</span>
-          <span class="service-delivery-page__rail-icon"><ArtSvgIcon :icon="stage.icon" /></span>
+      <section
+        class="service-delivery-page__control"
+        aria-labelledby="service-delivery-control-title"
+      >
+        <header class="service-delivery-page__heading">
           <div>
-            <strong>{{ stage.label }}</strong>
-            <small>{{ stage.description }}</small>
+            <span class="service-delivery-page__section-icon">
+              <ArtSvgIcon icon="ri:route-line" />
+            </span>
+            <span>
+              <strong id="service-delivery-control-title">服务交付控制链</strong>
+              <small>服务入口、受理责任、员工补充与解决确认保持同一条可审计轨迹</small>
+            </span>
           </div>
-          <b>{{ stage.value }}</b>
-        </li>
-      </ol>
+          <span class="service-delivery-page__governance">
+            <ArtSvgIcon icon="ri:shield-check-line" />租户隔离 · SLA 留痕
+          </span>
+        </header>
 
-      <HrEntityNavigation
-        v-model="activeEntity"
-        :items="navigationItems"
-        navigation-label="员工服务交付分类"
-        compact
-        @change="handleTabChange"
+        <ol class="service-delivery-page__rail" aria-label="员工服务交付阶段">
+          <li v-for="(stage, index) in deliveryStages" :key="stage.label" :class="stage.state">
+            <span class="service-delivery-page__rail-index">0{{ index + 1 }}</span>
+            <span class="service-delivery-page__rail-icon"><ArtSvgIcon :icon="stage.icon" /></span>
+            <div>
+              <strong>{{ stage.label }}</strong>
+              <small>{{ stage.description }}</small>
+            </div>
+            <b>{{ stage.value }}</b>
+          </li>
+        </ol>
+
+        <HrEntityNavigation
+          v-model="activeEntity"
+          :items="navigationItems"
+          navigation-label="员工服务交付分类"
+          compact
+          @change="handleTabChange"
+        />
+        <footer class="service-delivery-page__note">
+          <ArtSvgIcon icon="ri:information-line" />
+          普通员工只能查看和推进本人服务工单；团队队列、分派、解决和服务目录维护均由受控权限与服务端
+          RPC 双重校验。
+        </footer>
+      </section>
+
+      <ArtTableQuery
+        :key="activeEntity"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 76, showExpand: false }"
+        :table-props="{
+          rowKey: 'id',
+          tableLayout: 'fixed',
+          emptyText: activeEntity === 'request' ? '暂无员工服务工单' : '暂无可用服务',
+          emptyDescription: activeTab.emptyDescription
+        }"
+        focusable
       />
-      <footer class="service-delivery-page__note">
-        <ArtSvgIcon icon="ri:information-line" />
-        普通员工只能查看和推进本人服务工单；团队队列、分派、解决和服务目录维护均由受控权限与服务端
-        RPC 双重校验。
-      </footer>
-    </section>
 
-    <ArtTableQuery
-      :key="activeEntity"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 76, showExpand: false }"
-      :table-props="{
-        rowKey: 'id',
-        tableLayout: 'fixed',
-        emptyText: activeEntity === 'request' ? '暂无员工服务工单' : '暂无可用服务',
-        emptyDescription: activeTab.emptyDescription
-      }"
-      focusable
-    />
-
-    <ServiceDeliveryDialog ref="dialogRef" @success="handleSaveSuccess" />
-    <ServiceAssignmentDialog ref="assignmentDialogRef" @success="refreshAfterAction" />
-    <ServiceRequestDrawer ref="requestDrawerRef" />
-  </div>
+      <ServiceDeliveryDialog ref="dialogRef" @success="handleSaveSuccess" />
+      <ServiceAssignmentDialog ref="assignmentDialogRef" @success="refreshAfterAction" />
+      <ServiceRequestDrawer ref="requestDrawerRef" />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
-  import { ElButton, ElTag } from 'element-plus'
+  import { ElTag } from 'element-plus'
   import { useRouter } from 'vue-router'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
@@ -93,6 +92,10 @@
     ArtTableQueryHeaderAction
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
+  import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
+  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
@@ -100,7 +103,6 @@
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
-  import { useAuth } from '@/hooks/core/useAuth'
   import { useUserStore } from '@/store/modules/user'
   import { pageInfoHandler } from '@/utils/table/tableUtils'
   import { formatWithDayjs } from '@/utils/time'
@@ -166,7 +168,6 @@
   const router = useRouter()
   const userStore = useUserStore()
   const { getDictMap, isPlatformSuper } = storeToRefs(userStore)
-  const { hasAuth } = useAuth()
   const { confirmAction, promptText } = useArtFeedback()
   const activeEntity = ref<Entity>('request')
   const activeTab = computed(() => tabs.find((tab) => tab.value === activeEntity.value) ?? tabs[0]!)
@@ -261,10 +262,7 @@
   const formatDateTime = (value?: string | null): string =>
     value ? (formatWithDayjs(value) ?? '--') : '--'
   const identity = (primary?: string | null, secondary?: string | null) => (
-    <div class="service-delivery-page__identity">
-      <strong>{primary || '--'}</strong>
-      <span>{secondary || '--'}</span>
-    </div>
+    <HrTableIdentityCell primary={primary} secondary={secondary} />
   )
   const statusTone = (status: Api.Hr.ServiceRequestStatus) =>
     ['resolved', 'closed'].includes(status)
@@ -477,159 +475,236 @@
   const columnsFactory = (): ColumnOption<RecordItem>[] =>
     activeEntity.value === 'request' ? requestColumns() : serviceColumns()
 
-  const actionButton = (
+  interface ServiceMoreAction extends ButtonMoreItem {
+    run: () => void
+  }
+  const serviceAction = (
+    key: string,
     label: string,
-    type: 'primary' | 'success' | 'warning' | 'danger' | 'info',
-    handler: () => void,
-    permission?: string
-  ) =>
-    !permission || hasAuth(permission) ? (
-      <ElButton link type={type} onClick={handler}>
-        {label}
-      </ElButton>
-    ) : null
-  const requestTransitionButtons = (item: Api.Hr.ServiceRequest) => {
-    if (!item.id) return null
+    run: () => void,
+    icon: string,
+    auth?: string,
+    color?: string
+  ): ServiceMoreAction => ({ key, label, run, icon, auth, color })
+  const requestActions = (item: Api.Hr.ServiceRequest): ServiceMoreAction[] => {
+    if (!item.id) return []
     if (item.status === 'draft') {
-      return (
-        <>
-          {actionButton(
-            '提交',
-            'primary',
-            () => void handleRequestAction(item, 'submit'),
-            'Hr:SelfService:Submit'
-          )}
-          {actionButton(
-            '编辑',
-            'primary',
-            () => openDialog('request', item),
-            'Hr:SelfService:Edit'
-          )}
-          <ArtButtonTable
-            type="delete"
-            permission="Hr:SelfService:Delete"
-            onClick={() => void handleDelete(item)}
-          />
-        </>
-      )
+      return [
+        serviceAction(
+          'submit',
+          '提交服务工单',
+          () => void handleRequestAction(item, 'submit'),
+          'ri:send-plane-line',
+          'Hr:SelfService:Submit'
+        ),
+        serviceAction(
+          'edit',
+          '编辑服务工单',
+          () => openDialog('request', item),
+          'ri:edit-line',
+          'Hr:SelfService:Edit'
+        ),
+        serviceAction(
+          'delete',
+          '删除服务工单',
+          () => void handleDelete(item),
+          'ri:delete-bin-5-line',
+          'Hr:SelfService:Delete',
+          'var(--el-color-danger)'
+        )
+      ]
     }
     if (item.status === 'submitted') {
-      return (
-        <>
-          {actionButton(
-            '分派',
-            'primary',
-            () => void assignmentDialogRef.value?.handleOpen(item),
-            'Hr:SelfService:Assign'
-          )}
-          {actionButton(
-            '开始处理',
-            'success',
-            () => void handleRequestAction(item, 'start'),
-            'Hr:SelfService:Resolve'
-          )}
-          {actionButton(
-            '取消',
-            'warning',
-            () => void handleRequestAction(item, 'cancel'),
-            'Hr:SelfService:Submit'
-          )}
-        </>
-      )
+      return [
+        serviceAction(
+          'assign',
+          '分派服务工单',
+          () => void assignmentDialogRef.value?.handleOpen(item),
+          'ri:user-settings-line',
+          'Hr:SelfService:Assign'
+        ),
+        serviceAction(
+          'start',
+          '开始处理',
+          () => void handleRequestAction(item, 'start'),
+          'ri:play-circle-line',
+          'Hr:SelfService:Resolve'
+        ),
+        serviceAction(
+          'cancel',
+          '取消服务工单',
+          () => void handleRequestAction(item, 'cancel'),
+          'ri:close-circle-line',
+          'Hr:SelfService:Submit'
+        )
+      ]
     }
     if (item.status === 'assigned') {
-      return (
-        <>
-          {actionButton(
-            '重新分派',
-            'primary',
-            () => void assignmentDialogRef.value?.handleOpen(item),
-            'Hr:SelfService:Assign'
-          )}
-          {actionButton(
-            '开始处理',
-            'success',
-            () => void handleRequestAction(item, 'start'),
-            'Hr:SelfService:Resolve'
-          )}
-          {actionButton(
-            '解决',
-            'success',
-            () => void handleRequestAction(item, 'resolve'),
-            'Hr:SelfService:Resolve'
-          )}
-        </>
-      )
+      return [
+        serviceAction(
+          'reassign',
+          '重新分派',
+          () => void assignmentDialogRef.value?.handleOpen(item),
+          'ri:user-settings-line',
+          'Hr:SelfService:Assign'
+        ),
+        serviceAction(
+          'start',
+          '开始处理',
+          () => void handleRequestAction(item, 'start'),
+          'ri:play-circle-line',
+          'Hr:SelfService:Resolve'
+        ),
+        serviceAction(
+          'resolve',
+          '标记已解决',
+          () => void handleRequestAction(item, 'resolve'),
+          'ri:checkbox-circle-line',
+          'Hr:SelfService:Resolve'
+        )
+      ]
     }
     if (item.status === 'in_progress') {
-      return (
-        <>
-          {actionButton(
-            '请求补充',
-            'warning',
-            () => void handleRequestAction(item, 'wait'),
-            'Hr:SelfService:Resolve'
-          )}
-          {actionButton(
-            '解决',
-            'success',
-            () => void handleRequestAction(item, 'resolve'),
-            'Hr:SelfService:Resolve'
-          )}
-          {actionButton('沟通', 'primary', () => void handleRequestAction(item, 'comment'))}
-        </>
-      )
+      return [
+        serviceAction(
+          'wait',
+          '请求员工补充',
+          () => void handleRequestAction(item, 'wait'),
+          'ri:question-answer-line',
+          'Hr:SelfService:Resolve'
+        ),
+        serviceAction(
+          'resolve',
+          '标记已解决',
+          () => void handleRequestAction(item, 'resolve'),
+          'ri:checkbox-circle-line',
+          'Hr:SelfService:Resolve'
+        ),
+        serviceAction(
+          'comment',
+          '记录沟通',
+          () => void handleRequestAction(item, 'comment'),
+          'ri:chat-1-line'
+        )
+      ]
     }
     if (item.status === 'waiting_employee') {
-      return (
-        <>
-          {actionButton('已补充', 'primary', () => void handleRequestAction(item, 'resume'))}
-          {actionButton('沟通', 'primary', () => void handleRequestAction(item, 'comment'))}
-        </>
-      )
+      return [
+        serviceAction(
+          'resume',
+          '员工已补充',
+          () => void handleRequestAction(item, 'resume'),
+          'ri:play-circle-line'
+        ),
+        serviceAction(
+          'comment',
+          '记录沟通',
+          () => void handleRequestAction(item, 'comment'),
+          'ri:chat-1-line'
+        )
+      ]
     }
     if (item.status === 'resolved') {
-      return (
-        <>
-          {actionButton('确认关闭', 'success', () => void handleRequestAction(item, 'close'))}
-          {actionButton('重新打开', 'warning', () => void handleRequestAction(item, 'reopen'))}
-        </>
-      )
+      return [
+        serviceAction(
+          'close',
+          '确认关闭',
+          () => void handleRequestAction(item, 'close'),
+          'ri:checkbox-circle-line'
+        ),
+        serviceAction(
+          'reopen',
+          '重新打开',
+          () => void handleRequestAction(item, 'reopen'),
+          'ri:arrow-go-back-line'
+        )
+      ]
     }
     if (item.status === 'closed')
-      return actionButton('重新打开', 'warning', () => void handleRequestAction(item, 'reopen'))
-    return null
+      return [
+        serviceAction(
+          'reopen',
+          '重新打开',
+          () => void handleRequestAction(item, 'reopen'),
+          'ri:arrow-go-back-line'
+        )
+      ]
+    return []
   }
   const requestActionColumn = (): ColumnOption<RecordItem> => ({
     prop: 'action',
     label: '操作',
-    width: 350,
+    width: 112,
     fixed: 'right',
     formatter: (row) => {
       const item = row as Api.Hr.ServiceRequest
       return (
-        <div class="service-delivery-page__actions">
-          {actionButton(
-            '详情',
-            'primary',
-            () => item.id && void requestDrawerRef.value?.handleOpen(item.id)
-          )}
-          {requestTransitionButtons(item)}
-        </div>
+        <HrTableActions>
+          <ArtButtonTable
+            type="view"
+            label="查看服务工单详情"
+            permission="Hr:SelfService:View"
+            onClick={() => item.id && void requestDrawerRef.value?.handleOpen(item.id)}
+          />
+          <ArtButtonMore
+            list={() => requestActions(item)}
+            onClick={(action: ButtonMoreItem) =>
+              requestActions(item)
+                .find((candidate) => candidate.key === action.key)
+                ?.run()
+            }
+          />
+        </HrTableActions>
       )
     }
   })
   const serviceActionColumn = (): ColumnOption<RecordItem> => ({
     prop: 'action',
     label: '操作',
-    width: 190,
+    width: 112,
     fixed: 'right',
     formatter: (row) => {
       const item = row as Api.Hr.ServiceCatalog
       return (
-        <div class="service-delivery-page__actions">
-          {item.enabled && item.serviceMode === 'case'
-            ? actionButton('发起服务', 'primary', () =>
+        <HrTableActions>
+          <ArtButtonTable
+            type="edit"
+            label="编辑服务项目"
+            permission="Hr:SelfService:Catalog:Manage"
+            onClick={() => openDialog('service', item)}
+          />
+          <ArtButtonMore
+            list={() => {
+              const actions: ServiceMoreAction[] = []
+              if (item.enabled && item.serviceMode === 'case')
+                actions.push(
+                  serviceAction(
+                    'start_service',
+                    '发起服务',
+                    () =>
+                      openDialog('request', undefined, {
+                        serviceId: item.id,
+                        requestType: item.category,
+                        title: item.serviceName,
+                        priority: 'normal',
+                        channel: 'self_service'
+                      }),
+                    'ri:add-circle-line'
+                  )
+                )
+              if (item.enabled && item.serviceMode === 'redirect' && item.routePath)
+                actions.push(
+                  serviceAction(
+                    'open_route',
+                    '进入服务流程',
+                    () => void router.push(item.routePath!),
+                    'ri:external-link-line'
+                  )
+                )
+              return actions
+            }}
+            onClick={(action: ButtonMoreItem) => {
+              if (action.key === 'start_service')
                 openDialog('request', undefined, {
                   serviceId: item.id,
                   requestType: item.category,
@@ -637,18 +712,10 @@
                   priority: 'normal',
                   channel: 'self_service'
                 })
-              )
-            : null}
-          {item.enabled && item.serviceMode === 'redirect' && item.routePath
-            ? actionButton('进入流程', 'primary', () => void router.push(item.routePath!))
-            : null}
-          {actionButton(
-            '编辑',
-            'primary',
-            () => openDialog('service', item),
-            'Hr:SelfService:Catalog:Manage'
-          )}
-        </div>
+              if (action.key === 'open_route' && item.routePath) void router.push(item.routePath)
+            }}
+          />
+        </HrTableActions>
       )
     }
   })

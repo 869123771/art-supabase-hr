@@ -1,129 +1,128 @@
 <template>
-  <div
-    v-auth="'Hr:Experience:View'"
-    class="employee-experience-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="EMPLOYEE LISTENING & ACTION"
-      title="员工体验与敬业度"
-      description="以匿名调查持续倾听员工体验，只在达到最小汇报人数后形成组织洞察，并通过有负责人、有期限、有验收结果的行动闭环推动改善。"
-      icon="ri:chat-heart-line"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
-    </BusinessWorkspaceHeader>
+  <ArtPermissionGuard permission="Hr:Experience:View">
+    <div class="employee-experience-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="EMPLOYEE LISTENING & ACTION"
+        title="员工体验与敬业度"
+        description="以匿名调查持续倾听员工体验，只在达到最小汇报人数后形成组织洞察，并通过有负责人、有期限、有验收结果的行动闭环推动改善。"
+        icon="ri:chat-heart-line"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+      >
+        <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
+      </BusinessWorkspaceHeader>
 
-    <section class="employee-experience-page__control" aria-labelledby="experience-control-title">
-      <header class="employee-experience-page__heading">
-        <div>
-          <span class="employee-experience-page__section-icon" aria-hidden="true">
-            <ArtSvgIcon icon="ri:shield-check-line" />
-          </span>
-          <span>
-            <small>TRUSTED LISTENING LOOP</small>
-            <strong id="experience-control-title">从倾听到可验证改善</strong>
-            <em>完成状态与匿名答案物理分离，个人反馈不进入绩效、任职或员工关系结论</em>
-          </span>
-        </div>
-        <span class="employee-experience-page__privacy-badge">
-          <ArtSvgIcon icon="ri:lock-2-line" />
-          最小匿名阈值 5 人
-        </span>
-      </header>
-
-      <ol class="employee-experience-page__rail" aria-label="员工体验治理闭环">
-        <li v-for="(stage, index) in controlStages" :key="stage.label" :class="stage.state">
-          <span class="employee-experience-page__rail-index">0{{ index + 1 }}</span>
-          <span class="employee-experience-page__rail-icon" aria-hidden="true">
-            <ArtSvgIcon :icon="stage.icon" />
-          </span>
+      <section class="employee-experience-page__control" aria-labelledby="experience-control-title">
+        <header class="employee-experience-page__heading">
           <div>
-            <strong>{{ stage.label }}</strong>
-            <small>{{ stage.description }}</small>
+            <span class="employee-experience-page__section-icon" aria-hidden="true">
+              <ArtSvgIcon icon="ri:shield-check-line" />
+            </span>
+            <span>
+              <small>TRUSTED LISTENING LOOP</small>
+              <strong id="experience-control-title">从倾听到可验证改善</strong>
+              <em>完成状态与匿名答案物理分离，个人反馈不进入绩效、任职或员工关系结论</em>
+            </span>
           </div>
-          <b>{{ stage.value }}</b>
-        </li>
-      </ol>
+          <span class="employee-experience-page__privacy-badge">
+            <ArtSvgIcon icon="ri:lock-2-line" />
+            最小匿名阈值 5 人
+          </span>
+        </header>
 
-      <HrEntityNavigation
+        <ol class="employee-experience-page__rail" aria-label="员工体验治理闭环">
+          <li v-for="(stage, index) in controlStages" :key="stage.label" :class="stage.state">
+            <span class="employee-experience-page__rail-index">0{{ index + 1 }}</span>
+            <span class="employee-experience-page__rail-icon" aria-hidden="true">
+              <ArtSvgIcon :icon="stage.icon" />
+            </span>
+            <div>
+              <strong>{{ stage.label }}</strong>
+              <small>{{ stage.description }}</small>
+            </div>
+            <b>{{ stage.value }}</b>
+          </li>
+        </ol>
+
+        <HrEntityNavigation
+          v-if="navigationItems.length"
+          v-model="activeEntity"
+          :items="navigationItems"
+          navigation-label="员工体验工作视图"
+          compact
+          @change="handleTabChange"
+        />
+
+        <div class="employee-experience-page__context" aria-live="polite">
+          <div>
+            <span class="employee-experience-page__context-icon" aria-hidden="true">
+              <ArtSvgIcon :icon="activeTab.icon" />
+            </span>
+            <span>
+              <small>当前工作视图</small>
+              <strong>{{ activeTab.label }}</strong>
+              <em>{{ activeTab.description }}</em>
+            </span>
+          </div>
+          <dl>
+            <div
+              ><dt>当前结果</dt><dd>{{ tableTotal }}</dd></div
+            >
+            <div :class="activeAttention.tone">
+              <dt>{{ activeAttention.label }}</dt
+              ><dd>{{ activeAttention.value }}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <footer class="employee-experience-page__note">
+          <ArtSvgIcon icon="ri:information-line" />
+          员工只提交匿名答案，系统仅保留是否完成；组织与主题洞察低于调查设定阈值时不会返回分数、群组结果或开放评论。
+        </footer>
+      </section>
+
+      <ArtTableQuery
         v-if="navigationItems.length"
-        v-model="activeEntity"
-        :items="navigationItems"
-        navigation-label="员工体验工作视图"
-        compact
-        @change="handleTabChange"
+        :key="activeEntity"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
+        :table-props="{
+          rowKey: tableRowKey,
+          tableLayout: 'fixed',
+          emptyText: activeTab.emptyTitle,
+          emptyDescription: activeTab.emptyDescription
+        }"
+        :on-success="handleTableSuccess"
+        focusable
       />
 
-      <div class="employee-experience-page__context" aria-live="polite">
-        <div>
-          <span class="employee-experience-page__context-icon" aria-hidden="true">
-            <ArtSvgIcon :icon="activeTab.icon" />
-          </span>
-          <span>
-            <small>当前工作视图</small>
-            <strong>{{ activeTab.label }}</strong>
-            <em>{{ activeTab.description }}</em>
-          </span>
-        </div>
-        <dl>
-          <div
-            ><dt>当前结果</dt><dd>{{ tableTotal }}</dd></div
-          >
-          <div :class="activeAttention.tone">
-            <dt>{{ activeAttention.label }}</dt
-            ><dd>{{ activeAttention.value }}</dd>
-          </div>
-        </dl>
-      </div>
+      <ArtSectionCard
+        v-else
+        title="当前角色暂无可用工作视图"
+        subtitle="请为角色分配员工答卷或匿名洞察权限后重试。"
+        empty
+        empty-title="未配置员工体验权限"
+        empty-description="页面查看权限不会自动授予答卷、调查管理、评论查看或行动管理能力。"
+      />
 
-      <footer class="employee-experience-page__note">
-        <ArtSvgIcon icon="ri:information-line" />
-        员工只提交匿名答案，系统仅保留是否完成；组织与主题洞察低于调查设定阈值时不会返回分数、群组结果或开放评论。
-      </footer>
-    </section>
-
-    <ArtTableQuery
-      v-if="navigationItems.length"
-      :key="activeEntity"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
-      :table-props="{
-        rowKey: tableRowKey,
-        tableLayout: 'fixed',
-        emptyText: activeTab.emptyTitle,
-        emptyDescription: activeTab.emptyDescription
-      }"
-      :on-success="handleTableSuccess"
-      focusable
-    />
-
-    <ArtSectionCard
-      v-else
-      title="当前角色暂无可用工作视图"
-      subtitle="请为角色分配员工答卷或匿名洞察权限后重试。"
-      empty
-      empty-title="未配置员工体验权限"
-      empty-description="页面查看权限不会自动授予答卷、调查管理、评论查看或行动管理能力。"
-    />
-
-    <ExperienceSurveyDialog ref="surveyDialogRef" @success="handleRecordSuccess('survey')" />
-    <ExperienceQuestionDialog ref="questionDialogRef" @success="handleQuestionSuccess" />
-    <ExperienceActionDialog ref="actionDialogRef" @success="handleRecordSuccess('action')" />
-    <ExperienceResponseDialog ref="responseDialogRef" @success="handleResponseSuccess" />
-    <ExperienceDetailDrawer
-      ref="detailDrawerRef"
-      @add-question="openAddQuestion"
-      @edit-question="openEditQuestion"
-      @add-action="openActionFromInsight"
-    />
-  </div>
+      <ExperienceSurveyDialog ref="surveyDialogRef" @success="handleRecordSuccess('survey')" />
+      <ExperienceQuestionDialog ref="questionDialogRef" @success="handleQuestionSuccess" />
+      <ExperienceActionDialog ref="actionDialogRef" @success="handleRecordSuccess('action')" />
+      <ExperienceResponseDialog ref="responseDialogRef" @success="handleResponseSuccess" />
+      <ExperienceDetailDrawer
+        ref="detailDrawerRef"
+        @add-question="openAddQuestion"
+        @edit-question="openEditQuestion"
+        @add-action="openActionFromInsight"
+      />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
@@ -138,6 +137,8 @@
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
+  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import ArtSectionCard from '@/components/core/surfaces/art-section-card/index.vue'
   import BusinessWorkspaceHeader, {
@@ -413,10 +414,7 @@
   const dateText = (value?: string | null): string =>
     value ? dayjs(value).format('YYYY-MM-DD') : '--'
   const identity = (title?: string | null, subtitle?: string | null) => (
-    <div class="employee-experience-page__identity">
-      <strong>{title || '--'}</strong>
-      <small>{subtitle || '--'}</small>
-    </div>
+    <HrTableIdentityCell primary={title} secondary={subtitle} />
   )
   const availabilityMetaMap: Record<
     Api.Hr.EmployeeExperienceAvailability,
@@ -709,7 +707,7 @@
   const operationColumn = (): ColumnOption<RecordItem> => ({
     prop: 'operation',
     label: '操作',
-    width: activeEntity.value === 'my' ? 112 : 178,
+    width: 112,
     fixed: 'right',
     align: 'center',
     formatter: (row) => {
@@ -732,7 +730,7 @@
         )
       }
       return (
-        <div class="employee-experience-page__operations">
+        <HrTableActions>
           <ArtButtonTable
             type="view"
             permission="Hr:Experience:View"
@@ -743,7 +741,7 @@
             list={() => rowActions(row)}
             onClick={(item: ButtonMoreItem) => void handleRowAction(item, row)}
           />
-        </div>
+        </HrTableActions>
       )
     }
   })

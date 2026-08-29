@@ -1,81 +1,83 @@
 <template>
-  <div v-auth="'Hr:Absence:View'" class="absence-page business-workspace-page art-full-height">
-    <BusinessWorkspaceHeader
-      eyebrow="TIME OFF"
-      title="假勤管理"
-      description="统一假别、适用政策、员工休假余额与申请审批；余额变动使用不可变台账，批准结果可供考勤与薪资核算使用。"
-      icon="ri:calendar-schedule-line"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions>
-        <BusinessTableWorkspaceActions :table="tableQueryRef" />
-      </template>
-    </BusinessWorkspaceHeader>
+  <ArtPermissionGuard permission="Hr:Absence:View">
+    <div class="absence-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="TIME OFF"
+        title="假勤管理"
+        description="统一假别、适用政策、员工休假余额与申请审批；余额变动使用不可变台账，批准结果可供考勤与薪资核算使用。"
+        icon="ri:calendar-schedule-line"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+      >
+        <template #actions>
+          <BusinessTableWorkspaceActions :table="tableQueryRef" />
+        </template>
+      </BusinessWorkspaceHeader>
 
-    <section class="absence-page__control-deck" aria-labelledby="absence-control-title">
-      <header class="absence-page__control-heading">
-        <span class="absence-page__control-icon" aria-hidden="true">
-          <ArtSvgIcon icon="ri:calendar-check-line" />
-        </span>
-        <span>
-          <strong id="absence-control-title">假勤权益闭环</strong>
-          <small>政策定义、申请审批与余额台账使用同一业务口径</small>
-        </span>
-        <span class="absence-page__control-badge">
-          <ArtSvgIcon icon="ri:lock-2-line" /> 原因与附件独立授权
-        </span>
-      </header>
+      <section class="absence-page__control-deck" aria-labelledby="absence-control-title">
+        <header class="absence-page__control-heading">
+          <span class="absence-page__control-icon" aria-hidden="true">
+            <ArtSvgIcon icon="ri:calendar-check-line" />
+          </span>
+          <span>
+            <strong id="absence-control-title">假勤权益闭环</strong>
+            <small>政策定义、申请审批与余额台账使用同一业务口径</small>
+          </span>
+          <span class="absence-page__control-badge">
+            <ArtSvgIcon icon="ri:lock-2-line" /> 原因与附件独立授权
+          </span>
+        </header>
 
-      <div class="absence-page__journey" aria-label="假勤业务流程">
-        <span><i>01</i><strong>权益政策</strong><small>假别 · 额度 · 适用范围</small></span>
-        <ArtSvgIcon icon="ri:arrow-right-line" aria-hidden="true" />
-        <span><i>02</i><strong>申请审批</strong><small>提交占用 · 审批核销</small></span>
-        <ArtSvgIcon icon="ri:arrow-right-line" aria-hidden="true" />
-        <span><i>03</i><strong>余额台账</strong><small>调整 · 使用 · 冲销留痕</small></span>
-      </div>
+        <div class="absence-page__journey" aria-label="假勤业务流程">
+          <span><i>01</i><strong>权益政策</strong><small>假别 · 额度 · 适用范围</small></span>
+          <ArtSvgIcon icon="ri:arrow-right-line" aria-hidden="true" />
+          <span><i>02</i><strong>申请审批</strong><small>提交占用 · 审批核销</small></span>
+          <ArtSvgIcon icon="ri:arrow-right-line" aria-hidden="true" />
+          <span><i>03</i><strong>余额台账</strong><small>调整 · 使用 · 冲销留痕</small></span>
+        </div>
 
-      <HrEntityNavigation
-        :model-value="activeEntity"
-        :items="navigationItems"
-        navigation-label="假勤管理分类"
-        compact
-        @update:model-value="selectEntity"
+        <HrEntityNavigation
+          :model-value="activeEntity"
+          :items="navigationItems"
+          navigation-label="假勤管理分类"
+          compact
+          @update:model-value="selectEntity"
+        />
+
+        <footer class="absence-page__control-note">
+          <ArtSvgIcon icon="ri:information-line" />
+          员工余额只通过授予、使用、调整和冲销台账变化，不允许直接覆盖当前余额。
+        </footer>
+      </section>
+
+      <ArtTableQuery
+        :key="activeEntity"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 78, showExpand: false }"
+        :table-props="{
+          rowKey: 'id',
+          tableLayout: 'fixed',
+          emptyText: `暂无${activeTab.label}`,
+          emptyDescription: activeTab.emptyDescription
+        }"
+        :on-success="handleTableSuccess"
+        focusable
       />
 
-      <footer class="absence-page__control-note">
-        <ArtSvgIcon icon="ri:information-line" />
-        员工余额只通过授予、使用、调整和冲销台账变化，不允许直接覆盖当前余额。
-      </footer>
-    </section>
-
-    <ArtTableQuery
-      :key="activeEntity"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 78, showExpand: false }"
-      :table-props="{
-        rowKey: 'id',
-        tableLayout: 'fixed',
-        emptyText: `暂无${activeTab.label}`,
-        emptyDescription: activeTab.emptyDescription
-      }"
-      :on-success="handleTableSuccess"
-      focusable
-    />
-
-    <AbsenceDialog ref="dialogRef" @success="handleSaveSuccess" />
-  </div>
+      <AbsenceDialog ref="dialogRef" @success="handleSaveSuccess" />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
   import dayjs from 'dayjs'
-  import { ElButton, ElTag } from 'element-plus'
+  import { ElTag } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
     ArtTableQueryExpose,
@@ -83,6 +85,9 @@
     ArtTableQueryProps
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
+  import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
+  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtDictDisplay from '@/components/core/base/art-dict-display/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
@@ -94,7 +99,6 @@
     type HrEntityNavigationItem
   } from '../../shared/hr-entity-navigation.vue'
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
-  import { useAuth } from '@/hooks/core/useAuth'
   import { useUserStore } from '@/store/modules/user'
   import { pageInfoHandler } from '@/utils/table/tableUtils'
   import type { ColumnOption, DialogType } from '@/types'
@@ -170,7 +174,6 @@
 
   const userStore = useUserStore()
   const { getDictMap, isPlatformSuper } = storeToRefs(userStore)
-  const { hasAuth } = useAuth()
   const { confirmAction, promptText } = useArtFeedback()
   const activeEntity = ref<Entity>('request')
   const activeTab = computed(() => tabs.find((tab) => tab.entity === activeEntity.value) ?? tabs[0])
@@ -296,55 +299,73 @@
     return row.scope?.gradeName ?? '指定职级'
   }
 
+  const rowMoreActions = (status: string, canEdit: boolean): ButtonMoreItem[] => {
+    const actions: ButtonMoreItem[] = []
+    if (activeEntity.value === 'request' && status === 'draft')
+      actions.push({
+        key: 'submit',
+        label: '提交请假申请',
+        icon: 'ri:send-plane-line',
+        auth: 'Hr:Absence:Submit'
+      })
+    if (activeEntity.value === 'request' && status === 'pending')
+      actions.push(
+        {
+          key: 'approve',
+          label: '批准请假申请',
+          icon: 'ri:checkbox-circle-line',
+          auth: 'Hr:Absence:Approve'
+        },
+        {
+          key: 'reject',
+          label: '驳回请假申请',
+          icon: 'ri:close-circle-line',
+          color: 'var(--el-color-danger)',
+          auth: 'Hr:Absence:Approve'
+        }
+      )
+    if (activeEntity.value === 'request' && ['pending', 'approved'].includes(status))
+      actions.push({
+        key: 'cancel',
+        label: '撤销请假申请',
+        icon: 'ri:arrow-go-back-line',
+        auth: 'Hr:Absence:Submit'
+      })
+    if (canEdit)
+      actions.push({
+        key: 'delete',
+        label: activeEntity.value === 'request' ? '删除请假申请' : '删除假别配置',
+        icon: 'ri:delete-bin-5-line',
+        color: 'var(--el-color-danger)',
+        auth:
+          activeEntity.value === 'request'
+            ? 'Hr:Absence:Request:Delete'
+            : 'Hr:Absence:Policy:Delete'
+      })
+    return actions
+  }
+
   const actionColumn = (): ColumnOption<RecordItem> => ({
     prop: 'action',
     label: '操作',
-    width: 196,
+    width: 112,
     fixed: 'right',
     formatter: (row) => {
       if (activeEntity.value === 'ledger') return <span class="absence-page__locked">不可变</span>
       if (activeEntity.value === 'balance')
         return (
-          <ElButton
-            v-auth="Hr:Absence:Balance:Adjust"
-            link
-            type="primary"
+          <ArtButtonTable
+            type="edit"
+            label="调整假期余额"
+            permission="Hr:Absence:Balance:Adjust"
             onClick={() => openDialog('balance', row)}
-          >
-            调整余额
-          </ElButton>
+          />
         )
 
       const status = 'status' in row ? String(row.status ?? '') : ''
       const canEdit = activeEntity.value !== 'request' || status === 'draft'
       return (
-        <div class="absence-page__actions">
-          {activeEntity.value === 'request' &&
-          status === 'draft' &&
-          hasAuth('Hr:Absence:Submit') ? (
-            <ElButton link type="primary" onClick={() => handleRequestAction(row, 'submit')}>
-              提交
-            </ElButton>
-          ) : null}
-          {activeEntity.value === 'request' &&
-          status === 'pending' &&
-          hasAuth('Hr:Absence:Approve') ? (
-            <>
-              <ElButton link type="success" onClick={() => handleRequestAction(row, 'approve')}>
-                批准
-              </ElButton>
-              <ElButton link type="danger" onClick={() => handleRequestAction(row, 'reject')}>
-                驳回
-              </ElButton>
-            </>
-          ) : null}
-          {activeEntity.value === 'request' &&
-          ['pending', 'approved'].includes(status) &&
-          hasAuth('Hr:Absence:Submit') ? (
-            <ElButton link type="warning" onClick={() => handleRequestAction(row, 'cancel')}>
-              撤销
-            </ElButton>
-          ) : null}
+        <HrTableActions>
           {canEdit ? (
             <ArtButtonTable
               type="edit"
@@ -356,21 +377,22 @@
               onClick={() => openDialog(activeEntity.value as EditableEntity, row)}
             />
           ) : null}
-          {canEdit ? (
-            <ArtButtonTable
-              type="delete"
-              permission={
-                activeEntity.value === 'request'
-                  ? 'Hr:Absence:Request:Delete'
-                  : 'Hr:Absence:Policy:Delete'
-              }
-              onClick={() => handleDelete(row)}
-            />
-          ) : null}
-        </div>
+          <ArtButtonMore
+            list={() => rowMoreActions(status, canEdit)}
+            onClick={(item: ButtonMoreItem) => void handleMoreAction(item, row)}
+          />
+        </HrTableActions>
       )
     }
   })
+
+  const handleMoreAction = async (item: ButtonMoreItem, row: RecordItem): Promise<void> => {
+    if (item.key === 'delete') return await handleDelete(row)
+    if (item.key === 'submit') return await handleRequestAction(row, 'submit')
+    if (item.key === 'approve') return await handleRequestAction(row, 'approve')
+    if (item.key === 'reject') return await handleRequestAction(row, 'reject')
+    if (item.key === 'cancel') return await handleRequestAction(row, 'cancel')
+  }
 
   const columnsFactory = (): ColumnOption<RecordItem>[] => {
     if (activeEntity.value === 'type')

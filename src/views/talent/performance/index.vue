@@ -1,105 +1,108 @@
 <template>
-  <div
-    v-auth="'Hr:Performance:View'"
-    class="performance-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="PERFORMANCE MANAGEMENT"
-      title="绩效管理"
-      description="统一管理目标对齐、持续沟通、员工自评、主管评价与组织校准，让绩效结果来自可追溯的业务过程。"
-      icon="ri:line-chart-line"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
-    </BusinessWorkspaceHeader>
+  <ArtPermissionGuard permission="Hr:Performance:View">
+    <div class="performance-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="PERFORMANCE MANAGEMENT"
+        title="绩效管理"
+        description="统一管理目标对齐、持续沟通、员工自评、主管评价与组织校准，让绩效结果来自可追溯的业务过程。"
+        icon="ri:line-chart-line"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+      >
+        <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
+      </BusinessWorkspaceHeader>
 
-    <section class="performance-page__control-deck" aria-labelledby="performance-rail-title">
-      <header class="performance-page__control-heading">
-        <div>
-          <span class="performance-page__section-icon"
-            ><ArtSvgIcon icon="ri:git-commit-line"
-          /></span>
-          <span>
-            <strong id="performance-rail-title">绩效闭环轨道</strong>
-            <small>目标权重达标后开启评价，最终结果经组织校准或授权确认后定案</small>
+      <section class="performance-page__control-deck" aria-labelledby="performance-rail-title">
+        <header class="performance-page__control-heading">
+          <div>
+            <span class="performance-page__section-icon"
+              ><ArtSvgIcon icon="ri:git-commit-line"
+            /></span>
+            <span>
+              <strong id="performance-rail-title">绩效闭环轨道</strong>
+              <small>目标权重达标后开启评价，最终结果经组织校准或授权确认后定案</small>
+            </span>
+          </div>
+          <span class="performance-page__governance-badge">
+            <ArtSvgIcon icon="ri:shield-check-line" />过程留痕 · 结果受控
           </span>
-        </div>
-        <span class="performance-page__governance-badge">
-          <ArtSvgIcon icon="ri:shield-check-line" />过程留痕 · 结果受控
-        </span>
-      </header>
+        </header>
 
-      <div v-if="overview.featuredCycle" class="performance-page__featured-cycle">
-        <div class="performance-page__cycle-identity">
-          <span>当前主周期</span>
-          <strong>{{ overview.featuredCycle.cycleName }}</strong>
-          <small>
-            {{ overview.featuredCycle.cycleCode }} · {{ overview.featuredCycle.startDate }} →
-            {{ overview.featuredCycle.endDate }}
-          </small>
-        </div>
-        <ol class="performance-page__rail" aria-label="绩效周期进度">
-          <li
-            v-for="(stage, index) in performanceStages"
-            :key="stage.label"
-            :class="stageState(index)"
-          >
-            <span class="performance-page__rail-marker">0{{ index + 1 }}</span>
-            <div
-              ><strong>{{ stage.label }}</strong
-              ><small>{{ stage.description }}</small></div
+        <div v-if="overview.featuredCycle" class="performance-page__featured-cycle">
+          <div class="performance-page__cycle-identity">
+            <span>当前主周期</span>
+            <strong>{{ overview.featuredCycle.cycleName }}</strong>
+            <small>
+              {{ overview.featuredCycle.cycleCode }} · {{ overview.featuredCycle.startDate }} →
+              {{ overview.featuredCycle.endDate }}
+            </small>
+          </div>
+          <ol class="performance-page__rail" aria-label="绩效周期进度">
+            <li
+              v-for="(stage, index) in performanceStages"
+              :key="stage.label"
+              :class="stageState(index)"
             >
-            <b>{{ stage.value }}</b>
-          </li>
-        </ol>
-      </div>
-      <div v-else class="performance-page__empty-cycle">
-        <span class="performance-page__empty-icon"><ArtSvgIcon icon="ri:flag-2-line" /></span>
-        <div>
-          <strong>先建立考核周期与员工考核范围</strong>
-          <small>配置员工目标且权重合计达到 100% 后，周期才能启动并开放员工自评。</small>
+              <span class="performance-page__rail-marker">0{{ index + 1 }}</span>
+              <div
+                ><strong>{{ stage.label }}</strong
+                ><small>{{ stage.description }}</small></div
+              >
+              <b>{{ stage.value }}</b>
+            </li>
+          </ol>
         </div>
-        <ElButton v-if="hasAuth('Hr:Performance:Add')" type="primary" @click="openDialog('cycle')">
-          新建绩效周期
-        </ElButton>
-      </div>
+        <div v-else class="performance-page__empty-cycle">
+          <span class="performance-page__empty-icon"><ArtSvgIcon icon="ri:flag-2-line" /></span>
+          <div>
+            <strong>先建立考核周期与员工考核范围</strong>
+            <small>配置员工目标且权重合计达到 100% 后，周期才能启动并开放员工自评。</small>
+          </div>
+          <ElButton
+            v-if="hasAuth('Hr:Performance:Add')"
+            type="primary"
+            @click="openDialog('cycle')"
+          >
+            新建绩效周期
+          </ElButton>
+        </div>
 
-      <HrEntityNavigation
-        v-model="activeEntity"
-        :items="navigationItems"
-        navigation-label="绩效管理分类"
-        compact
-        @change="handleTabChange"
+        <HrEntityNavigation
+          v-model="activeEntity"
+          :items="navigationItems"
+          navigation-label="绩效管理分类"
+          compact
+          @change="handleTabChange"
+        />
+
+        <footer class="performance-page__control-note">
+          <ArtSvgIcon icon="ri:information-line" />
+          主管评分按目标权重自动汇总，最终分数不允许直接录入；校准调整必须说明比较依据，并同时保留主管原始结果。
+        </footer>
+      </section>
+
+      <ArtTableQuery
+        :key="activeEntity"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
+        :table-props="{
+          rowKey: 'id',
+          tableLayout: 'fixed',
+          emptyText: `暂无${activeTab.label}`,
+          emptyDescription: activeTab.emptyDescription
+        }"
+        focusable
       />
 
-      <footer class="performance-page__control-note">
-        <ArtSvgIcon icon="ri:information-line" />
-        主管评分按目标权重自动汇总，最终分数不允许直接录入；校准调整必须说明比较依据，并同时保留主管原始结果。
-      </footer>
-    </section>
-
-    <ArtTableQuery
-      :key="activeEntity"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
-      :table-props="{
-        rowKey: 'id',
-        tableLayout: 'fixed',
-        emptyText: `暂无${activeTab.label}`,
-        emptyDescription: activeTab.emptyDescription
-      }"
-      focusable
-    />
-
-    <PerformanceDialog ref="dialogRef" @success="handleSaveSuccess" />
-  </div>
+      <PerformanceDialog ref="dialogRef" @success="handleSaveSuccess" />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
@@ -111,6 +114,10 @@
     ArtTableQueryHeaderAction
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
+  import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
+  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
@@ -390,10 +397,7 @@
     </ElTag>
   )
   const identity = (title?: string | null, subtitle?: string | null) => (
-    <div class="performance-page__identity">
-      <strong>{title || '--'}</strong>
-      <small>{subtitle || '--'}</small>
-    </div>
+    <HrTableIdentityCell primary={title} secondary={subtitle} />
   )
   const score = (value?: number | null, level?: string | null) => (
     <div class="performance-page__score">
@@ -771,117 +775,95 @@
     if (activeEntity.value === 'calibration') return status === 'setup'
     return activeEntity.value === 'check_in'
   }
-  const actionButton = (
-    label: string,
-    type: 'primary' | 'success' | 'warning' | 'danger',
-    permission: string,
-    handler: () => void
-  ) =>
-    hasAuth(permission) ? (
-      <ElButton link type={type} onClick={handler}>
-        {label}
-      </ElButton>
-    ) : null
-  const transitionButtons = (row: RecordItem) => {
-    if (!row.id) return null
+  const transitionActions = (row: RecordItem): ButtonMoreItem[] => {
+    if (!row.id) return []
+    const actions: ButtonMoreItem[] = []
     const status = statusOf(row)
     if (activeEntity.value === 'cycle') {
       if (status === 'draft')
-        return actionButton(
-          '启动',
-          'success',
-          'Hr:Performance:Activate',
-          () => void handleCycleTransition(row as Api.Hr.PerformanceCycle, 'activate')
-        )
+        actions.push({
+          key: 'activate_cycle',
+          label: '启动绩效周期',
+          icon: 'ri:play-circle-line',
+          auth: 'Hr:Performance:Activate'
+        })
       if (status === 'active')
-        return (
-          <>
-            {actionButton(
-              '进入评议',
-              'primary',
-              'Hr:Performance:Review',
-              () => void handleCycleTransition(row as Api.Hr.PerformanceCycle, 'begin_review')
-            )}
-            {actionButton(
-              '取消',
-              'warning',
-              'Hr:Performance:Activate',
-              () => void handleCycleTransition(row as Api.Hr.PerformanceCycle, 'cancel')
-            )}
-          </>
+        actions.push(
+          {
+            key: 'review_cycle',
+            label: '进入绩效评议',
+            icon: 'ri:group-line',
+            auth: 'Hr:Performance:Review'
+          },
+          {
+            key: 'cancel_cycle',
+            label: '取消绩效周期',
+            icon: 'ri:close-circle-line',
+            auth: 'Hr:Performance:Activate'
+          }
         )
       if (status === 'reviewing')
-        return actionButton(
-          '完成周期',
-          'success',
-          'Hr:Performance:Complete',
-          () => void handleCycleTransition(row as Api.Hr.PerformanceCycle, 'complete')
-        )
+        actions.push({
+          key: 'complete_cycle',
+          label: '完成绩效周期',
+          icon: 'ri:checkbox-circle-line',
+          auth: 'Hr:Performance:Complete'
+        })
     }
     if (activeEntity.value === 'review') {
       if (status === 'self_review')
-        return actionButton(
-          '提交自评',
-          'primary',
-          'Hr:Performance:Review',
-          () => void handleReviewTransition(row as Api.Hr.PerformanceReview, 'submit_self')
-        )
+        actions.push({
+          key: 'submit_self',
+          label: '提交员工自评',
+          icon: 'ri:send-plane-line',
+          auth: 'Hr:Performance:Review'
+        })
       if (status === 'manager_review')
-        return actionButton(
-          '提交主管评价',
-          'success',
-          'Hr:Performance:Review',
-          () => void handleReviewTransition(row as Api.Hr.PerformanceReview, 'submit_manager')
-        )
+        actions.push({
+          key: 'submit_manager',
+          label: '提交主管评价',
+          icon: 'ri:send-plane-line',
+          auth: 'Hr:Performance:Review'
+        })
       if (status === 'confirmed')
-        return actionButton(
-          '直接定案',
-          'success',
-          'Hr:Performance:Complete',
-          () => void handleReviewTransition(row as Api.Hr.PerformanceReview, 'complete')
-        )
+        actions.push({
+          key: 'complete_review',
+          label: '确认绩效定案',
+          icon: 'ri:checkbox-circle-line',
+          auth: 'Hr:Performance:Complete'
+        })
     }
     if (activeEntity.value === 'calibration') {
-      const item = row as Api.Hr.PerformanceCalibrationSession
-      const view = actionButton('查看明细', 'primary', 'Hr:Performance:View', () =>
-        openCalibrationItems(item)
-      )
+      actions.push({
+        key: 'view_calibration',
+        label: '查看校准明细',
+        icon: 'ri:eye-line',
+        auth: 'Hr:Performance:View'
+      })
       if (status === 'setup')
-        return (
-          <>
-            {actionButton(
-              '开始校准',
-              'success',
-              'Hr:Performance:Calibrate',
-              () => void handleCalibrationTransition(item, 'start')
-            )}
-            {view}
-          </>
-        )
+        actions.unshift({
+          key: 'start_calibration',
+          label: '开始绩效校准',
+          icon: 'ri:play-circle-line',
+          auth: 'Hr:Performance:Calibrate'
+        })
       if (status === 'in_progress')
-        return (
-          <>
-            {actionButton(
-              '批准定案',
-              'success',
-              'Hr:Performance:Complete',
-              () => void handleCalibrationTransition(item, 'approve')
-            )}
-            {view}
-          </>
-        )
-      return view
+        actions.unshift({
+          key: 'approve_calibration',
+          label: '批准校准定案',
+          icon: 'ri:checkbox-circle-line',
+          auth: 'Hr:Performance:Complete'
+        })
     }
-    return null
+    return actions
   }
   const actionColumn = (): ColumnOption<RecordItem> => ({
     prop: 'action',
     label: '操作',
-    width: activeEntity.value === 'cycle' || activeEntity.value === 'calibration' ? 245 : 210,
+    width: 112,
     fixed: 'right',
     formatter: (row) => (
-      <div class="performance-page__actions">
-        {transitionButtons(row)}
+      <HrTableActions>
         {activeEntity.value === 'calibration_item' && row.id ? (
           <ArtButtonTable
             type="edit"
@@ -895,16 +877,51 @@
             onClick={() => openDialog(activeEntity.value, row)}
           />
         ) : null}
-        {canDelete(row) ? (
-          <ArtButtonTable
-            type="delete"
-            permission={permissionFor('delete')}
-            onClick={() => void handleDelete(row)}
-          />
-        ) : null}
-      </div>
+        <ArtButtonMore
+          list={() => [
+            ...transitionActions(row),
+            ...(canDelete(row)
+              ? [
+                  {
+                    key: 'delete',
+                    label: '删除当前记录',
+                    icon: 'ri:delete-bin-5-line',
+                    color: 'var(--el-color-danger)',
+                    auth: permissionFor('delete')
+                  }
+                ]
+              : [])
+          ]}
+          onClick={(item: ButtonMoreItem) => void handleMoreAction(item, row)}
+        />
+      </HrTableActions>
     )
   })
+  const handleMoreAction = async (item: ButtonMoreItem, row: RecordItem): Promise<void> => {
+    if (item.key === 'delete') return await handleDelete(row)
+    if (activeEntity.value === 'cycle') {
+      const cycle = row as Api.Hr.PerformanceCycle
+      if (item.key === 'activate_cycle') return await handleCycleTransition(cycle, 'activate')
+      if (item.key === 'review_cycle') return await handleCycleTransition(cycle, 'begin_review')
+      if (item.key === 'cancel_cycle') return await handleCycleTransition(cycle, 'cancel')
+      if (item.key === 'complete_cycle') return await handleCycleTransition(cycle, 'complete')
+    }
+    if (activeEntity.value === 'review') {
+      const review = row as Api.Hr.PerformanceReview
+      if (item.key === 'submit_self') return await handleReviewTransition(review, 'submit_self')
+      if (item.key === 'submit_manager')
+        return await handleReviewTransition(review, 'submit_manager')
+      if (item.key === 'complete_review') return await handleReviewTransition(review, 'complete')
+    }
+    if (activeEntity.value === 'calibration') {
+      const session = row as Api.Hr.PerformanceCalibrationSession
+      if (item.key === 'view_calibration') return openCalibrationItems(session)
+      if (item.key === 'start_calibration')
+        return await handleCalibrationTransition(session, 'start')
+      if (item.key === 'approve_calibration')
+        return await handleCalibrationTransition(session, 'approve')
+    }
+  }
 
   const headerActions = computed<ArtTableQueryHeaderAction[]>(() =>
     activeEntity.value === 'calibration_item'

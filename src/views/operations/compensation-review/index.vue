@@ -1,194 +1,193 @@
 <template>
-  <div
-    v-auth="'Hr:CompensationReview:View'"
-    class="review-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="COMPENSATION REVIEW & MERIT GOVERNANCE"
-      title="调薪复核"
-      description="把年度调薪从线下表格升级为可审计的预算、经理建议、组织校准、审批与生效闭环；最终结果写入员工有效期薪酬历史。"
-      icon="ri:funds-box-line"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
-    </BusinessWorkspaceHeader>
+  <ArtPermissionGuard permission="Hr:CompensationReview:View">
+    <div class="review-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="COMPENSATION REVIEW & MERIT GOVERNANCE"
+        title="调薪复核"
+        description="把年度调薪从线下表格升级为可审计的预算、经理建议、组织校准、审批与生效闭环；最终结果写入员工有效期薪酬历史。"
+        icon="ri:funds-box-line"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+      >
+        <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
+      </BusinessWorkspaceHeader>
 
-    <section class="review-page__command" aria-labelledby="review-command-title">
-      <header class="review-page__command-header">
-        <div>
-          <span class="review-page__command-icon" aria-hidden="true"
-            ><ArtSvgIcon icon="ri:route-line"
-          /></span>
-          <span>
-            <small>ACTIVE REVIEW CONTEXT</small>
-            <strong id="review-command-title">{{
-              selectedCycle?.cycleName || '建立首个调薪复核周期'
-            }}</strong>
-            <em v-if="selectedCycle">
-              {{ selectedCycle.cycleCode }} · {{ selectedCycle.reviewYear }} 年 ·
-              {{ selectedCycle.scopeOrganizationName || '全部组织' }}
-            </em>
-            <em v-else>先定义统一的时间、预算与调薪指引，再开放经理建议</em>
-          </span>
+      <section class="review-page__command" aria-labelledby="review-command-title">
+        <header class="review-page__command-header">
+          <div>
+            <span class="review-page__command-icon" aria-hidden="true"
+              ><ArtSvgIcon icon="ri:route-line"
+            /></span>
+            <span>
+              <small>ACTIVE REVIEW CONTEXT</small>
+              <strong id="review-command-title">{{
+                selectedCycle?.cycleName || '建立首个调薪复核周期'
+              }}</strong>
+              <em v-if="selectedCycle">
+                {{ selectedCycle.cycleCode }} · {{ selectedCycle.reviewYear }} 年 ·
+                {{ selectedCycle.scopeOrganizationName || '全部组织' }}
+              </em>
+              <em v-else>先定义统一的时间、预算与调薪指引，再开放经理建议</em>
+            </span>
+          </div>
+
+          <div class="review-page__cycle-picker">
+            <label for="review-cycle-selector">复核周期</label>
+            <ElSelect
+              id="review-cycle-selector"
+              v-model="selectedCycleId"
+              filterable
+              clearable
+              placeholder="选择调薪周期"
+              @change="handleCycleChange"
+            >
+              <ElOption
+                v-for="option in cycleOptions"
+                :key="option.id"
+                :label="`${option.name} · ${statusLabel(option.status)}`"
+                :value="option.id"
+              />
+            </ElSelect>
+            <ElTag
+              v-if="selectedCycle"
+              :type="cycleStatusTone(selectedCycle.status)"
+              effect="light"
+              round
+            >
+              {{ statusLabel(selectedCycle.status) }}
+            </ElTag>
+          </div>
+        </header>
+
+        <ol class="review-page__lifecycle" aria-label="调薪复核状态流转">
+          <li v-for="(stage, index) in lifecycleStages" :key="stage.key" :class="stage.state">
+            <span class="review-page__stage-index">0{{ index + 1 }}</span>
+            <span class="review-page__stage-icon"><ArtSvgIcon :icon="stage.icon" /></span>
+            <div
+              ><strong>{{ stage.label }}</strong
+              ><small>{{ stage.description }}</small></div
+            >
+            <b>{{ stage.value }}</b>
+          </li>
+        </ol>
+
+        <div v-if="selectedCycle" class="review-page__guardrails">
+          <article>
+            <span><ArtSvgIcon icon="ri:calendar-check-line" /></span>
+            <div
+              ><small>决策节奏</small
+              ><strong
+                >{{ selectedCycle.recommendationDueDate }} →
+                {{ selectedCycle.calibrationDueDate }}</strong
+              ><em>生效 {{ selectedCycle.effectiveDate }}</em></div
+            >
+          </article>
+          <article>
+            <span><ArtSvgIcon icon="ri:percent-line" /></span>
+            <div
+              ><small>调薪建议区间</small
+              ><strong
+                >{{ numberText(selectedCycle.guidelineMinPercent) }}% ～
+                {{ numberText(selectedCycle.guidelineMaxPercent) }}%</strong
+              ><em>默认预算率 {{ numberText(selectedCycle.defaultBudgetPercent) }}%</em></div
+            >
+          </article>
+          <article :class="budgetToneClass">
+            <span
+              ><ArtSvgIcon :icon="overview.amountAccess ? 'ri:wallet-3-line' : 'ri:lock-2-line'"
+            /></span>
+            <div
+              ><small>预算占用</small
+              ><strong>{{
+                overview.amountAccess ? `${numberText(overview.budgetUtilization)}%` : '金额受控'
+              }}</strong
+              ><em>{{
+                overview.amountAccess
+                  ? `${money(overview.proposedIncreaseAmount)} / ${money(overview.budgetAmount)}`
+                  : '当前权限仅展示流程状态'
+              }}</em></div
+            >
+          </article>
+          <article :class="overview.outOfGuidelineCount ? 'is-warning' : 'is-success'">
+            <span
+              ><ArtSvgIcon
+                :icon="
+                  overview.outOfGuidelineCount ? 'ri:alarm-warning-line' : 'ri:shield-check-line'
+                "
+            /></span>
+            <div
+              ><small>治理例外</small><strong>{{ overview.outOfGuidelineCount }} 项超出指引</strong
+              ><em>{{ overview.excludedCount }} 人已说明排除原因</em></div
+            >
+          </article>
         </div>
 
-        <div class="review-page__cycle-picker">
-          <label for="review-cycle-selector">复核周期</label>
-          <ElSelect
-            id="review-cycle-selector"
-            v-model="selectedCycleId"
-            filterable
-            clearable
-            placeholder="选择调薪周期"
-            @change="handleCycleChange"
+        <div v-else class="review-page__starter">
+          <span><ArtSvgIcon icon="ri:calendar-schedule-line" /></span>
+          <div>
+            <strong>从统一规则开始，而不是先发 Excel</strong>
+            <p
+              >创建周期后，系统会在开放时锁定员工当前薪酬、职级、组织和最近绩效结果，并按组织自动生成预算。</p
+            >
+          </div>
+          <ElButton
+            v-auth="'Hr:CompensationReview:Cycle:Manage'"
+            type="primary"
+            @click="openDialog('cycle')"
           >
-            <ElOption
-              v-for="option in cycleOptions"
-              :key="option.id"
-              :label="`${option.name} · ${statusLabel(option.status)}`"
-              :value="option.id"
-            />
-          </ElSelect>
-          <ElTag
-            v-if="selectedCycle"
-            :type="cycleStatusTone(selectedCycle.status)"
-            effect="light"
-            round
-          >
-            {{ statusLabel(selectedCycle.status) }}
-          </ElTag>
+            <ArtSvgIcon icon="ri:add-line" />新增调薪周期
+          </ElButton>
         </div>
-      </header>
 
-      <ol class="review-page__lifecycle" aria-label="调薪复核状态流转">
-        <li v-for="(stage, index) in lifecycleStages" :key="stage.key" :class="stage.state">
-          <span class="review-page__stage-index">0{{ index + 1 }}</span>
-          <span class="review-page__stage-icon"><ArtSvgIcon :icon="stage.icon" /></span>
-          <div
-            ><strong>{{ stage.label }}</strong
-            ><small>{{ stage.description }}</small></div
-          >
-          <b>{{ stage.value }}</b>
-        </li>
-      </ol>
+        <footer class="review-page__boundary">
+          <ArtSvgIcon icon="ri:information-line" />
+          当前工作台只管理调薪决策；到达生效日并获得独立权限后，系统才会关闭旧薪酬版本、创建新版本并保留周期来源，薪资与财务继续读取批准后的有效薪酬。
+        </footer>
+      </section>
 
-      <div v-if="selectedCycle" class="review-page__guardrails">
-        <article>
-          <span><ArtSvgIcon icon="ri:calendar-check-line" /></span>
+      <section class="review-page__workspace" aria-labelledby="review-workspace-title">
+        <header>
           <div
-            ><small>决策节奏</small
-            ><strong
-              >{{ selectedCycle.recommendationDueDate }} →
-              {{ selectedCycle.calibrationDueDate }}</strong
-            ><em>生效 {{ selectedCycle.effectiveDate }}</em></div
+            ><small>DECISION WORKSPACE</small
+            ><strong id="review-workspace-title">{{ activeTab.label }}</strong
+            ><span>{{ activeTab.description }}</span></div
           >
-        </article>
-        <article>
-          <span><ArtSvgIcon icon="ri:percent-line" /></span>
-          <div
-            ><small>调薪建议区间</small
-            ><strong
-              >{{ numberText(selectedCycle.guidelineMinPercent) }}% ～
-              {{ numberText(selectedCycle.guidelineMaxPercent) }}%</strong
-            ><em>默认预算率 {{ numberText(selectedCycle.defaultBudgetPercent) }}%</em></div
+          <span class="review-page__result"
+            ><ArtSvgIcon :icon="activeTab.icon" />{{ tableTotal }} 条当前结果</span
           >
-        </article>
-        <article :class="budgetToneClass">
-          <span
-            ><ArtSvgIcon :icon="overview.amountAccess ? 'ri:wallet-3-line' : 'ri:lock-2-line'"
-          /></span>
-          <div
-            ><small>预算占用</small
-            ><strong>{{
-              overview.amountAccess ? `${numberText(overview.budgetUtilization)}%` : '金额受控'
-            }}</strong
-            ><em>{{
-              overview.amountAccess
-                ? `${money(overview.proposedIncreaseAmount)} / ${money(overview.budgetAmount)}`
-                : '当前权限仅展示流程状态'
-            }}</em></div
-          >
-        </article>
-        <article :class="overview.outOfGuidelineCount ? 'is-warning' : 'is-success'">
-          <span
-            ><ArtSvgIcon
-              :icon="
-                overview.outOfGuidelineCount ? 'ri:alarm-warning-line' : 'ri:shield-check-line'
-              "
-          /></span>
-          <div
-            ><small>治理例外</small><strong>{{ overview.outOfGuidelineCount }} 项超出指引</strong
-            ><em>{{ overview.excludedCount }} 人已说明排除原因</em></div
-          >
-        </article>
-      </div>
+        </header>
+        <HrEntityNavigation
+          v-model="activeEntity"
+          :items="navigationItems"
+          navigation-label="调薪复核工作视图"
+          compact
+          @change="handleTabChange"
+        />
+      </section>
 
-      <div v-else class="review-page__starter">
-        <span><ArtSvgIcon icon="ri:calendar-schedule-line" /></span>
-        <div>
-          <strong>从统一规则开始，而不是先发 Excel</strong>
-          <p
-            >创建周期后，系统会在开放时锁定员工当前薪酬、职级、组织和最近绩效结果，并按组织自动生成预算。</p
-          >
-        </div>
-        <ElButton
-          v-auth="'Hr:CompensationReview:Cycle:Manage'"
-          type="primary"
-          @click="openDialog('cycle')"
-        >
-          <ArtSvgIcon icon="ri:add-line" />新增调薪周期
-        </ElButton>
-      </div>
-
-      <footer class="review-page__boundary">
-        <ArtSvgIcon icon="ri:information-line" />
-        当前工作台只管理调薪决策；到达生效日并获得独立权限后，系统才会关闭旧薪酬版本、创建新版本并保留周期来源，薪资与财务继续读取批准后的有效薪酬。
-      </footer>
-    </section>
-
-    <section class="review-page__workspace" aria-labelledby="review-workspace-title">
-      <header>
-        <div
-          ><small>DECISION WORKSPACE</small
-          ><strong id="review-workspace-title">{{ activeTab.label }}</strong
-          ><span>{{ activeTab.description }}</span></div
-        >
-        <span class="review-page__result"
-          ><ArtSvgIcon :icon="activeTab.icon" />{{ tableTotal }} 条当前结果</span
-        >
-      </header>
-      <HrEntityNavigation
-        v-model="activeEntity"
-        :items="navigationItems"
-        navigation-label="调薪复核工作视图"
-        compact
-        @change="handleTabChange"
+      <ArtTableQuery
+        :key="`${activeEntity}-${selectedCycleId || 'all'}`"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
+        :table-props="{
+          rowKey: 'id',
+          tableLayout: 'fixed',
+          emptyText: activeTab.emptyTitle,
+          emptyDescription: activeTab.emptyDescription
+        }"
+        :on-success="handleTableSuccess"
+        focusable
       />
-    </section>
 
-    <ArtTableQuery
-      :key="`${activeEntity}-${selectedCycleId || 'all'}`"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
-      :table-props="{
-        rowKey: 'id',
-        tableLayout: 'fixed',
-        emptyText: activeTab.emptyTitle,
-        emptyDescription: activeTab.emptyDescription
-      }"
-      :on-success="handleTableSuccess"
-      focusable
-    />
-
-    <CompensationReviewDialog ref="dialogRef" @success="handleDialogSuccess" />
-  </div>
+      <CompensationReviewDialog ref="dialogRef" @success="handleDialogSuccess" />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
@@ -201,6 +200,8 @@
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
@@ -543,11 +544,7 @@
         ? '--'
         : String(value)
   const identity = (title?: string | null, subtitle?: string | null, extra?: string | null) => (
-    <div class="review-page__identity">
-      <strong>{title || '--'}</strong>
-      <small>{subtitle || '--'}</small>
-      {extra ? <em>{extra}</em> : null}
-    </div>
+    <HrTableIdentityCell primary={title} secondary={subtitle} tertiary={extra} />
   )
   const statusTag = (status?: string) => (
     <ElTag
@@ -644,7 +641,7 @@
     {
       prop: 'action',
       label: '操作',
-      width: 170,
+      width: 112,
       fixed: 'right',
       formatter: (row) => cycleActions(row as Api.Hr.CompensationReviewCycle)
     }
@@ -879,7 +876,7 @@
         color: 'var(--el-color-danger)'
       })
     return (
-      <div class="review-page__actions">
+      <HrTableActions>
         <ArtButtonTable type="view" label="进入周期" onClick={() => selectCycle(row)} />
         {actions.length ? (
           <ArtButtonMore
@@ -887,7 +884,7 @@
             onClick={(item: ButtonMoreItem) => void handleCycleMoreAction(item, row)}
           />
         ) : null}
-      </div>
+      </HrTableActions>
     )
   }
 
@@ -919,10 +916,10 @@
       hasAuth('Hr:CompensationReview:Amount:Edit')
     if (!editable) return <span class="review-page__locked">预算锁定</span>
     return (
-      <div class="review-page__actions">
+      <HrTableActions>
         <ArtButtonTable type="edit" onClick={() => openDialog('budget', row)} />
         <ArtButtonTable type="delete" onClick={() => handleDelete('budget', row)} />
-      </div>
+      </HrTableActions>
     )
   }
 

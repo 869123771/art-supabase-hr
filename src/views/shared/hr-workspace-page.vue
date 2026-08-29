@@ -74,6 +74,8 @@
     ArtTableQueryHeaderAction
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
+  import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import ArtDictDisplay from '@/components/core/base/art-dict-display/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
@@ -94,6 +96,8 @@
   } from '@hr/api'
   import WorkspaceRecordDialog from './workspace-record-dialog.vue'
   import PersonnelChangeDialog from '../personnel/personnel-change/modules/personnel-change-dialog.vue'
+  import HrTableActions from './hr-table-actions.vue'
+  import HrTableIdentityCell from './hr-table-identity-cell.vue'
   import {
     hrWorkspaceDefinitions,
     type HrWorkspaceDefinition,
@@ -285,6 +289,14 @@
       showOverflowTooltip: true,
       formatter: (row: Api.Hr.WorkspaceRecord) => {
         const value = get(row, String(column.key))
+        if (column.secondaryKey || column.tertiaryKey)
+          return (
+            <HrTableIdentityCell
+              primary={value == null ? undefined : String(value)}
+              secondary={String(get(row, String(column.secondaryKey)) ?? '')}
+              tertiary={String(get(row, String(column.tertiaryKey)) ?? '')}
+            />
+          )
         if (column.dictCode)
           return (
             <ArtDictDisplay dictCode={column.dictCode} value={String(value ?? '')} display="auto" />
@@ -296,10 +308,10 @@
     {
       prop: 'operation',
       label: '操作',
-      width: activeTab.value.approvalBusinessType ? 250 : 120,
+      width: 112,
       fixed: 'right',
       formatter: (row: Api.Hr.WorkspaceRecord) => (
-        <div class="hr-workspace-page__row-actions">
+        <HrTableActions>
           {canEditRow(row) && (
             <ArtButtonTable
               type="edit"
@@ -307,38 +319,57 @@
               onClick={() => void openDialog(row)}
             />
           )}
-          {canEditRow(row) && (
-            <ArtButtonTable
-              type="delete"
-              permission={props.permissions.delete}
-              onClick={() => void handleDelete(row)}
-            />
-          )}
-          {activeTab.value.approvalBusinessType &&
-            ['draft', 'rejected'].includes(getRowStatus(row)) &&
-            props.permissions.submit && (
-              <ArtButtonTable
-                type="sign"
-                label="提交审批"
-                icon="ri:send-plane-line"
-                permission={props.permissions.submit}
-                onClick={() => void handleSubmitApproval(row)}
-              />
-            )}
-          {activeTab.value.canEffect &&
-            getRowStatus(row) === 'approved' &&
-            props.permissions.effect && (
-              <ArtButtonTable
-                type="sign"
-                label="生效"
-                permission={props.permissions.effect}
-                onClick={() => void handleEffect(row)}
-              />
-            )}
-        </div>
+          <ArtButtonMore
+            list={() => rowMoreActions(row)}
+            onClick={(item: ButtonMoreItem) => void handleRowMoreAction(item, row)}
+          />
+        </HrTableActions>
       )
     }
   ]
+
+  const rowMoreActions = (row: Api.Hr.WorkspaceRecord): ButtonMoreItem[] => {
+    const actions: ButtonMoreItem[] = []
+    if (canEditRow(row)) {
+      actions.push({
+        key: 'delete',
+        label: `删除${activeTab.value.label}`,
+        icon: 'ri:delete-bin-5-line',
+        color: 'var(--el-color-danger)',
+        auth: props.permissions.delete
+      })
+    }
+    if (
+      activeTab.value.approvalBusinessType &&
+      ['draft', 'rejected'].includes(getRowStatus(row)) &&
+      props.permissions.submit
+    ) {
+      actions.unshift({
+        key: 'submit',
+        label: '提交审批',
+        icon: 'ri:send-plane-line',
+        auth: props.permissions.submit
+      })
+    }
+    if (activeTab.value.canEffect && getRowStatus(row) === 'approved' && props.permissions.effect) {
+      actions.unshift({
+        key: 'effect',
+        label: '确认生效',
+        icon: 'ri:checkbox-circle-line',
+        auth: props.permissions.effect
+      })
+    }
+    return actions
+  }
+
+  const handleRowMoreAction = async (
+    item: ButtonMoreItem,
+    row: Api.Hr.WorkspaceRecord
+  ): Promise<void> => {
+    if (item.key === 'delete') await handleDelete(row)
+    if (item.key === 'submit') await handleSubmitApproval(row)
+    if (item.key === 'effect') await handleEffect(row)
+  }
 
   const fetchTableData: ArtTableQueryApiFn = async (params) => {
     const { from, to } = pageInfoHandler(params as TableParams)

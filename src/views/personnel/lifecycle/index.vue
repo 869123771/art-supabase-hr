@@ -1,86 +1,92 @@
 <template>
-  <div v-auth="'Hr:Lifecycle:View'" class="lifecycle-page business-workspace-page art-full-height">
-    <BusinessWorkspaceHeader
-      eyebrow="EMPLOYEE JOURNEY OPERATIONS"
-      title="入转调离"
-      description="把入职、转正、调动与离职从审批记录升级为可执行的员工旅程，统一责任、时限、门禁、证据和生效归档。"
-      icon="ri:user-settings-line"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
-    </BusinessWorkspaceHeader>
+  <ArtPermissionGuard permission="Hr:Lifecycle:View">
+    <div class="lifecycle-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="EMPLOYEE JOURNEY OPERATIONS"
+        title="入转调离"
+        description="把入职、转正、调动与离职从审批记录升级为可执行的员工旅程，统一责任、时限、门禁、证据和生效归档。"
+        icon="ri:user-settings-line"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+      >
+        <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
+      </BusinessWorkspaceHeader>
 
-    <section class="lifecycle-page__journey" aria-labelledby="lifecycle-journey-title">
-      <header class="lifecycle-page__heading">
-        <div>
-          <span class="lifecycle-page__section-icon"><ArtSvgIcon icon="ri:route-line" /></span>
-          <span>
-            <strong id="lifecycle-journey-title">员工旅程执行轨道</strong>
-            <small>审批与执行分轴管理，必办和阻断任务共同决定事项能否生效</small>
-          </span>
-        </div>
-        <span class="lifecycle-page__governance"
-          ><ArtSvgIcon icon="ri:shield-check-line" />过程留痕 · 门禁受控</span
-        >
-      </header>
-
-      <ol class="lifecycle-page__rail" aria-label="生命周期事项执行阶段">
-        <li v-for="(stage, index) in journeyStages" :key="stage.label" :class="stage.state">
-          <span class="lifecycle-page__rail-index">0{{ index + 1 }}</span>
-          <span class="lifecycle-page__rail-icon"><ArtSvgIcon :icon="stage.icon" /></span>
-          <div
-            ><strong>{{ stage.label }}</strong
-            ><small>{{ stage.description }}</small></div
+      <section class="lifecycle-page__journey" aria-labelledby="lifecycle-journey-title">
+        <header class="lifecycle-page__heading">
+          <div>
+            <span class="lifecycle-page__section-icon"><ArtSvgIcon icon="ri:route-line" /></span>
+            <span>
+              <strong id="lifecycle-journey-title">员工旅程执行轨道</strong>
+              <small>审批与执行分轴管理，必办和阻断任务共同决定事项能否生效</small>
+            </span>
+          </div>
+          <span class="lifecycle-page__governance"
+            ><ArtSvgIcon icon="ri:shield-check-line" />过程留痕 · 门禁受控</span
           >
-          <b>{{ stage.value }}</b>
-        </li>
-      </ol>
+        </header>
 
-      <HrEntityNavigation
-        v-model="activeEntity"
-        :items="navigationItems"
-        navigation-label="员工生命周期运营分类"
-        compact
-        @change="handleTabChange"
+        <ol class="lifecycle-page__rail" aria-label="生命周期事项执行阶段">
+          <li v-for="(stage, index) in journeyStages" :key="stage.label" :class="stage.state">
+            <span class="lifecycle-page__rail-index">0{{ index + 1 }}</span>
+            <span class="lifecycle-page__rail-icon"><ArtSvgIcon :icon="stage.icon" /></span>
+            <div
+              ><strong>{{ stage.label }}</strong
+              ><small>{{ stage.description }}</small></div
+            >
+            <b>{{ stage.value }}</b>
+          </li>
+        </ol>
+
+        <HrEntityNavigation
+          v-model="activeEntity"
+          :items="navigationItems"
+          navigation-label="员工生命周期运营分类"
+          compact
+          @change="handleTabChange"
+        />
+        <footer class="lifecycle-page__note">
+          <ArtSvgIcon icon="ri:information-line" />
+          标准任务包仅在建单时固化；在途事项不会因模板调整而被改写。招聘交接完成后可直接生成入职事项，避免重复录入。
+        </footer>
+      </section>
+
+      <ArtTableQuery
+        :key="activeEntity"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 76, showExpand: false }"
+        :table-props="{
+          rowKey: 'id',
+          tableLayout: 'fixed',
+          emptyText: `暂无${activeTab.label}`,
+          emptyDescription: activeTab.emptyDescription
+        }"
+        focusable
       />
-      <footer class="lifecycle-page__note">
-        <ArtSvgIcon icon="ri:information-line" />
-        标准任务包仅在建单时固化；在途事项不会因模板调整而被改写。招聘交接完成后可直接生成入职事项，避免重复录入。
-      </footer>
-    </section>
-
-    <ArtTableQuery
-      :key="activeEntity"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 76, showExpand: false }"
-      :table-props="{
-        rowKey: 'id',
-        tableLayout: 'fixed',
-        emptyText: `暂无${activeTab.label}`,
-        emptyDescription: activeTab.emptyDescription
-      }"
-      focusable
-    />
-    <LifecycleDialog ref="dialogRef" @success="handleSaveSuccess" />
-  </div>
+      <LifecycleDialog ref="dialogRef" @success="handleSaveSuccess" />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
   import dayjs from 'dayjs'
-  import { ElButton, ElProgress } from 'element-plus'
+  import { ElProgress } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
     ArtTableQueryExpose,
     ArtTableQueryHeaderAction
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
+  import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
+  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
@@ -88,7 +94,6 @@
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
-  import { useAuth } from '@/hooks/core/useAuth'
   import { useUserStore } from '@/store/modules/user'
   import { pageInfoHandler } from '@/utils/table/tableUtils'
   import type { ColumnOption, DialogType } from '@/types'
@@ -163,7 +168,6 @@
 
   const userStore = useUserStore()
   const { getDictMap, isPlatformSuper } = storeToRefs(userStore)
-  const { hasAuth } = useAuth()
   const { confirmAction, promptText } = useArtFeedback()
   const activeEntity = ref<Entity>('case')
   const activeTab = computed(() => tabs.find((tab) => tab.value === activeEntity.value) ?? tabs[0]!)
@@ -315,10 +319,7 @@
   const dictLabel = (code: string, value?: string | null) =>
     getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
   const identity = (title?: string | null, subtitle?: string | null) => (
-    <div class="lifecycle-page__identity">
-      <strong>{title || '--'}</strong>
-      <small>{subtitle || '--'}</small>
-    </div>
+    <HrTableIdentityCell primary={title} secondary={subtitle} />
   )
   const progress = (closed = 0, total = 0, overdue = 0) => {
     const rate = Math.round((closed / Math.max(total, 1)) * 100)
@@ -603,162 +604,126 @@
         : activeEntity.value === 'template'
           ? (row as Api.Hr.LifecycleTemplate).status !== 'active'
           : (row as Api.Hr.LifecycleTemplateTask).template?.status !== 'active'
-  const actionButton = (
-    label: string,
-    type: 'primary' | 'success' | 'warning' | 'danger',
-    permission: string,
-    handler: () => void
-  ) =>
-    hasAuth(permission) ? (
-      <ElButton link type={type} onClick={handler}>
-        {label}
-      </ElButton>
-    ) : null
-  const transitionButtons = (row: RecordItem) => {
-    if (!row.id) return null
+  const transitionActions = (row: RecordItem): ButtonMoreItem[] => {
+    if (!row.id) return []
+    const actions: ButtonMoreItem[] = []
     if (activeEntity.value === 'case') {
       const item = row as Api.Hr.LifecycleCase
-      const tasks = actionButton('查看任务', 'primary', 'Hr:Lifecycle:View', () =>
-        openCaseTasks(item)
-      )
+      actions.push({
+        key: 'view_tasks',
+        label: '查看执行任务',
+        icon: 'ri:list-check-3',
+        auth: 'Hr:Lifecycle:View'
+      })
       if (item.status === 'draft' && item.executionStatus === 'planning')
-        return (
-          <>
-            {actionButton(
-              '提交审批',
-              'primary',
-              'Hr:Lifecycle:Submit',
-              () => void handleSubmitApproval(item)
-            )}
-            {tasks}
-          </>
-        )
+        actions.unshift({
+          key: 'submit_case',
+          label: '提交事项审批',
+          icon: 'ri:send-plane-line',
+          auth: 'Hr:Lifecycle:Submit'
+        })
       if (['approved', 'effective'].includes(item.status) && item.executionStatus === 'planning')
-        return (
-          <>
-            {actionButton(
-              '启动',
-              'success',
-              'Hr:Lifecycle:Start',
-              () => void handleCaseTransition(item, 'start')
-            )}
-            {tasks}
-          </>
-        )
+        actions.unshift({
+          key: 'start_case',
+          label: '启动生命周期事项',
+          icon: 'ri:play-circle-line',
+          auth: 'Hr:Lifecycle:Start'
+        })
       if (item.executionStatus === 'in_progress')
-        return (
-          <>
-            {actionButton(
-              '校验就绪',
-              'success',
-              'Hr:Lifecycle:Start',
-              () => void handleCaseTransition(item, 'ready')
-            )}
-            {actionButton(
-              '取消',
-              'warning',
-              'Hr:Lifecycle:Start',
-              () => void handleCaseTransition(item, 'cancel')
-            )}
-            {tasks}
-          </>
+        actions.unshift(
+          {
+            key: 'ready_case',
+            label: '校验事项就绪',
+            icon: 'ri:shield-check-line',
+            auth: 'Hr:Lifecycle:Start'
+          },
+          {
+            key: 'cancel_case',
+            label: '取消生命周期事项',
+            icon: 'ri:close-circle-line',
+            auth: 'Hr:Lifecycle:Start'
+          }
         )
       if (item.executionStatus === 'ready')
-        return (
-          <>
-            {actionButton(
-              '确认生效',
-              'success',
-              'Hr:Lifecycle:CompleteCase',
-              () => void handleCaseTransition(item, 'complete')
-            )}
-            {actionButton(
-              '取消',
-              'warning',
-              'Hr:Lifecycle:Start',
-              () => void handleCaseTransition(item, 'cancel')
-            )}
-            {tasks}
-          </>
+        actions.unshift(
+          {
+            key: 'complete_case',
+            label: '确认事项生效',
+            icon: 'ri:checkbox-circle-line',
+            auth: 'Hr:Lifecycle:CompleteCase'
+          },
+          {
+            key: 'cancel_case',
+            label: '取消生命周期事项',
+            icon: 'ri:close-circle-line',
+            auth: 'Hr:Lifecycle:Start'
+          }
         )
-      return tasks
     }
     if (activeEntity.value === 'task') {
       const item = row as Api.Hr.LifecycleTask
       if (item.status === 'pending')
-        return (
-          <>
-            {actionButton(
-              '开始',
-              'primary',
-              'Hr:Lifecycle:CompleteTask',
-              () => void handleTaskTransition(item, 'start')
-            )}
-            {actionButton(
-              '完成',
-              'success',
-              'Hr:Lifecycle:CompleteTask',
-              () => void handleTaskTransition(item, 'complete')
-            )}
-            {actionButton(
-              '豁免',
-              'warning',
-              'Hr:Lifecycle:WaiveTask',
-              () => void handleTaskTransition(item, 'waive')
-            )}
-          </>
+        actions.push(
+          {
+            key: 'start_task',
+            label: '开始执行任务',
+            icon: 'ri:play-circle-line',
+            auth: 'Hr:Lifecycle:CompleteTask'
+          },
+          {
+            key: 'complete_task',
+            label: '完成执行任务',
+            icon: 'ri:checkbox-circle-line',
+            auth: 'Hr:Lifecycle:CompleteTask'
+          },
+          {
+            key: 'waive_task',
+            label: '豁免执行任务',
+            icon: 'ri:shield-check-line',
+            auth: 'Hr:Lifecycle:WaiveTask'
+          }
         )
       if (item.status === 'processing')
-        return (
-          <>
-            {actionButton(
-              '完成',
-              'success',
-              'Hr:Lifecycle:CompleteTask',
-              () => void handleTaskTransition(item, 'complete')
-            )}
-            {actionButton(
-              '豁免',
-              'warning',
-              'Hr:Lifecycle:WaiveTask',
-              () => void handleTaskTransition(item, 'waive')
-            )}
-          </>
+        actions.push(
+          {
+            key: 'complete_task',
+            label: '完成执行任务',
+            icon: 'ri:checkbox-circle-line',
+            auth: 'Hr:Lifecycle:CompleteTask'
+          },
+          {
+            key: 'waive_task',
+            label: '豁免执行任务',
+            icon: 'ri:shield-check-line',
+            auth: 'Hr:Lifecycle:WaiveTask'
+          }
         )
       if (['completed', 'skipped'].includes(item.status))
-        return actionButton(
-          '重新打开',
-          'warning',
-          'Hr:Lifecycle:CompleteTask',
-          () => void handleTaskTransition(item, 'reopen')
-        )
+        actions.push({
+          key: 'reopen_task',
+          label: '重新打开任务',
+          icon: 'ri:arrow-go-back-line',
+          auth: 'Hr:Lifecycle:CompleteTask'
+        })
     }
     if (activeEntity.value === 'template') {
       const item = row as Api.Hr.LifecycleTemplate
-      return item.status === 'active'
-        ? actionButton(
-            '停用',
-            'warning',
-            'Hr:Lifecycle:ManageTemplate',
-            () => void handleTemplateTransition(item, 'deactivate')
-          )
-        : actionButton(
-            '启用',
-            'success',
-            'Hr:Lifecycle:ManageTemplate',
-            () => void handleTemplateTransition(item, 'activate')
-          )
+      actions.push({
+        key: item.status === 'active' ? 'deactivate_template' : 'activate_template',
+        label: item.status === 'active' ? '停用任务模板' : '启用任务模板',
+        icon: item.status === 'active' ? 'ri:stop-circle-line' : 'ri:play-circle-line',
+        auth: 'Hr:Lifecycle:ManageTemplate'
+      })
     }
-    return null
+    return actions
   }
   const actionColumn = (): ColumnOption<RecordItem> => ({
     prop: 'action',
     label: '操作',
-    width: activeEntity.value === 'case' || activeEntity.value === 'task' ? 300 : 210,
+    width: 112,
     fixed: 'right',
     formatter: (row) => (
-      <div class="lifecycle-page__actions">
-        {transitionButtons(row)}
+      <HrTableActions>
         {canEdit(row) ? (
           <ArtButtonTable
             type="edit"
@@ -766,16 +731,52 @@
             onClick={() => openDialog(activeEntity.value, row)}
           />
         ) : null}
-        {canDelete(row) ? (
-          <ArtButtonTable
-            type="delete"
-            permission={permissionFor('delete')}
-            onClick={() => void handleDelete(row)}
-          />
-        ) : null}
-      </div>
+        <ArtButtonMore
+          list={() => [
+            ...transitionActions(row),
+            ...(canDelete(row)
+              ? [
+                  {
+                    key: 'delete',
+                    label: '删除当前记录',
+                    icon: 'ri:delete-bin-5-line',
+                    color: 'var(--el-color-danger)',
+                    auth: permissionFor('delete')
+                  }
+                ]
+              : [])
+          ]}
+          onClick={(item: ButtonMoreItem) => void handleMoreAction(item, row)}
+        />
+      </HrTableActions>
     )
   })
+  const handleMoreAction = async (item: ButtonMoreItem, row: RecordItem): Promise<void> => {
+    if (item.key === 'delete') return await handleDelete(row)
+    if (activeEntity.value === 'case') {
+      const record = row as Api.Hr.LifecycleCase
+      if (item.key === 'view_tasks') return openCaseTasks(record)
+      if (item.key === 'submit_case') return await handleSubmitApproval(record)
+      if (item.key === 'start_case') return await handleCaseTransition(record, 'start')
+      if (item.key === 'ready_case') return await handleCaseTransition(record, 'ready')
+      if (item.key === 'cancel_case') return await handleCaseTransition(record, 'cancel')
+      if (item.key === 'complete_case') return await handleCaseTransition(record, 'complete')
+    }
+    if (activeEntity.value === 'task') {
+      const record = row as Api.Hr.LifecycleTask
+      if (item.key === 'start_task') return await handleTaskTransition(record, 'start')
+      if (item.key === 'complete_task') return await handleTaskTransition(record, 'complete')
+      if (item.key === 'waive_task') return await handleTaskTransition(record, 'waive')
+      if (item.key === 'reopen_task') return await handleTaskTransition(record, 'reopen')
+    }
+    if (activeEntity.value === 'template') {
+      const record = row as Api.Hr.LifecycleTemplate
+      if (item.key === 'activate_template')
+        return await handleTemplateTransition(record, 'activate')
+      if (item.key === 'deactivate_template')
+        return await handleTemplateTransition(record, 'deactivate')
+    }
+  }
   const headerActions = computed<ArtTableQueryHeaderAction[]>(() => [
     {
       type: 'add',

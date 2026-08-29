@@ -1,324 +1,324 @@
 <template>
-  <div
-    v-auth="'Hr:SkillMatrix:View'"
-    class="skill-matrix-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="WORKFORCE SKILL MATRIX"
-      title="技能矩阵"
-      description="以组织能力为中心聚合岗位要求与员工评估，识别能力风险、覆盖缺口和训练优先级。"
-      icon="ri:grid-line"
-      :tags="[
-        { label: '组织能力视图', type: 'primary' },
-        { label: '岗位模型 × 评估', type: 'success' },
-        { label: '不含绩效结论', type: 'info' }
-      ]"
-      :metrics="metrics"
-      refreshable
-      refresh-label="刷新技能矩阵"
-      :refresh-loading="loading"
-      @metric-click="handleMetricClick"
-      @refresh="loadOverview"
-    />
+  <ArtPermissionGuard permission="Hr:SkillMatrix:View">
+    <div class="skill-matrix-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="WORKFORCE SKILL MATRIX"
+        title="技能矩阵"
+        description="以组织能力为中心聚合岗位要求与员工评估，识别能力风险、覆盖缺口和训练优先级。"
+        icon="ri:grid-line"
+        :tags="[
+          { label: '组织能力视图', type: 'primary' },
+          { label: '岗位模型 × 评估', type: 'success' },
+          { label: '不含绩效结论', type: 'info' }
+        ]"
+        :metrics="metrics"
+        refreshable
+        refresh-label="刷新技能矩阵"
+        :refresh-loading="loading"
+        @metric-click="handleMetricClick"
+        @refresh="loadOverview"
+      />
 
-    <ArtSectionCard
-      class="skill-matrix-page__analysis"
-      :title="overview?.competencies.length ? '组织能力风险排行' : '能力数据就绪度'"
-      :subtitle="
-        overview?.competencies.length
-          ? `优先处理缺口人数多、评估覆盖不足的能力项，更新时间 ${generatedAt}`
-          : '补齐岗位能力标准与员工评估后，系统将自动生成组织能力风险排序。'
-      "
-      :loading="loading && !overview"
-      :error="errorMessage"
-      :min-height="200"
-      @retry="loadOverview"
-    >
-      <template #actions>
-        <ElTag v-if="overview" type="info" effect="plain" round>
-          {{ overview.competencies.length }} 项岗位能力
-        </ElTag>
-      </template>
-
-      <template v-if="overview">
-        <ElAlert
-          v-if="overview.truncated"
-          class="skill-matrix-page__capacity-alert"
-          type="warning"
-          show-icon
-          :closable="false"
-          :title="`员工数量较大，当前分析 ${overview.returnedRecords} / ${overview.totalRecords} 人`"
-          description="可结合组织范围继续拆分技能盘点。"
-        />
-
-        <div v-if="overview.competencies.length" class="skill-matrix-page__analysis-grid">
-          <div class="skill-matrix-page__priority">
-            <ol class="skill-matrix-page__competency-list">
-              <li v-for="(item, index) in overview.competencies.slice(0, 8)" :key="item.id">
-                <span class="skill-matrix-page__rank">{{ index + 1 }}</span>
-                <div class="skill-matrix-page__competency-main">
-                  <strong>{{ item.competencyName }}</strong>
-                  <span>{{ item.category }} · {{ item.competencyCode }}</span>
-                </div>
-                <div class="skill-matrix-page__competency-progress">
-                  <span
-                    >达标率 {{ item.readinessRate == null ? '--' : `${item.readinessRate}%` }}</span
-                  >
-                  <ElProgress
-                    :percentage="item.readinessRate ?? 0"
-                    :status="competencyStatus(item)"
-                    :stroke-width="6"
-                    :show-text="false"
-                  />
-                </div>
-                <div class="skill-matrix-page__competency-result">
-                  <strong>{{ item.gapEmployees }}</strong>
-                  <span>人有缺口</span>
-                </div>
-                <div class="skill-matrix-page__competency-result is-muted">
-                  <strong>{{ item.unassessedEmployees }}</strong>
-                  <span>人待评估</span>
-                </div>
-              </li>
-            </ol>
-          </div>
-
-          <aside class="skill-matrix-page__coverage" aria-label="能力评估覆盖概览">
-            <header>
-              <div>
-                <ArtSectionTitle :show-line="false">评估覆盖</ArtSectionTitle>
-                <p>以已配置岗位能力模型的员工为口径</p>
-              </div>
-            </header>
-            <ElProgress
-              class="skill-matrix-page__coverage-progress"
-              type="dashboard"
-              :width="126"
-              :stroke-width="9"
-              :percentage="assessmentCoverage ?? 0"
-              :status="coverageStatus"
-            />
-            <strong class="skill-matrix-page__coverage-label">
-              {{ assessmentCoverage == null ? '暂无覆盖口径' : '能力评估覆盖率' }}
-            </strong>
-            <dl>
-              <div>
-                <dt>已建模员工</dt>
-                <dd>{{ overview.modelledEmployeeCount }}</dd>
-              </div>
-              <div>
-                <dt>已完成评估</dt>
-                <dd>{{ overview.assessedEmployeeCount }}</dd>
-              </div>
-              <div>
-                <dt>岗位待评估</dt>
-                <dd>{{ overview.unassessedEmployeeCount }}</dd>
-              </div>
-            </dl>
-            <p class="skill-matrix-page__coverage-note">
-              <ArtSvgIcon icon="ri:information-line" />
-              未建模员工不会计入覆盖率，应先补齐岗位能力标准。
-            </p>
-          </aside>
-        </div>
-
-        <section v-else class="skill-matrix-page__setup-state" aria-labelledby="setup-title">
-          <header class="skill-matrix-page__setup-header">
-            <div class="skill-matrix-page__setup-intro">
-              <span class="skill-matrix-page__setup-icon" aria-hidden="true">
-                <ArtSvgIcon icon="ri:radar-line" />
-              </span>
-              <div>
-                <span class="skill-matrix-page__setup-eyebrow">CAPABILITY READINESS</span>
-                <h2 id="setup-title">当前还没有可分析的岗位能力数据</h2>
-                <p>技能矩阵只读取岗位能力要求与员工评估，不混入绩效结论。</p>
-              </div>
-            </div>
-            <ElButton type="primary" @click="goToCapabilityConfig">
-              配置岗位能力
-              <ArtSvgIcon icon="ri:arrow-right-line" />
-            </ElButton>
-          </header>
-
-          <div class="skill-matrix-page__setup-body">
-            <dl class="skill-matrix-page__setup-summary" aria-label="能力数据准备概览">
-              <div
-                ><dt>在盘员工</dt><dd>{{ overview.employeeCount }}</dd></div
-              >
-              <div
-                ><dt>岗位已建模</dt><dd>{{ overview.modelledEmployeeCount }}</dd></div
-              >
-              <div
-                ><dt>评估已完成</dt><dd>{{ overview.assessedEmployeeCount }}</dd></div
-              >
-            </dl>
-
-            <ol class="skill-matrix-page__setup-steps" aria-label="技能矩阵数据准备步骤">
-              <li>
-                <span>01</span>
-                <div>
-                  <span class="skill-matrix-page__step-heading">
-                    <strong>定义岗位标准</strong>
-                    <ElTag type="warning" effect="light" round>当前</ElTag>
-                  </span>
-                  <small
-                    >{{ overview.modelledEmployeeCount }} /
-                    {{ overview.employeeCount }} 人已匹配模型</small
-                  >
-                </div>
-              </li>
-              <li>
-                <span>02</span>
-                <div>
-                  <span class="skill-matrix-page__step-heading">
-                    <strong>完成能力评估</strong>
-                    <ElTag type="info" effect="plain" round>待推进</ElTag>
-                  </span>
-                  <small>{{ overview.assessedEmployeeCount }} 人已有有效评估</small>
-                </div>
-              </li>
-              <li>
-                <span>03</span>
-                <div>
-                  <span class="skill-matrix-page__step-heading">
-                    <strong>生成风险排序</strong>
-                    <ElTag type="success" effect="plain" round>自动</ElTag>
-                  </span>
-                  <small>按缺口人数与评估覆盖自动排序</small>
-                </div>
-              </li>
-            </ol>
-          </div>
-        </section>
-      </template>
-    </ArtSectionCard>
-
-    <ArtSectionCard
-      v-if="overview"
-      class="skill-matrix-page__employees"
-      title="员工岗位准备度"
-      subtitle="集中查看岗位建模、评估覆盖与实际达标情况，能力缺口同时包含未评估项。"
-      :empty="!filteredRecords.length"
-      empty-title="暂无准备度员工"
-      empty-description="当前筛选范围暂无匹配员工，可调整关键词或准备度范围。"
-      :min-height="320"
-    >
-      <template #actions>
-        <div class="skill-matrix-page__filters">
-          <ElInput
-            v-model="keyword"
-            clearable
-            placeholder="员工、工号或岗位"
-            aria-label="检索员工技能矩阵"
-          >
-            <template #prefix><ArtSvgIcon icon="ri:search-line" /></template>
-          </ElInput>
-          <ElRadioGroup v-model="activeScope" size="small" aria-label="技能矩阵范围">
-            <ElRadioButton value="all">全部</ElRadioButton>
-            <ElRadioButton value="gap">有缺口</ElRadioButton>
-            <ElRadioButton value="ready">已就绪</ElRadioButton>
-            <ElRadioButton value="unassessed">待评估</ElRadioButton>
-            <ElRadioButton value="unmodelled">未建模</ElRadioButton>
-          </ElRadioGroup>
-        </div>
-      </template>
-
-      <ArtTable
-        :data="pagedRecords"
-        :columns="tableColumns"
-        :loading="loading"
-        :pagination="false"
-        :show-table-header="false"
-        row-key="id"
-        table-layout="fixed"
-        empty-height="220px"
-        empty-text="暂无准备度员工"
-        empty-description="当前筛选范围暂无匹配员工，可调整关键词或准备度范围。"
+      <ArtSectionCard
+        class="skill-matrix-page__analysis"
+        :title="overview?.competencies.length ? '组织能力风险排行' : '能力数据就绪度'"
+        :subtitle="
+          overview?.competencies.length
+            ? `优先处理缺口人数多、评估覆盖不足的能力项，更新时间 ${generatedAt}`
+            : '补齐岗位能力标准与员工评估后，系统将自动生成组织能力风险排序。'
+        "
+        :loading="loading && !overview"
+        :error="errorMessage"
+        :min-height="200"
+        @retry="loadOverview"
       >
-        <template #employeeIdentity="{ row: employee }">
-          <HrEmployeeIdentityCell
-            :employee-name="employee.employeeName"
-            :employee-no="employee.employeeNo"
-            :to="canViewEmployee ? `/hr/personnel/employee-detail/${employee.id}` : undefined"
-          />
-        </template>
-        <template #positionState="{ row: employee }">
-          <ElTag :type="employeeTone(employee)" effect="light" round>
-            {{ employeeState(employee) }}
+        <template #actions>
+          <ElTag v-if="overview" type="info" effect="plain" round>
+            {{ overview.competencies.length }} 项岗位能力
           </ElTag>
         </template>
-        <template #readiness="{ row: employee }">
-          <div class="skill-matrix-page__readiness">
-            <div>
-              <strong>{{
-                employee.readinessRate == null ? '--' : `${employee.readinessRate}%`
-              }}</strong>
-              <span>
-                {{
-                  employee.requiredCount
-                    ? `${employee.metCount} / ${employee.requiredCount} 项达标`
-                    : '未建立准备度口径'
-                }}
-              </span>
-            </div>
-            <ElProgress
-              v-if="employee.requiredCount"
-              :percentage="employee.readinessRate ?? 0"
-              :status="employeeProgressStatus(employee)"
-              :stroke-width="7"
-              :show-text="false"
-            />
-          </div>
-        </template>
-        <template #assessmentCoverage="{ row: employee }">
-          <div class="skill-matrix-page__stacked-cell">
-            <strong>{{ employee.assessedCount }} / {{ employee.requiredCount }}</strong>
-            <small v-if="employee.unassessedCount">
-              {{ employee.unassessedCount }} 项尚未评估
-            </small>
-            <small v-else-if="employee.requiredCount">评估已覆盖岗位要求</small>
-            <small v-else>需先配置岗位能力要求</small>
-          </div>
-        </template>
-        <template #abilityResult="{ row: employee }">
-          <span
-            class="skill-matrix-page__gap-result"
-            :class="{
-              'has-gap': employee.requiredCount > 0 && employee.gapCount > 0,
-              'is-unmodelled': employee.requiredCount === 0
-            }"
-          >
-            <ArtSvgIcon
-              :icon="
-                !employee.requiredCount
-                  ? 'ri:node-tree'
-                  : employee.gapCount
-                    ? 'ri:alarm-warning-line'
-                    : 'ri:shield-check-line'
-              "
-            />
-            {{
-              !employee.requiredCount
-                ? '待建模'
-                : employee.gapCount
-                  ? `${employee.gapCount} 项缺口`
-                  : '全部达标'
-            }}
-          </span>
-        </template>
-      </ArtTable>
 
-      <ElPagination
-        v-if="filteredRecords.length > pageSize"
-        v-model:current-page="currentPage"
-        class="skill-matrix-page__pagination"
-        background
-        layout="total, prev, pager, next"
-        :page-size="pageSize"
-        :total="filteredRecords.length"
-      />
-    </ArtSectionCard>
-  </div>
+        <template v-if="overview">
+          <ElAlert
+            v-if="overview.truncated"
+            class="skill-matrix-page__capacity-alert"
+            type="warning"
+            show-icon
+            :closable="false"
+            :title="`员工数量较大，当前分析 ${overview.returnedRecords} / ${overview.totalRecords} 人`"
+            description="可结合组织范围继续拆分技能盘点。"
+          />
+
+          <div v-if="overview.competencies.length" class="skill-matrix-page__analysis-grid">
+            <div class="skill-matrix-page__priority">
+              <ol class="skill-matrix-page__competency-list">
+                <li v-for="(item, index) in overview.competencies.slice(0, 8)" :key="item.id">
+                  <span class="skill-matrix-page__rank">{{ index + 1 }}</span>
+                  <div class="skill-matrix-page__competency-main">
+                    <strong>{{ item.competencyName }}</strong>
+                    <span>{{ item.category }} · {{ item.competencyCode }}</span>
+                  </div>
+                  <div class="skill-matrix-page__competency-progress">
+                    <span
+                      >达标率
+                      {{ item.readinessRate == null ? '--' : `${item.readinessRate}%` }}</span
+                    >
+                    <ElProgress
+                      :percentage="item.readinessRate ?? 0"
+                      :status="competencyStatus(item)"
+                      :stroke-width="6"
+                      :show-text="false"
+                    />
+                  </div>
+                  <div class="skill-matrix-page__competency-result">
+                    <strong>{{ item.gapEmployees }}</strong>
+                    <span>人有缺口</span>
+                  </div>
+                  <div class="skill-matrix-page__competency-result is-muted">
+                    <strong>{{ item.unassessedEmployees }}</strong>
+                    <span>人待评估</span>
+                  </div>
+                </li>
+              </ol>
+            </div>
+
+            <aside class="skill-matrix-page__coverage" aria-label="能力评估覆盖概览">
+              <header>
+                <div>
+                  <ArtSectionTitle :show-line="false">评估覆盖</ArtSectionTitle>
+                  <p>以已配置岗位能力模型的员工为口径</p>
+                </div>
+              </header>
+              <ElProgress
+                class="skill-matrix-page__coverage-progress"
+                type="dashboard"
+                :width="126"
+                :stroke-width="9"
+                :percentage="assessmentCoverage ?? 0"
+                :status="coverageStatus"
+              />
+              <strong class="skill-matrix-page__coverage-label">
+                {{ assessmentCoverage == null ? '暂无覆盖口径' : '能力评估覆盖率' }}
+              </strong>
+              <dl>
+                <div>
+                  <dt>已建模员工</dt>
+                  <dd>{{ overview.modelledEmployeeCount }}</dd>
+                </div>
+                <div>
+                  <dt>已完成评估</dt>
+                  <dd>{{ overview.assessedEmployeeCount }}</dd>
+                </div>
+                <div>
+                  <dt>岗位待评估</dt>
+                  <dd>{{ overview.unassessedEmployeeCount }}</dd>
+                </div>
+              </dl>
+              <p class="skill-matrix-page__coverage-note">
+                <ArtSvgIcon icon="ri:information-line" />
+                未建模员工不会计入覆盖率，应先补齐岗位能力标准。
+              </p>
+            </aside>
+          </div>
+
+          <section v-else class="skill-matrix-page__setup-state" aria-labelledby="setup-title">
+            <header class="skill-matrix-page__setup-header">
+              <div class="skill-matrix-page__setup-intro">
+                <span class="skill-matrix-page__setup-icon" aria-hidden="true">
+                  <ArtSvgIcon icon="ri:radar-line" />
+                </span>
+                <div>
+                  <span class="skill-matrix-page__setup-eyebrow">CAPABILITY READINESS</span>
+                  <h2 id="setup-title">当前还没有可分析的岗位能力数据</h2>
+                  <p>技能矩阵只读取岗位能力要求与员工评估，不混入绩效结论。</p>
+                </div>
+              </div>
+              <ElButton type="primary" @click="goToCapabilityConfig">
+                配置岗位能力
+                <ArtSvgIcon icon="ri:arrow-right-line" />
+              </ElButton>
+            </header>
+
+            <div class="skill-matrix-page__setup-body">
+              <dl class="skill-matrix-page__setup-summary" aria-label="能力数据准备概览">
+                <div
+                  ><dt>在盘员工</dt><dd>{{ overview.employeeCount }}</dd></div
+                >
+                <div
+                  ><dt>岗位已建模</dt><dd>{{ overview.modelledEmployeeCount }}</dd></div
+                >
+                <div
+                  ><dt>评估已完成</dt><dd>{{ overview.assessedEmployeeCount }}</dd></div
+                >
+              </dl>
+
+              <ol class="skill-matrix-page__setup-steps" aria-label="技能矩阵数据准备步骤">
+                <li>
+                  <span>01</span>
+                  <div>
+                    <span class="skill-matrix-page__step-heading">
+                      <strong>定义岗位标准</strong>
+                      <ElTag type="warning" effect="light" round>当前</ElTag>
+                    </span>
+                    <small
+                      >{{ overview.modelledEmployeeCount }} /
+                      {{ overview.employeeCount }} 人已匹配模型</small
+                    >
+                  </div>
+                </li>
+                <li>
+                  <span>02</span>
+                  <div>
+                    <span class="skill-matrix-page__step-heading">
+                      <strong>完成能力评估</strong>
+                      <ElTag type="info" effect="plain" round>待推进</ElTag>
+                    </span>
+                    <small>{{ overview.assessedEmployeeCount }} 人已有有效评估</small>
+                  </div>
+                </li>
+                <li>
+                  <span>03</span>
+                  <div>
+                    <span class="skill-matrix-page__step-heading">
+                      <strong>生成风险排序</strong>
+                      <ElTag type="success" effect="plain" round>自动</ElTag>
+                    </span>
+                    <small>按缺口人数与评估覆盖自动排序</small>
+                  </div>
+                </li>
+              </ol>
+            </div>
+          </section>
+        </template>
+      </ArtSectionCard>
+
+      <ArtSectionCard
+        v-if="overview"
+        class="skill-matrix-page__employees"
+        title="员工岗位准备度"
+        subtitle="集中查看岗位建模、评估覆盖与实际达标情况，能力缺口同时包含未评估项。"
+        :empty="!filteredRecords.length"
+        empty-title="暂无准备度员工"
+        empty-description="当前筛选范围暂无匹配员工，可调整关键词或准备度范围。"
+        :min-height="320"
+      >
+        <template #actions>
+          <div class="skill-matrix-page__filters">
+            <ElInput
+              v-model="keyword"
+              clearable
+              placeholder="员工、工号或岗位"
+              aria-label="检索员工技能矩阵"
+            >
+              <template #prefix><ArtSvgIcon icon="ri:search-line" /></template>
+            </ElInput>
+            <ElRadioGroup v-model="activeScope" size="small" aria-label="技能矩阵范围">
+              <ElRadioButton value="all">全部</ElRadioButton>
+              <ElRadioButton value="gap">有缺口</ElRadioButton>
+              <ElRadioButton value="ready">已就绪</ElRadioButton>
+              <ElRadioButton value="unassessed">待评估</ElRadioButton>
+              <ElRadioButton value="unmodelled">未建模</ElRadioButton>
+            </ElRadioGroup>
+          </div>
+        </template>
+
+        <ArtTable
+          :data="pagedRecords"
+          :columns="tableColumns"
+          :loading="loading"
+          :pagination="false"
+          :show-table-header="false"
+          row-key="id"
+          table-layout="fixed"
+          empty-height="220px"
+          empty-text="暂无准备度员工"
+          empty-description="当前筛选范围暂无匹配员工，可调整关键词或准备度范围。"
+        >
+          <template #employeeIdentity="{ row: employee }">
+            <HrEmployeeIdentityCell
+              :employee-name="employee.employeeName"
+              :employee-no="employee.employeeNo"
+              :to="canViewEmployee ? `/hr/personnel/employee-detail/${employee.id}` : undefined"
+            />
+          </template>
+          <template #positionState="{ row: employee }">
+            <ElTag :type="employeeTone(employee)" effect="light" round>
+              {{ employeeState(employee) }}
+            </ElTag>
+          </template>
+          <template #readiness="{ row: employee }">
+            <div class="skill-matrix-page__readiness">
+              <div>
+                <strong>{{
+                  employee.readinessRate == null ? '--' : `${employee.readinessRate}%`
+                }}</strong>
+                <span>
+                  {{
+                    employee.requiredCount
+                      ? `${employee.metCount} / ${employee.requiredCount} 项达标`
+                      : '未建立准备度口径'
+                  }}
+                </span>
+              </div>
+              <ElProgress
+                v-if="employee.requiredCount"
+                :percentage="employee.readinessRate ?? 0"
+                :status="employeeProgressStatus(employee)"
+                :stroke-width="7"
+                :show-text="false"
+              />
+            </div>
+          </template>
+          <template #assessmentCoverage="{ row: employee }">
+            <div class="skill-matrix-page__stacked-cell">
+              <strong>{{ employee.assessedCount }} / {{ employee.requiredCount }}</strong>
+              <small v-if="employee.unassessedCount">
+                {{ employee.unassessedCount }} 项尚未评估
+              </small>
+              <small v-else-if="employee.requiredCount">评估已覆盖岗位要求</small>
+              <small v-else>需先配置岗位能力要求</small>
+            </div>
+          </template>
+          <template #abilityResult="{ row: employee }">
+            <span
+              class="skill-matrix-page__gap-result"
+              :class="{
+                'has-gap': employee.requiredCount > 0 && employee.gapCount > 0,
+                'is-unmodelled': employee.requiredCount === 0
+              }"
+            >
+              <ArtSvgIcon
+                :icon="
+                  !employee.requiredCount
+                    ? 'ri:node-tree'
+                    : employee.gapCount
+                      ? 'ri:alarm-warning-line'
+                      : 'ri:shield-check-line'
+                "
+              />
+              {{
+                !employee.requiredCount
+                  ? '待建模'
+                  : employee.gapCount
+                    ? `${employee.gapCount} 项缺口`
+                    : '全部达标'
+              }}
+            </span>
+          </template>
+        </ArtTable>
+
+        <ElPagination
+          v-if="filteredRecords.length > pageSize"
+          v-model:current-page="currentPage"
+          class="skill-matrix-page__pagination"
+          background
+          layout="total, prev, pager, next"
+          :page-size="pageSize"
+          :total="filteredRecords.length"
+        />
+      </ArtSectionCard>
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="ts">

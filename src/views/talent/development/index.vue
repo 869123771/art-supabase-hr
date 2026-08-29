@@ -1,88 +1,90 @@
 <template>
-  <div v-auth="'Hr:Talent:View'" class="learning-page business-workspace-page art-full-height">
-    <BusinessWorkspaceHeader
-      eyebrow="LEARNING OPERATIONS"
-      title="培训与能力"
-      description="统一管理培养计划、课程产品、交付班次、员工学习结果与证书，让培训投入能够回写人才能力并形成可审计闭环。"
-      icon="ri:graduation-cap-line"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
-    </BusinessWorkspaceHeader>
+  <ArtPermissionGuard permission="Hr:Talent:View">
+    <div class="learning-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="LEARNING OPERATIONS"
+        title="培训与能力"
+        description="统一管理培养计划、课程产品、交付班次、员工学习结果与证书，让培训投入能够回写人才能力并形成可审计闭环。"
+        icon="ri:graduation-cap-line"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+      >
+        <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
+      </BusinessWorkspaceHeader>
 
-    <section class="learning-page__control-deck" aria-labelledby="learning-control-title">
-      <header class="learning-page__control-heading">
-        <div class="learning-page__heading-copy">
-          <span class="learning-page__section-icon"><ArtSvgIcon icon="ri:route-line" /></span>
-          <span>
-            <strong id="learning-control-title">企业学习交付闭环</strong>
-            <small>先定义课程与能力目标，再按班次交付，并以结果驱动履历、证书和能力更新</small>
+      <section class="learning-page__control-deck" aria-labelledby="learning-control-title">
+        <header class="learning-page__control-heading">
+          <div class="learning-page__heading-copy">
+            <span class="learning-page__section-icon"><ArtSvgIcon icon="ri:route-line" /></span>
+            <span>
+              <strong id="learning-control-title">企业学习交付闭环</strong>
+              <small>先定义课程与能力目标，再按班次交付，并以结果驱动履历、证书和能力更新</small>
+            </span>
+          </div>
+          <span class="learning-page__governance-badge">
+            <ArtSvgIcon icon="ri:shield-check-line" />结果受控回写
           </span>
+        </header>
+
+        <div class="learning-page__journey" aria-label="学习发展业务流程">
+          <article v-for="(stage, index) in journeyStages" :key="stage.title">
+            <span class="learning-page__journey-index">0{{ index + 1 }}</span>
+            <span class="learning-page__journey-icon"><ArtSvgIcon :icon="stage.icon" /></span>
+            <div
+              ><strong>{{ stage.title }}</strong
+              ><small>{{ stage.description }}</small></div
+            >
+            <ArtSvgIcon
+              v-if="index < journeyStages.length - 1"
+              class="learning-page__connector"
+              icon="ri:arrow-right-line"
+              aria-hidden="true"
+            />
+          </article>
         </div>
-        <span class="learning-page__governance-badge">
-          <ArtSvgIcon icon="ri:shield-check-line" />结果受控回写
-        </span>
-      </header>
 
-      <div class="learning-page__journey" aria-label="学习发展业务流程">
-        <article v-for="(stage, index) in journeyStages" :key="stage.title">
-          <span class="learning-page__journey-index">0{{ index + 1 }}</span>
-          <span class="learning-page__journey-icon"><ArtSvgIcon :icon="stage.icon" /></span>
-          <div
-            ><strong>{{ stage.title }}</strong
-            ><small>{{ stage.description }}</small></div
-          >
-          <ArtSvgIcon
-            v-if="index < journeyStages.length - 1"
-            class="learning-page__connector"
-            icon="ri:arrow-right-line"
-            aria-hidden="true"
-          />
-        </article>
-      </div>
+        <HrEntityNavigation
+          v-model="activeEntity"
+          :items="navigationItems"
+          navigation-label="学习运营分类"
+          compact
+          @change="handleTabChange"
+        />
 
-      <HrEntityNavigation
-        v-model="activeEntity"
-        :items="navigationItems"
-        navigation-label="学习运营分类"
-        compact
-        @change="handleTabChange"
+        <footer class="learning-page__control-note">
+          <ArtSvgIcon icon="ri:information-line" />
+          课程发布后固化通过标准；班次存在未完成结果时不可结班；员工通过课程后自动写入培训履历，并按能力映射更新个人能力证据。
+        </footer>
+      </section>
+
+      <ArtTableQuery
+        :key="activeEntity"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
+        :table-props="{
+          rowKey: 'id',
+          tableLayout: 'fixed',
+          emptyText: `暂无${activeTab.label}`,
+          emptyDescription: activeTab.emptyDescription
+        }"
+        :on-success="handleTableSuccess"
+        focusable
       />
 
-      <footer class="learning-page__control-note">
-        <ArtSvgIcon icon="ri:information-line" />
-        课程发布后固化通过标准；班次存在未完成结果时不可结班；员工通过课程后自动写入培训履历，并按能力映射更新个人能力证据。
-      </footer>
-    </section>
-
-    <ArtTableQuery
-      :key="activeEntity"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
-      :table-props="{
-        rowKey: 'id',
-        tableLayout: 'fixed',
-        emptyText: `暂无${activeTab.label}`,
-        emptyDescription: activeTab.emptyDescription
-      }"
-      :on-success="handleTableSuccess"
-      focusable
-    />
-
-    <LearningDialog ref="dialogRef" @success="handleSaveSuccess" />
-  </div>
+      <LearningDialog ref="dialogRef" @success="handleSaveSuccess" />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
   import dayjs from 'dayjs'
-  import { ElButton, ElMessage, ElProgress, ElTag } from 'element-plus'
+  import { ElMessage, ElProgress, ElTag } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
     ArtTableQueryExpose,
@@ -90,6 +92,10 @@
     ArtTableQueryProps
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
+  import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
+  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
@@ -97,7 +103,6 @@
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
-  import { useAuth } from '@/hooks/core/useAuth'
   import { useUserStore } from '@/store/modules/user'
   import { pageInfoHandler } from '@/utils/table/tableUtils'
   import type { ColumnOption, DialogType } from '@/types'
@@ -185,7 +190,6 @@
 
   const userStore = useUserStore()
   const { getDictMap, isPlatformSuper } = storeToRefs(userStore)
-  const { hasAuth } = useAuth()
   const { confirmAction, promptText } = useArtFeedback()
   const activeEntity = ref<Entity>('plan')
   const activeTab = computed<Tab>(
@@ -305,10 +309,7 @@
           maximumFractionDigits: 2
         }).format(value)
   const identity = (title?: string | null, subtitle?: string | null) => (
-    <div class="learning-page__identity">
-      <strong>{title || '--'}</strong>
-      <small>{subtitle || '--'}</small>
-    </div>
+    <HrTableIdentityCell primary={title} secondary={subtitle} />
   )
   const statusTag = (dictionary: string, status?: string | null) => (
     <ElTag type={statusType(status)} effect="light" round>
@@ -319,11 +320,10 @@
   const actionColumn = (): ColumnOption<RecordItem> => ({
     prop: 'action',
     label: '操作',
-    width: activeEntity.value === 'enrollment' ? 250 : 210,
+    width: 112,
     fixed: 'right',
     formatter: (row) => (
-      <div class="learning-page__actions">
-        {transitionButtons(row)}
+      <HrTableActions>
         {canEdit(row) ? (
           <ArtButtonTable
             type="edit"
@@ -331,14 +331,24 @@
             onClick={() => openDialog(activeEntity.value, row)}
           />
         ) : null}
-        {canDelete(row) ? (
-          <ArtButtonTable
-            type="delete"
-            permission={permissionFor('delete')}
-            onClick={() => handleDelete(row)}
-          />
-        ) : null}
-      </div>
+        <ArtButtonMore
+          list={() => [
+            ...transitionActions(row),
+            ...(canDelete(row)
+              ? [
+                  {
+                    key: 'delete',
+                    label: '删除当前记录',
+                    icon: 'ri:delete-bin-5-line',
+                    color: 'var(--el-color-danger)',
+                    auth: permissionFor('delete')
+                  }
+                ]
+              : [])
+          ]}
+          onClick={(item: ButtonMoreItem) => void handleMoreAction(item, row)}
+        />
+      </HrTableActions>
     )
   })
 
@@ -754,165 +764,165 @@
       (activeEntity.value === 'enrollment' && status === 'enrolled')
     )
   }
-  const actionButton = (
-    label: string,
-    type: 'primary' | 'success' | 'warning' | 'danger',
-    permission: string,
-    handler: () => void
-  ) =>
-    hasAuth(permission) ? (
-      <ElButton link type={type} onClick={handler}>
-        {label}
-      </ElButton>
-    ) : null
-  const transitionButtons = (row: RecordItem) => {
-    if (!row.id) return null
+  const transitionActions = (row: RecordItem): ButtonMoreItem[] => {
+    if (!row.id) return []
+    const actions: ButtonMoreItem[] = []
     const status = statusOf(row)
     if (activeEntity.value === 'plan') {
       if (status === 'draft')
-        return actionButton(
-          '发布',
-          'success',
-          'Hr:Talent:Plan:Transition',
-          () => void handleTransition(row, 'publish')
-        )
+        actions.push({
+          key: 'publish',
+          label: '发布培训计划',
+          icon: 'ri:send-plane-line',
+          auth: 'Hr:Talent:Plan:Transition'
+        })
       if (status === 'published')
-        return (
-          <>
-            {actionButton(
-              '启动',
-              'primary',
-              'Hr:Talent:Plan:Transition',
-              () => void handleTransition(row, 'start')
-            )}
-            {actionButton(
-              '取消',
-              'warning',
-              'Hr:Talent:Plan:Transition',
-              () => void handleTransition(row, 'cancel')
-            )}
-          </>
+        actions.push(
+          {
+            key: 'start',
+            label: '启动培训计划',
+            icon: 'ri:play-circle-line',
+            auth: 'Hr:Talent:Plan:Transition'
+          },
+          {
+            key: 'cancel',
+            label: '取消培训计划',
+            icon: 'ri:close-circle-line',
+            auth: 'Hr:Talent:Plan:Transition'
+          }
         )
       if (status === 'in_progress')
-        return (
-          <>
-            {actionButton(
-              '完成',
-              'success',
-              'Hr:Talent:Plan:Transition',
-              () => void handleTransition(row, 'complete')
-            )}
-            {actionButton(
-              '取消',
-              'warning',
-              'Hr:Talent:Plan:Transition',
-              () => void handleTransition(row, 'cancel')
-            )}
-          </>
+        actions.push(
+          {
+            key: 'complete',
+            label: '完成培训计划',
+            icon: 'ri:checkbox-circle-line',
+            auth: 'Hr:Talent:Plan:Transition'
+          },
+          {
+            key: 'cancel',
+            label: '取消培训计划',
+            icon: 'ri:close-circle-line',
+            auth: 'Hr:Talent:Plan:Transition'
+          }
         )
     }
     if (activeEntity.value === 'course') {
       if (status === 'draft')
-        return actionButton(
-          '发布',
-          'success',
-          'Hr:Talent:Course:Publish',
-          () => void handleTransition(row, 'publish')
-        )
+        actions.push({
+          key: 'publish',
+          label: '发布课程',
+          icon: 'ri:send-plane-line',
+          auth: 'Hr:Talent:Course:Publish'
+        })
       if (status === 'published')
-        return actionButton(
-          '停用',
-          'warning',
-          'Hr:Talent:Course:Publish',
-          () => void handleTransition(row, 'retire')
-        )
+        actions.push({
+          key: 'retire',
+          label: '停用课程',
+          icon: 'ri:stop-circle-line',
+          auth: 'Hr:Talent:Course:Publish'
+        })
     }
     if (activeEntity.value === 'session') {
       if (status === 'planned')
-        return (
-          <>
-            {actionButton(
-              '开放',
-              'success',
-              'Hr:Talent:Session:Transition',
-              () => void handleTransition(row, 'open')
-            )}
-            {actionButton(
-              '取消',
-              'warning',
-              'Hr:Talent:Session:Transition',
-              () => void handleTransition(row, 'cancel')
-            )}
-          </>
+        actions.push(
+          {
+            key: 'open',
+            label: '开放培训班次',
+            icon: 'ri:door-open-line',
+            auth: 'Hr:Talent:Session:Transition'
+          },
+          {
+            key: 'cancel',
+            label: '取消培训班次',
+            icon: 'ri:close-circle-line',
+            auth: 'Hr:Talent:Session:Transition'
+          }
         )
       if (status === 'open')
-        return (
-          <>
-            {actionButton(
-              '开班',
-              'primary',
-              'Hr:Talent:Session:Transition',
-              () => void handleTransition(row, 'start')
-            )}
-            {actionButton(
-              '取消',
-              'warning',
-              'Hr:Talent:Session:Transition',
-              () => void handleTransition(row, 'cancel')
-            )}
-          </>
+        actions.push(
+          {
+            key: 'start',
+            label: '开始培训班次',
+            icon: 'ri:play-circle-line',
+            auth: 'Hr:Talent:Session:Transition'
+          },
+          {
+            key: 'cancel',
+            label: '取消培训班次',
+            icon: 'ri:close-circle-line',
+            auth: 'Hr:Talent:Session:Transition'
+          }
         )
       if (status === 'in_progress')
-        return (
-          <>
-            {actionButton(
-              '结班',
-              'success',
-              'Hr:Talent:Session:Transition',
-              () => void handleTransition(row, 'complete')
-            )}
-            {actionButton(
-              '取消',
-              'warning',
-              'Hr:Talent:Session:Transition',
-              () => void handleTransition(row, 'cancel')
-            )}
-          </>
+        actions.push(
+          {
+            key: 'complete',
+            label: '完成培训班次',
+            icon: 'ri:checkbox-circle-line',
+            auth: 'Hr:Talent:Session:Transition'
+          },
+          {
+            key: 'cancel',
+            label: '取消培训班次',
+            icon: 'ri:close-circle-line',
+            auth: 'Hr:Talent:Session:Transition'
+          }
         )
     }
     if (activeEntity.value === 'enrollment' && ['enrolled', 'attending'].includes(status))
-      return (
-        <>
-          {status === 'enrolled'
-            ? actionButton(
-                '开始学习',
-                'primary',
-                'Hr:Talent:Enrollment:Manage',
-                () => void handleTransition(row, 'attend')
-              )
-            : null}
-          {actionButton(
-            '登记结果',
-            'success',
-            'Hr:Talent:Enrollment:Manage',
-            () => void handleLearningResult(row as Api.Hr.LearningEnrollment)
-          )}
-          {actionButton(
-            '退出',
-            'warning',
-            'Hr:Talent:Enrollment:Manage',
-            () => void handleTransition(row, 'withdraw')
-          )}
-        </>
+      actions.push(
+        ...(status === 'enrolled'
+          ? [
+              {
+                key: 'attend',
+                label: '开始学习',
+                icon: 'ri:play-circle-line',
+                auth: 'Hr:Talent:Enrollment:Manage'
+              }
+            ]
+          : []),
+        {
+          key: 'result',
+          label: '登记学习结果',
+          icon: 'ri:file-list-3-line',
+          auth: 'Hr:Talent:Enrollment:Manage'
+        },
+        {
+          key: 'withdraw',
+          label: '退出培训',
+          icon: 'ri:logout-box-r-line',
+          auth: 'Hr:Talent:Enrollment:Manage'
+        }
       )
     if (activeEntity.value === 'certificate' && status === 'valid')
-      return actionButton(
-        '撤销',
-        'danger',
-        'Hr:Talent:Certificate:Manage',
-        () => void handleTransition(row, 'revoke')
-      )
-    return null
+      actions.push({
+        key: 'revoke',
+        label: '撤销证书',
+        icon: 'ri:close-circle-line',
+        color: 'var(--el-color-danger)',
+        auth: 'Hr:Talent:Certificate:Manage'
+      })
+    return actions
+  }
+
+  const handleMoreAction = async (item: ButtonMoreItem, row: RecordItem): Promise<void> => {
+    if (item.key === 'delete') return await handleDelete(row)
+    if (item.key === 'result') return handleLearningResult(row as Api.Hr.LearningEnrollment)
+    if (
+      [
+        'publish',
+        'start',
+        'cancel',
+        'complete',
+        'retire',
+        'open',
+        'attend',
+        'withdraw',
+        'revoke'
+      ].includes(String(item.key))
+    )
+      return await handleTransition(row, String(item.key))
   }
 
   const headerActions = computed<ArtTableQueryHeaderAction[]>(() =>

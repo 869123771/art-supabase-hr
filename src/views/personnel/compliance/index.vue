@@ -1,105 +1,104 @@
 <template>
-  <div
-    v-auth="'Hr:Compliance:View'"
-    class="compliance-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="WORKFORCE COMPLIANCE CONTROL"
-      title="用工合规中心"
-      description="统一管理劳动合同版本、续签决策、员工资质核验和到期风险，把合规资料转化为有负责人、有时限、有审计的处置闭环。"
-      icon="ri:shield-check-line"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
-    </BusinessWorkspaceHeader>
+  <ArtPermissionGuard permission="Hr:Compliance:View">
+    <div class="compliance-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="WORKFORCE COMPLIANCE CONTROL"
+        title="用工合规中心"
+        description="统一管理劳动合同版本、续签决策、员工资质核验和到期风险，把合规资料转化为有负责人、有时限、有审计的处置闭环。"
+        icon="ri:shield-check-line"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+      >
+        <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
+      </BusinessWorkspaceHeader>
 
-    <section class="compliance-page__control" aria-labelledby="compliance-control-title">
-      <header class="compliance-page__heading">
-        <div>
-          <span class="compliance-page__section-icon" aria-hidden="true">
-            <ArtSvgIcon icon="ri:radar-line" />
+      <section class="compliance-page__control" aria-labelledby="compliance-control-title">
+        <header class="compliance-page__heading">
+          <div>
+            <span class="compliance-page__section-icon" aria-hidden="true">
+              <ArtSvgIcon icon="ri:radar-line" />
+            </span>
+            <span>
+              <strong id="compliance-control-title">用工合规控制链</strong>
+              <small>从权威资料建档、真实性核验，到期前决策与不可变审计</small>
+            </span>
+          </div>
+          <span class="compliance-page__governance">
+            <ArtSvgIcon icon="ri:lock-2-line" />版本留痕 · 权限隔离
           </span>
-          <span>
-            <strong id="compliance-control-title">用工合规控制链</strong>
-            <small>从权威资料建档、真实性核验，到期前决策与不可变审计</small>
-          </span>
+        </header>
+
+        <ol class="compliance-page__rail" aria-label="用工合规处理阶段">
+          <li v-for="(stage, index) in controlStages" :key="stage.label" :class="stage.state">
+            <span class="compliance-page__rail-index">0{{ index + 1 }}</span>
+            <span class="compliance-page__rail-icon"><ArtSvgIcon :icon="stage.icon" /></span>
+            <div
+              ><strong>{{ stage.label }}</strong
+              ><small>{{ stage.description }}</small></div
+            >
+            <b>{{ stage.value }}</b>
+          </li>
+        </ol>
+
+        <HrEntityNavigation
+          v-model="activeEntity"
+          :items="navigationItems"
+          navigation-label="用工合规管理分类"
+          compact
+          @change="handleTabChange"
+        />
+
+        <div class="compliance-page__context" aria-live="polite">
+          <div>
+            <span class="compliance-page__context-icon"><ArtSvgIcon :icon="activeTab.icon" /></span>
+            <span>
+              <small>当前工作视图</small>
+              <strong>{{ activeTab.label }}</strong>
+              <em>{{ activeTab.description }}</em>
+            </span>
+          </div>
+          <dl>
+            <div
+              ><dt>当前结果</dt><dd>{{ tableTotal }}</dd></div
+            >
+            <div :class="attentionTone"
+              ><dt>{{ attentionLabel }}</dt
+              ><dd>{{ attentionValue }}</dd></div
+            >
+          </dl>
         </div>
-        <span class="compliance-page__governance">
-          <ArtSvgIcon icon="ri:lock-2-line" />版本留痕 · 权限隔离
-        </span>
-      </header>
 
-      <ol class="compliance-page__rail" aria-label="用工合规处理阶段">
-        <li v-for="(stage, index) in controlStages" :key="stage.label" :class="stage.state">
-          <span class="compliance-page__rail-index">0{{ index + 1 }}</span>
-          <span class="compliance-page__rail-icon"><ArtSvgIcon :icon="stage.icon" /></span>
-          <div
-            ><strong>{{ stage.label }}</strong
-            ><small>{{ stage.description }}</small></div
-          >
-          <b>{{ stage.value }}</b>
-        </li>
-      </ol>
+        <footer class="compliance-page__note">
+          <ArtSvgIcon icon="ri:information-line" />
+          续签会创建新合同版本，不覆盖原签署事实；资质有效性与核验状态分开管理，所有处置动作均保留审计轨迹。
+        </footer>
+      </section>
 
-      <HrEntityNavigation
-        v-model="activeEntity"
-        :items="navigationItems"
-        navigation-label="用工合规管理分类"
-        compact
-        @change="handleTabChange"
+      <ArtTableQuery
+        :key="activeEntity"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
+        :table-props="{
+          rowKey,
+          tableLayout: 'fixed',
+          emptyText: `暂无${activeTab.label}`,
+          emptyDescription: activeTab.emptyDescription
+        }"
+        :on-success="handleTableSuccess"
+        focusable
       />
 
-      <div class="compliance-page__context" aria-live="polite">
-        <div>
-          <span class="compliance-page__context-icon"><ArtSvgIcon :icon="activeTab.icon" /></span>
-          <span>
-            <small>当前工作视图</small>
-            <strong>{{ activeTab.label }}</strong>
-            <em>{{ activeTab.description }}</em>
-          </span>
-        </div>
-        <dl>
-          <div
-            ><dt>当前结果</dt><dd>{{ tableTotal }}</dd></div
-          >
-          <div :class="attentionTone"
-            ><dt>{{ attentionLabel }}</dt
-            ><dd>{{ attentionValue }}</dd></div
-          >
-        </dl>
-      </div>
-
-      <footer class="compliance-page__note">
-        <ArtSvgIcon icon="ri:information-line" />
-        续签会创建新合同版本，不覆盖原签署事实；资质有效性与核验状态分开管理，所有处置动作均保留审计轨迹。
-      </footer>
-    </section>
-
-    <ArtTableQuery
-      :key="activeEntity"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
-      :table-props="{
-        rowKey,
-        tableLayout: 'fixed',
-        emptyText: `暂无${activeTab.label}`,
-        emptyDescription: activeTab.emptyDescription
-      }"
-      :on-success="handleTableSuccess"
-      focusable
-    />
-
-    <ComplianceRecordDialog ref="recordDialogRef" @success="handleRecordSuccess" />
-    <ComplianceActionDialog ref="actionDialogRef" @success="handleActionSuccess" />
-    <ComplianceDetailDrawer ref="detailDrawerRef" />
-  </div>
+      <ComplianceRecordDialog ref="recordDialogRef" @success="handleRecordSuccess" />
+      <ComplianceActionDialog ref="actionDialogRef" @success="handleActionSuccess" />
+      <ComplianceDetailDrawer ref="detailDrawerRef" />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
@@ -114,6 +113,8 @@
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
+  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
@@ -366,10 +367,7 @@
   const dictLabel = (code: string, value?: string | null): string =>
     getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
   const identity = (title?: string | null, subtitle?: string | null) => (
-    <div class="compliance-page__identity">
-      <strong>{title || '--'}</strong>
-      <small>{subtitle || '--'}</small>
-    </div>
+    <HrTableIdentityCell primary={title} secondary={subtitle} />
   )
   const riskTone = (risk?: Api.Hr.ComplianceRiskStatus): TagProps['type'] =>
     ['overdue', 'critical'].includes(risk || '')
@@ -580,10 +578,10 @@
   const actionColumn = (): ColumnOption<RecordItem> => ({
     prop: 'action',
     label: '操作',
-    width: 118,
+    width: 112,
     fixed: 'right',
     formatter: (row) => (
-      <div class="compliance-page__actions">
+      <HrTableActions>
         <ArtButtonTable
           type="view"
           permission="Hr:Compliance:View"
@@ -594,7 +592,7 @@
           list={() => rowActions(row)}
           onClick={(item: ButtonMoreItem) => void handleRowAction(item, row)}
         />
-      </div>
+      </HrTableActions>
     )
   })
 

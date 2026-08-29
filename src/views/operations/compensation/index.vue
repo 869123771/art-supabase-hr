@@ -1,84 +1,83 @@
 <template>
-  <div
-    v-auth="'Hr:Compensation:View'"
-    class="compensation-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="TOTAL REWARDS"
-      title="薪酬管理"
-      description="统一薪酬项目、薪酬方案、职级薪档与员工有效期薪酬；已批准结果作为财务薪资核算的受控输入。"
-      icon="ri:money-cny-circle-line"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions>
-        <BusinessTableWorkspaceActions :table="tableQueryRef" />
-      </template>
-    </BusinessWorkspaceHeader>
+  <ArtPermissionGuard permission="Hr:Compensation:View">
+    <div class="compensation-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="TOTAL REWARDS"
+        title="薪酬管理"
+        description="统一薪酬项目、薪酬方案、职级薪档与员工有效期薪酬；已批准结果作为财务薪资核算的受控输入。"
+        icon="ri:money-cny-circle-line"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+      >
+        <template #actions>
+          <BusinessTableWorkspaceActions :table="tableQueryRef" />
+        </template>
+      </BusinessWorkspaceHeader>
 
-    <section class="compensation-page__control-deck" aria-labelledby="compensation-control-title">
-      <header class="compensation-page__control-heading">
-        <span class="compensation-page__control-icon" aria-hidden="true">
-          <ArtSvgIcon icon="ri:funds-box-line" />
-        </span>
-        <span>
-          <strong id="compensation-control-title">薪酬政策与核算边界</strong>
-          <small>HR 维护有效期薪酬事实，FMS 负责期间计算、计提审批与发放</small>
-        </span>
-        <span class="compensation-page__control-badge">
-          <ArtSvgIcon icon="ri:shield-keyhole-line" /> 敏感金额授权
-        </span>
-      </header>
+      <section class="compensation-page__control-deck" aria-labelledby="compensation-control-title">
+        <header class="compensation-page__control-heading">
+          <span class="compensation-page__control-icon" aria-hidden="true">
+            <ArtSvgIcon icon="ri:funds-box-line" />
+          </span>
+          <span>
+            <strong id="compensation-control-title">薪酬政策与核算边界</strong>
+            <small>HR 维护有效期薪酬事实，FMS 负责期间计算、计提审批与发放</small>
+          </span>
+          <span class="compensation-page__control-badge">
+            <ArtSvgIcon icon="ri:shield-keyhole-line" /> 敏感金额授权
+          </span>
+        </header>
 
-      <div class="compensation-page__responsibility" aria-label="薪酬职责边界">
-        <article>
-          <span><ArtSvgIcon icon="ri:shield-check-line" /></span>
-          <div><strong>HR 政策层</strong><small>定薪、调薪、薪档与生效历史</small></div>
-        </article>
-        <ArtSvgIcon icon="ri:arrow-right-line" aria-hidden="true" />
-        <article>
-          <span><ArtSvgIcon icon="ri:calculator-line" /></span>
-          <div><strong>FMS 核算层</strong><small>当期计算、审批计提与实际发放</small></div>
-        </article>
-        <p>审批后记录锁定并保留历史，核算系统只消费已生效数据。</p>
-      </div>
+        <div class="compensation-page__responsibility" aria-label="薪酬职责边界">
+          <article>
+            <span><ArtSvgIcon icon="ri:shield-check-line" /></span>
+            <div><strong>HR 政策层</strong><small>定薪、调薪、薪档与生效历史</small></div>
+          </article>
+          <ArtSvgIcon icon="ri:arrow-right-line" aria-hidden="true" />
+          <article>
+            <span><ArtSvgIcon icon="ri:calculator-line" /></span>
+            <div><strong>FMS 核算层</strong><small>当期计算、审批计提与实际发放</small></div>
+          </article>
+          <p>审批后记录锁定并保留历史，核算系统只消费已生效数据。</p>
+        </div>
 
-      <HrEntityNavigation
-        :model-value="activeEntity"
-        :items="navigationItems"
-        navigation-label="薪酬管理分类"
-        compact
-        @update:model-value="selectEntity"
+        <HrEntityNavigation
+          :model-value="activeEntity"
+          :items="navigationItems"
+          navigation-label="薪酬管理分类"
+          compact
+          @update:model-value="selectEntity"
+        />
+      </section>
+
+      <ArtTableQuery
+        :key="activeEntity"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 80, showExpand: false }"
+        :table-props="{
+          rowKey: 'id',
+          tableLayout: 'fixed',
+          emptyText: `暂无${activeTab.label}`,
+          emptyDescription: activeTab.emptyDescription
+        }"
+        :on-success="handleTableSuccess"
+        focusable
       />
-    </section>
 
-    <ArtTableQuery
-      :key="activeEntity"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 80, showExpand: false }"
-      :table-props="{
-        rowKey: 'id',
-        tableLayout: 'fixed',
-        emptyText: `暂无${activeTab.label}`,
-        emptyDescription: activeTab.emptyDescription
-      }"
-      :on-success="handleTableSuccess"
-      focusable
-    />
-
-    <CompensationDialog ref="dialogRef" @success="handleSaveSuccess" />
-  </div>
+      <CompensationDialog ref="dialogRef" @success="handleSaveSuccess" />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
   import dayjs from 'dayjs'
-  import { ElButton, ElTag } from 'element-plus'
+  import { ElTag } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
     ArtTableQueryExpose,
@@ -86,6 +85,9 @@
     ArtTableQueryProps
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
+  import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
+  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtDictDisplay from '@/components/core/base/art-dict-display/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
@@ -97,7 +99,6 @@
     type HrEntityNavigationItem
   } from '../../shared/hr-entity-navigation.vue'
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
-  import { useAuth } from '@/hooks/core/useAuth'
   import { useUserStore } from '@/store/modules/user'
   import { pageInfoHandler } from '@/utils/table/tableUtils'
   import type { ColumnOption, DialogType } from '@/types'
@@ -165,7 +166,6 @@
 
   const userStore = useUserStore()
   const { getDictMap, isPlatformSuper } = storeToRefs(userStore)
-  const { hasAuth } = useAuth()
   const { confirmAction, promptText } = useArtFeedback()
   const activeEntity = ref<Entity>('employee')
   const activeTab = computed(() => tabs.find((tab) => tab.entity === activeEntity.value) ?? tabs[0])
@@ -315,7 +315,7 @@
   const actionColumn = (): ColumnOption<RecordItem> => ({
     prop: 'operation',
     label: '操作',
-    width: activeEntity.value === 'employee' || activeEntity.value === 'band' ? 220 : 120,
+    width: 112,
     fixed: 'right',
     formatter: (row) => {
       const lifecycle = (row as Api.Hr.EmployeeCompensation | Api.Hr.SalaryBand).lifecycleStatus
@@ -328,7 +328,7 @@
           ? 'Hr:Compensation:Record:Delete'
           : 'Hr:Compensation:Policy:Delete'
       return (
-        <div class="compensation-page__actions">
+        <HrTableActions>
           {canEditRow(row) && (
             <ArtButtonTable
               type="edit"
@@ -336,35 +336,55 @@
               onClick={() => openDialog(row)}
             />
           )}
-          {canDeleteRow(row) && (
-            <ArtButtonTable
-              type="delete"
-              permission={deletePermission}
-              onClick={() => void handleDelete(row)}
-            />
-          )}
-          {(activeEntity.value === 'employee' || activeEntity.value === 'band') &&
-            lifecycle === 'draft' &&
-            hasAuth('Hr:Compensation:Approve') && (
-              <ElButton link type="primary" onClick={() => void handleAction(row, 'approve')}>
-                批准
-              </ElButton>
-            )}
-          {(activeEntity.value === 'employee' || activeEntity.value === 'band') &&
-            lifecycle === 'scheduled' &&
-            hasAuth('Hr:Compensation:Approve') && (
-              <ElButton link type="danger" onClick={() => void handleAction(row, 'cancel')}>
-                取消
-              </ElButton>
-            )}
-          {activeEntity.value === 'employee' &&
-            lifecycle === 'active' &&
-            hasAuth('Hr:Compensation:Approve') && (
-              <ElButton link type="warning" onClick={() => void handleEnd(row)}>
-                终止
-              </ElButton>
-            )}
-        </div>
+          <ArtButtonMore
+            list={() => {
+              const actions: ButtonMoreItem[] = []
+              if (
+                (activeEntity.value === 'employee' || activeEntity.value === 'band') &&
+                lifecycle === 'draft'
+              )
+                actions.push({
+                  key: 'approve',
+                  label: '批准薪酬版本',
+                  icon: 'ri:checkbox-circle-line',
+                  auth: 'Hr:Compensation:Approve'
+                })
+              if (
+                (activeEntity.value === 'employee' || activeEntity.value === 'band') &&
+                lifecycle === 'scheduled'
+              )
+                actions.push({
+                  key: 'cancel',
+                  label: '取消薪酬版本',
+                  icon: 'ri:close-circle-line',
+                  color: 'var(--el-color-danger)',
+                  auth: 'Hr:Compensation:Approve'
+                })
+              if (activeEntity.value === 'employee' && lifecycle === 'active')
+                actions.push({
+                  key: 'end',
+                  label: '终止当前薪酬',
+                  icon: 'ri:stop-circle-line',
+                  auth: 'Hr:Compensation:Approve'
+                })
+              if (canDeleteRow(row))
+                actions.push({
+                  key: 'delete',
+                  label: '删除薪酬记录',
+                  icon: 'ri:delete-bin-5-line',
+                  color: 'var(--el-color-danger)',
+                  auth: deletePermission
+                })
+              return actions
+            }}
+            onClick={(item: ButtonMoreItem) => {
+              if (item.key === 'approve') void handleAction(row, 'approve')
+              if (item.key === 'cancel') void handleAction(row, 'cancel')
+              if (item.key === 'end') void handleEnd(row)
+              if (item.key === 'delete') void handleDelete(row)
+            }}
+          />
+        </HrTableActions>
       )
     }
   })

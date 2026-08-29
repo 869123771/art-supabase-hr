@@ -1,62 +1,61 @@
 <template>
-  <div
-    v-auth="'Hr:JobProfile:View'"
-    class="job-architecture-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="JOB ARCHITECTURE"
-      title="职务体系"
-      description="统一维护职族、标准职务和职级；岗位引用标准职务，员工通过任职关系占用岗位。"
-      icon="ri:stack-line"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions>
-        <BusinessTableWorkspaceActions :table="tableQueryRef" />
-      </template>
-    </BusinessWorkspaceHeader>
+  <ArtPermissionGuard permission="Hr:JobProfile:View">
+    <div class="job-architecture-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="JOB ARCHITECTURE"
+        title="职务体系"
+        description="统一维护职族、标准职务和职级；岗位引用标准职务，员工通过任职关系占用岗位。"
+        icon="ri:stack-line"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+      >
+        <template #actions>
+          <BusinessTableWorkspaceActions :table="tableQueryRef" />
+        </template>
+      </BusinessWorkspaceHeader>
 
-    <section class="job-architecture-page__domain-navigation" aria-label="职务体系工作域">
-      <div>
-        <span class="job-architecture-page__domain-icon" aria-hidden="true">
-          <ArtSvgIcon icon="ri:node-tree" />
-        </span>
-        <span>
-          <strong>标准职务架构</strong>
-          <small>先定义职族与标准职务，再建立职级层级，供岗位和员工任职关系引用</small>
-        </span>
-      </div>
-      <HrEntityNavigation
-        :model-value="activeEntity"
-        :items="navigationItems"
-        navigation-label="职务体系分类"
-        compact
-        @update:model-value="selectEntity"
+      <section class="job-architecture-page__domain-navigation" aria-label="职务体系工作域">
+        <div>
+          <span class="job-architecture-page__domain-icon" aria-hidden="true">
+            <ArtSvgIcon icon="ri:node-tree" />
+          </span>
+          <span>
+            <strong>标准职务架构</strong>
+            <small>先定义职族与标准职务，再建立职级层级，供岗位和员工任职关系引用</small>
+          </span>
+        </div>
+        <HrEntityNavigation
+          :model-value="activeEntity"
+          :items="navigationItems"
+          navigation-label="职务体系分类"
+          compact
+          @update:model-value="selectEntity"
+        />
+      </section>
+
+      <ArtTableQuery
+        :key="activeEntity"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 80, showExpand: false }"
+        :table-props="{
+          rowKey: 'id',
+          tableLayout: 'fixed',
+          emptyText: `暂无${activeTab.label}`,
+          emptyDescription: `可新增${activeTab.label}，逐步建立企业统一任职标准。`
+        }"
+        :on-success="handleTableSuccess"
+        focusable
       />
-    </section>
 
-    <ArtTableQuery
-      :key="activeEntity"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 80, showExpand: false }"
-      :table-props="{
-        rowKey: 'id',
-        tableLayout: 'fixed',
-        emptyText: `暂无${activeTab.label}`,
-        emptyDescription: `可新增${activeTab.label}，逐步建立企业统一任职标准。`
-      }"
-      :on-success="handleTableSuccess"
-      focusable
-    />
-
-    <JobArchitectureDialog ref="dialogRef" @success="handleSaveSuccess" />
-  </div>
+      <JobArchitectureDialog ref="dialogRef" @success="handleSaveSuccess" />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
@@ -68,6 +67,7 @@
     ArtTableQueryProps
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
@@ -228,10 +228,10 @@
   const actionColumn = (): ColumnOption<RecordItem> => ({
     prop: 'operation',
     label: '操作',
-    width: 120,
+    width: 112,
     fixed: 'right',
     formatter: (row) => (
-      <div class="job-architecture-page__actions">
+      <HrTableActions>
         <ArtButtonTable
           type="edit"
           permission={activeTab.value.editPermission}
@@ -242,7 +242,7 @@
           permission={activeTab.value.deletePermission}
           onClick={() => void handleDelete(row)}
         />
-      </div>
+      </HrTableActions>
     )
   })
 

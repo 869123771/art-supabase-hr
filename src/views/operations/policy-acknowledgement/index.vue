@@ -1,140 +1,139 @@
 <template>
-  <div
-    v-auth="'Hr:PolicyAcknowledgement:View'"
-    class="policy-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="POLICY DISTRIBUTION & ACKNOWLEDGEMENT"
-      title="政策与签收"
-      description="统一治理制度版本、适用范围、员工送达、签收时限与审计凭证，让每一次发布都形成可证明、可追踪、不可静默覆盖的合规闭环。"
-      icon="ri:file-shield-2-line"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
-    </BusinessWorkspaceHeader>
+  <ArtPermissionGuard permission="Hr:PolicyAcknowledgement:View">
+    <div class="policy-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="POLICY DISTRIBUTION & ACKNOWLEDGEMENT"
+        title="政策与签收"
+        description="统一治理制度版本、适用范围、员工送达、签收时限与审计凭证，让每一次发布都形成可证明、可追踪、不可静默覆盖的合规闭环。"
+        icon="ri:file-shield-2-line"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+      >
+        <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
+      </BusinessWorkspaceHeader>
 
-    <section class="policy-page__command" aria-labelledby="policy-command-title">
-      <header>
-        <div>
-          <span class="policy-page__command-icon"><ArtSvgIcon icon="ri:route-line" /></span>
-          <span>
-            <small>CONTROLLED DISTRIBUTION PATH</small>
-            <strong id="policy-command-title">从受控版本到签收证据</strong>
-            <em>发布时固化适用人群；完成、豁免与重新打开均保留责任人和时间依据</em>
-          </span>
-        </div>
-        <ElTag :type="overview.overdueCount ? 'danger' : 'success'" effect="light" round>
-          <ArtSvgIcon
-            :icon="overview.overdueCount ? 'ri:alarm-warning-line' : 'ri:shield-check-line'"
-          />
-          {{ overview.overdueCount ? `${overview.overdueCount} 项签收逾期` : '当前无逾期签收' }}
-        </ElTag>
-      </header>
-
-      <ol class="policy-page__lifecycle" aria-label="政策发布与签收治理链路">
-        <li v-for="(stage, index) in lifecycleStages" :key="stage.label" :class="stage.state">
-          <span class="policy-page__stage-index">0{{ index + 1 }}</span>
-          <span class="policy-page__stage-icon"><ArtSvgIcon :icon="stage.icon" /></span>
+      <section class="policy-page__command" aria-labelledby="policy-command-title">
+        <header>
           <div>
-            <strong>{{ stage.label }}</strong>
-            <small>{{ stage.description }}</small>
+            <span class="policy-page__command-icon"><ArtSvgIcon icon="ri:route-line" /></span>
+            <span>
+              <small>CONTROLLED DISTRIBUTION PATH</small>
+              <strong id="policy-command-title">从受控版本到签收证据</strong>
+              <em>发布时固化适用人群；完成、豁免与重新打开均保留责任人和时间依据</em>
+            </span>
           </div>
-          <b>{{ stage.value }}</b>
-        </li>
-      </ol>
+          <ElTag :type="overview.overdueCount ? 'danger' : 'success'" effect="light" round>
+            <ArtSvgIcon
+              :icon="overview.overdueCount ? 'ri:alarm-warning-line' : 'ri:shield-check-line'"
+            />
+            {{ overview.overdueCount ? `${overview.overdueCount} 项签收逾期` : '当前无逾期签收' }}
+          </ElTag>
+        </header>
 
-      <div class="policy-page__guardrails">
-        <article class="is-restricted">
-          <span><ArtSvgIcon icon="ri:git-commit-line" /></span>
-          <div
-            ><small>版本控制</small><strong>发布版本不可覆盖</strong
-            ><em>变更必须创建新版本</em></div
-          >
-        </article>
-        <article class="is-success">
-          <span><ArtSvgIcon icon="ri:group-line" /></span>
-          <div
-            ><small>受众快照</small><strong>发布时固化名单</strong
-            ><em>组织范围自动包含下级组织</em></div
-          >
-        </article>
-        <article :class="overview.overdueCount ? 'is-danger' : 'is-success'">
-          <span><ArtSvgIcon icon="ri:timer-flash-line" /></span>
-          <div
-            ><small>时限治理</small><strong>{{ overview.overdueCount }} 项已逾期</strong
-            ><em>按生效日与签收天数计算</em></div
-          >
-        </article>
-        <article :class="overview.evidenceAccess ? 'is-success' : 'is-restricted'">
-          <span
-            ><ArtSvgIcon :icon="overview.evidenceAccess ? 'ri:key-2-line' : 'ri:lock-line'"
-          /></span>
-          <div
-            ><small>证据边界</small
-            ><strong>{{ overview.evidenceAccess ? '已授权查看' : '敏感依据已隐藏' }}</strong
-            ><em>查看权与业务操作权独立</em></div
-          >
-        </article>
-      </div>
+        <ol class="policy-page__lifecycle" aria-label="政策发布与签收治理链路">
+          <li v-for="(stage, index) in lifecycleStages" :key="stage.label" :class="stage.state">
+            <span class="policy-page__stage-index">0{{ index + 1 }}</span>
+            <span class="policy-page__stage-icon"><ArtSvgIcon :icon="stage.icon" /></span>
+            <div>
+              <strong>{{ stage.label }}</strong>
+              <small>{{ stage.description }}</small>
+            </div>
+            <b>{{ stage.value }}</b>
+          </li>
+        </ol>
 
-      <footer>
-        <ArtSvgIcon icon="ri:information-line" />
-        发布操作由服务端按实时员工主数据生成送达记录；页面统计仅用于运营判断，不会替代服务端权限、范围和状态门禁。
-      </footer>
-    </section>
-
-    <section class="policy-page__workspace" aria-labelledby="policy-workspace-title">
-      <header>
-        <div>
-          <small>OPERATING WORKSPACE</small>
-          <strong id="policy-workspace-title">{{ activeTab.label }}</strong>
-          <span>{{ activeTab.description }}</span>
+        <div class="policy-page__guardrails">
+          <article class="is-restricted">
+            <span><ArtSvgIcon icon="ri:git-commit-line" /></span>
+            <div
+              ><small>版本控制</small><strong>发布版本不可覆盖</strong
+              ><em>变更必须创建新版本</em></div
+            >
+          </article>
+          <article class="is-success">
+            <span><ArtSvgIcon icon="ri:group-line" /></span>
+            <div
+              ><small>受众快照</small><strong>发布时固化名单</strong
+              ><em>组织范围自动包含下级组织</em></div
+            >
+          </article>
+          <article :class="overview.overdueCount ? 'is-danger' : 'is-success'">
+            <span><ArtSvgIcon icon="ri:timer-flash-line" /></span>
+            <div
+              ><small>时限治理</small><strong>{{ overview.overdueCount }} 项已逾期</strong
+              ><em>按生效日与签收天数计算</em></div
+            >
+          </article>
+          <article :class="overview.evidenceAccess ? 'is-success' : 'is-restricted'">
+            <span
+              ><ArtSvgIcon :icon="overview.evidenceAccess ? 'ri:key-2-line' : 'ri:lock-line'"
+            /></span>
+            <div
+              ><small>证据边界</small
+              ><strong>{{ overview.evidenceAccess ? '已授权查看' : '敏感依据已隐藏' }}</strong
+              ><em>查看权与业务操作权独立</em></div
+            >
+          </article>
         </div>
-        <span class="policy-page__result"
-          ><ArtSvgIcon :icon="activeTab.icon" />{{ tableTotal }} 条当前结果</span
-        >
-      </header>
-      <HrEntityNavigation
-        v-model="activeEntity"
-        :items="navigationItems"
-        navigation-label="政策与签收工作视图"
-        compact
-        @change="handleTabChange"
+
+        <footer>
+          <ArtSvgIcon icon="ri:information-line" />
+          发布操作由服务端按实时员工主数据生成送达记录；页面统计仅用于运营判断，不会替代服务端权限、范围和状态门禁。
+        </footer>
+      </section>
+
+      <section class="policy-page__workspace" aria-labelledby="policy-workspace-title">
+        <header>
+          <div>
+            <small>OPERATING WORKSPACE</small>
+            <strong id="policy-workspace-title">{{ activeTab.label }}</strong>
+            <span>{{ activeTab.description }}</span>
+          </div>
+          <span class="policy-page__result"
+            ><ArtSvgIcon :icon="activeTab.icon" />{{ tableTotal }} 条当前结果</span
+          >
+        </header>
+        <HrEntityNavigation
+          v-model="activeEntity"
+          :items="navigationItems"
+          navigation-label="政策与签收工作视图"
+          compact
+          @change="handleTabChange"
+        />
+        <div v-if="activeEntity === 'receipt' && focusedPolicy" class="policy-page__focus">
+          <span><ArtSvgIcon icon="ri:focus-3-line" /></span>
+          <div>
+            <small>当前政策签收</small>
+            <strong>{{ focusedPolicy.policyTitle }} · v{{ focusedPolicy.versionNo }}</strong>
+            <em>{{ focusedPolicy.policyCode }} · {{ audienceLabel(focusedPolicy) }}</em>
+          </div>
+          <ElButton text type="primary" @click="clearPolicyFocus">查看全部签收</ElButton>
+        </div>
+      </section>
+
+      <ArtTableQuery
+        :key="`${activeEntity}-${focusedPolicy?.id || 'all'}`"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
+        :table-props="{
+          rowKey: 'id',
+          tableLayout: 'fixed',
+          emptyText: activeTab.emptyTitle,
+          emptyDescription: activeTab.emptyDescription
+        }"
+        :on-success="handleTableSuccess"
+        focusable
       />
-      <div v-if="activeEntity === 'receipt' && focusedPolicy" class="policy-page__focus">
-        <span><ArtSvgIcon icon="ri:focus-3-line" /></span>
-        <div>
-          <small>当前政策签收</small>
-          <strong>{{ focusedPolicy.policyTitle }} · v{{ focusedPolicy.versionNo }}</strong>
-          <em>{{ focusedPolicy.policyCode }} · {{ audienceLabel(focusedPolicy) }}</em>
-        </div>
-        <ElButton text type="primary" @click="clearPolicyFocus">查看全部签收</ElButton>
-      </div>
-    </section>
 
-    <ArtTableQuery
-      :key="`${activeEntity}-${focusedPolicy?.id || 'all'}`"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
-      :table-props="{
-        rowKey: 'id',
-        tableLayout: 'fixed',
-        emptyText: activeTab.emptyTitle,
-        emptyDescription: activeTab.emptyDescription
-      }"
-      :on-success="handleTableSuccess"
-      focusable
-    />
-
-    <PolicyDocumentDialog ref="dialogRef" @success="handleDialogSuccess" />
-  </div>
+      <PolicyDocumentDialog ref="dialogRef" @success="handleDialogSuccess" />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
@@ -147,6 +146,7 @@
     ArtTableQueryProps
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
+  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
@@ -325,11 +325,7 @@
     </ElTag>
   )
   const identity = (title?: string | null, subtitle?: string | null, extra?: string | null) => (
-    <div class="policy-page__identity">
-      <strong>{title || '--'}</strong>
-      <small>{subtitle || '--'}</small>
-      {extra ? <em>{extra}</em> : null}
-    </div>
+    <HrTableIdentityCell primary={title} secondary={subtitle} tertiary={extra} />
   )
   const progress = (completed = 0, total = 0, overdue = 0) => {
     const percentage = total ? Math.round((completed * 100) / total) : 0
@@ -459,7 +455,7 @@
     {
       prop: 'action',
       label: '操作',
-      width: 126,
+      width: 112,
       fixed: 'right',
       formatter: (row) => policyActions(row as Api.Hr.HrPolicyDocument)
     }

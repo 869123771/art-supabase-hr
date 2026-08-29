@@ -1,110 +1,114 @@
 <template>
-  <div v-auth="'Hr:Headcount:View'" class="workforce-page business-workspace-page art-full-height">
-    <BusinessWorkspaceHeader
-      eyebrow="WORKFORCE CAPACITY"
-      title="人力规划与编制"
-      description="把年度人力规划、岗位增减员、预算预测与实时岗位容量连接为可审批、可执行、可追溯的管理闭环。"
-      icon="ri:organization-chart"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions>
-        <BusinessTableWorkspaceActions :table="tableQueryRef" />
-      </template>
-    </BusinessWorkspaceHeader>
+  <ArtPermissionGuard permission="Hr:Headcount:View">
+    <div class="workforce-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="WORKFORCE CAPACITY"
+        title="人力规划与编制"
+        description="把年度人力规划、岗位增减员、预算预测与实时岗位容量连接为可审批、可执行、可追溯的管理闭环。"
+        icon="ri:organization-chart"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+      >
+        <template #actions>
+          <BusinessTableWorkspaceActions :table="tableQueryRef" />
+        </template>
+      </BusinessWorkspaceHeader>
 
-    <section class="workforce-page__capacity-deck" aria-labelledby="capacity-bridge-title">
-      <header class="workforce-page__capacity-heading">
-        <span class="workforce-page__capacity-icon" aria-hidden="true">
-          <ArtSvgIcon icon="ri:scales-3-line" />
-        </span>
-        <span>
-          <strong id="capacity-bridge-title">编制容量桥</strong>
-          <small>规划建议先审批，启用后才成为岗位实时容量权威</small>
-        </span>
-        <span class="workforce-page__authority-badge">
-          <ArtSvgIcon icon="ri:shield-check-line" /> 分层数据权威
-        </span>
-      </header>
+      <section class="workforce-page__capacity-deck" aria-labelledby="capacity-bridge-title">
+        <header class="workforce-page__capacity-heading">
+          <span class="workforce-page__capacity-icon" aria-hidden="true">
+            <ArtSvgIcon icon="ri:scales-3-line" />
+          </span>
+          <span>
+            <strong id="capacity-bridge-title">编制容量桥</strong>
+            <small>规划建议先审批，启用后才成为岗位实时容量权威</small>
+          </span>
+          <span class="workforce-page__authority-badge">
+            <ArtSvgIcon icon="ri:shield-check-line" /> 分层数据权威
+          </span>
+        </header>
 
-      <div v-if="featuredPlan" class="workforce-page__bridge" aria-label="当前重点规划容量变化">
-        <div class="workforce-page__bridge-identity">
-          <span>{{ featuredPlan.planNo }}</span>
-          <strong>{{ featuredPlan.planName }}</strong>
-          <ArtDictDisplay
-            dict-code="hrWorkforcePlanStatus"
-            :value="featuredPlan.status"
-            display="auto"
-          />
+        <div v-if="featuredPlan" class="workforce-page__bridge" aria-label="当前重点规划容量变化">
+          <div class="workforce-page__bridge-identity">
+            <span>{{ featuredPlan.planNo }}</span>
+            <strong>{{ featuredPlan.planName }}</strong>
+            <ArtDictDisplay
+              dict-code="hrWorkforcePlanStatus"
+              :value="featuredPlan.status"
+              display="auto"
+            />
+          </div>
+          <div class="workforce-page__bridge-flow">
+            <article
+              ><small>基线人数</small><strong>{{ featuredPlan.baselineCount }}</strong
+              ><span>当前快照</span></article
+            >
+            <span class="workforce-page__bridge-operator is-positive">+</span>
+            <article class="is-positive"
+              ><small>计划增员</small><strong>{{ featuredPlan.plannedHires }}</strong
+              ><span>招聘与补充</span></article
+            >
+            <span class="workforce-page__bridge-operator is-negative">−</span>
+            <article class="is-negative"
+              ><small>计划减员</small><strong>{{ featuredPlan.plannedExits }}</strong
+              ><span>流失与优化</span></article
+            >
+            <span class="workforce-page__bridge-operator">=</span>
+            <article class="is-target"
+              ><small>目标编制</small><strong>{{ featuredPlan.targetCount }}</strong
+              ><span>批准后待启用</span></article
+            >
+          </div>
+          <div class="workforce-page__budget-signal">
+            <small>年度成本预测</small>
+            <strong>{{
+              formatMoney(featuredPlan.plannedPayroll, featuredPlan.currencyCode)
+            }}</strong>
+            <span :class="{ 'is-over': Number(featuredPlan.budgetVariance ?? 0) < 0 }">{{
+              budgetVarianceText
+            }}</span>
+          </div>
         </div>
-        <div class="workforce-page__bridge-flow">
-          <article
-            ><small>基线人数</small><strong>{{ featuredPlan.baselineCount }}</strong
-            ><span>当前快照</span></article
-          >
-          <span class="workforce-page__bridge-operator is-positive">+</span>
-          <article class="is-positive"
-            ><small>计划增员</small><strong>{{ featuredPlan.plannedHires }}</strong
-            ><span>招聘与补充</span></article
-          >
-          <span class="workforce-page__bridge-operator is-negative">−</span>
-          <article class="is-negative"
-            ><small>计划减员</small><strong>{{ featuredPlan.plannedExits }}</strong
-            ><span>流失与优化</span></article
-          >
-          <span class="workforce-page__bridge-operator">=</span>
-          <article class="is-target"
-            ><small>目标编制</small><strong>{{ featuredPlan.targetCount }}</strong
-            ><span>批准后待启用</span></article
+        <div v-else class="workforce-page__bridge-empty">
+          <ArtSvgIcon icon="ri:route-line" />
+          <span
+            ><strong>尚未建立人力规划</strong
+            ><small>先创建规划周期，再按岗位维护增减员和成本假设。</small></span
           >
         </div>
-        <div class="workforce-page__budget-signal">
-          <small>年度成本预测</small>
-          <strong>{{ formatMoney(featuredPlan.plannedPayroll, featuredPlan.currencyCode) }}</strong>
-          <span :class="{ 'is-over': Number(featuredPlan.budgetVariance ?? 0) < 0 }">{{
-            budgetVarianceText
-          }}</span>
-        </div>
-      </div>
-      <div v-else class="workforce-page__bridge-empty">
-        <ArtSvgIcon icon="ri:route-line" />
-        <span
-          ><strong>尚未建立人力规划</strong
-          ><small>先创建规划周期，再按岗位维护增减员和成本假设。</small></span
-        >
-      </div>
 
-      <HrEntityNavigation
-        :model-value="activeEntity"
-        :items="navigationItems"
-        navigation-label="人力规划分类"
-        compact
-        @update:model-value="selectEntity"
+        <HrEntityNavigation
+          :model-value="activeEntity"
+          :items="navigationItems"
+          navigation-label="人力规划分类"
+          compact
+          @update:model-value="selectEntity"
+        />
+      </section>
+
+      <ArtTableQuery
+        :key="activeEntity"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 80, showExpand: false }"
+        :table-props="{
+          rowKey: 'id',
+          tableLayout: 'fixed',
+          emptyText: `暂无${activeTab.label}`,
+          emptyDescription: activeTab.emptyDescription
+        }"
+        :on-success="handleTableSuccess"
+        focusable
       />
-    </section>
 
-    <ArtTableQuery
-      :key="activeEntity"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 80, showExpand: false }"
-      :table-props="{
-        rowKey: 'id',
-        tableLayout: 'fixed',
-        emptyText: `暂无${activeTab.label}`,
-        emptyDescription: activeTab.emptyDescription
-      }"
-      :on-success="handleTableSuccess"
-      focusable
-    />
-
-    <WorkforcePlanningDialog ref="dialogRef" @success="handleSaveSuccess" />
-  </div>
+      <WorkforcePlanningDialog ref="dialogRef" @success="handleSaveSuccess" />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
@@ -117,6 +121,8 @@
     ArtTableQueryProps
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtDictDisplay from '@/components/core/base/art-dict-display/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
@@ -325,10 +331,7 @@
   })
 
   const identity = (title?: string | null, subtitle?: string | null) => (
-    <div class="workforce-page__identity">
-      <strong>{title || '--'}</strong>
-      <span>{subtitle || '--'}</span>
-    </div>
+    <HrTableIdentityCell primary={title} secondary={subtitle} />
   )
   const capacityCell = (baseline: number, hires: number, exits: number, target: number) => (
     <div class="workforce-page__capacity-cell">
@@ -419,13 +422,11 @@
     fixed: 'right',
     formatter: (row) => {
       if (activeEntity.value === 'cycle')
-        return (
-          <div class="workforce-page__actions">{cycleAction(row as Api.Hr.WorkforcePlanCycle)}</div>
-        )
+        return <HrTableActions>{cycleAction(row as Api.Hr.WorkforcePlanCycle)}</HrTableActions>
       if (activeEntity.value === 'line') {
         const line = row as Api.Hr.WorkforcePlanLine
         return line.planStatus === 'draft' ? (
-          <div class="workforce-page__actions">
+          <HrTableActions>
             <ArtButtonTable
               type="edit"
               permission="Hr:Headcount:Edit"
@@ -436,7 +437,7 @@
               permission="Hr:Headcount:Delete"
               onClick={() => handleDelete(row)}
             />
-          </div>
+          </HrTableActions>
         ) : null
       }
       const item = row as Api.Hr.WorkforceEffectiveHeadcount
@@ -447,7 +448,7 @@
           </ElTag>
         )
       return (
-        <div class="workforce-page__actions">
+        <HrTableActions>
           <ArtButtonTable
             type={item.effectiveFrom ? 'edit' : 'add'}
             label={item.effectiveFrom ? '编辑有效编制' : '核定有效编制'}
@@ -461,7 +462,7 @@
               onClick={() => handleDelete(row)}
             />
           ) : null}
-        </div>
+        </HrTableActions>
       )
     }
   })

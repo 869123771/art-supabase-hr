@@ -1,112 +1,111 @@
 <template>
-  <div
-    v-auth="'Hr:Succession:View'"
-    class="succession-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="SUCCESSION & CAREER"
-      title="继任与发展"
-      description="围绕关键岗位管理继任覆盖、候选人准备度和发展行动，把人才盘点结论转化为可复盘的组织能力计划。"
-      icon="ri:git-merge-line"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
-    </BusinessWorkspaceHeader>
+  <ArtPermissionGuard permission="Hr:Succession:View">
+    <div class="succession-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="SUCCESSION & CAREER"
+        title="继任与发展"
+        description="围绕关键岗位管理继任覆盖、候选人准备度和发展行动，把人才盘点结论转化为可复盘的组织能力计划。"
+        icon="ri:git-merge-line"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+      >
+        <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
+      </BusinessWorkspaceHeader>
 
-    <section class="succession-page__command-center" aria-labelledby="succession-control-title">
-      <header class="succession-page__command-heading">
-        <div>
-          <span class="succession-page__section-icon" aria-hidden="true">
-            <ArtSvgIcon icon="ri:route-line" />
-          </span>
-          <span>
-            <small>SUCCESSION CONTROL CENTER</small>
-            <strong id="succession-control-title">关键岗位继任闭环</strong>
-            <em>识别业务连续性风险，建立候选梯队，并用可验收行动推进准备度</em>
-          </span>
-        </div>
-        <span class="succession-page__governance-badge">
-          <ArtSvgIcon icon="ri:shield-keyhole-line" />
-          仅限授权 HR 管理者
-        </span>
-      </header>
-
-      <nav class="succession-page__stage-switcher" aria-label="继任管理工作视图">
-        <button
-          v-for="(stage, index) in journeyStages"
-          :key="stage.entity"
-          type="button"
-          :class="[`is-${stage.tone}`, { 'is-active': activeEntity === stage.entity }]"
-          :aria-current="activeEntity === stage.entity ? 'step' : undefined"
-          @click="selectStage(stage.entity)"
-        >
-          <span class="succession-page__stage-index">0{{ index + 1 }}</span>
-          <span class="succession-page__stage-icon" aria-hidden="true">
-            <ArtSvgIcon :icon="stage.icon" />
-          </span>
-          <span class="succession-page__stage-copy">
-            <span>
-              <strong>{{ stage.title }}</strong>
-              <em>{{ stage.signal }}</em>
+      <section class="succession-page__command-center" aria-labelledby="succession-control-title">
+        <header class="succession-page__command-heading">
+          <div>
+            <span class="succession-page__section-icon" aria-hidden="true">
+              <ArtSvgIcon icon="ri:route-line" />
             </span>
-            <small>{{ stage.description }}</small>
-          </span>
-          <span class="succession-page__stage-arrow" aria-hidden="true">
-            <ArtSvgIcon icon="ri:arrow-right-s-line" />
-          </span>
-        </button>
-      </nav>
-
-      <footer class="succession-page__active-context" aria-live="polite">
-        <span>
-          <ArtSvgIcon :icon="activeTab.icon" />
-          当前：<strong>{{ activeTab.label }}</strong>
-          <em>{{ activeTab.description }}</em>
-        </span>
-        <dl>
-          <div
-            ><dt>当前结果</dt><dd>{{ tableTotal }}</dd></div
-          >
-          <div :class="`is-${activeAttention.tone}`">
-            <dt>{{ activeAttention.label }}</dt
-            ><dd>{{ activeAttention.value }}</dd>
+            <span>
+              <small>SUCCESSION CONTROL CENTER</small>
+              <strong id="succession-control-title">关键岗位继任闭环</strong>
+              <em>识别业务连续性风险，建立候选梯队，并用可验收行动推进准备度</em>
+            </span>
           </div>
-        </dl>
-        <p>
-          <ArtSvgIcon icon="ri:information-line" />
-          现任任职者不能提名为同岗位继任人，评审、退出与任用全程留痕。
-        </p>
-      </footer>
-    </section>
+          <span class="succession-page__governance-badge">
+            <ArtSvgIcon icon="ri:shield-keyhole-line" />
+            仅限授权 HR 管理者
+          </span>
+        </header>
 
-    <ArtTableQuery
-      :key="activeEntity"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
-      :table-props="{
-        rowKey: 'id',
-        tableLayout: 'fixed',
-        emptyText: `暂无${activeTab.label}`,
-        emptyDescription: activeTab.emptyDescription
-      }"
-      :on-success="handleTableSuccess"
-      focusable
-    />
+        <nav class="succession-page__stage-switcher" aria-label="继任管理工作视图">
+          <button
+            v-for="(stage, index) in journeyStages"
+            :key="stage.entity"
+            type="button"
+            :class="[`is-${stage.tone}`, { 'is-active': activeEntity === stage.entity }]"
+            :aria-current="activeEntity === stage.entity ? 'step' : undefined"
+            @click="selectStage(stage.entity)"
+          >
+            <span class="succession-page__stage-index">0{{ index + 1 }}</span>
+            <span class="succession-page__stage-icon" aria-hidden="true">
+              <ArtSvgIcon :icon="stage.icon" />
+            </span>
+            <span class="succession-page__stage-copy">
+              <span>
+                <strong>{{ stage.title }}</strong>
+                <em>{{ stage.signal }}</em>
+              </span>
+              <small>{{ stage.description }}</small>
+            </span>
+            <span class="succession-page__stage-arrow" aria-hidden="true">
+              <ArtSvgIcon icon="ri:arrow-right-s-line" />
+            </span>
+          </button>
+        </nav>
 
-    <SuccessionDialog ref="dialogRef" @success="handleSaveSuccess" />
-  </div>
+        <footer class="succession-page__active-context" aria-live="polite">
+          <span>
+            <ArtSvgIcon :icon="activeTab.icon" />
+            当前：<strong>{{ activeTab.label }}</strong>
+            <em>{{ activeTab.description }}</em>
+          </span>
+          <dl>
+            <div
+              ><dt>当前结果</dt><dd>{{ tableTotal }}</dd></div
+            >
+            <div :class="`is-${activeAttention.tone}`">
+              <dt>{{ activeAttention.label }}</dt
+              ><dd>{{ activeAttention.value }}</dd>
+            </div>
+          </dl>
+          <p>
+            <ArtSvgIcon icon="ri:information-line" />
+            现任任职者不能提名为同岗位继任人，评审、退出与任用全程留痕。
+          </p>
+        </footer>
+      </section>
+
+      <ArtTableQuery
+        :key="activeEntity"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
+        :table-props="{
+          rowKey: 'id',
+          tableLayout: 'fixed',
+          emptyText: `暂无${activeTab.label}`,
+          emptyDescription: activeTab.emptyDescription
+        }"
+        :on-success="handleTableSuccess"
+        focusable
+      />
+
+      <SuccessionDialog ref="dialogRef" @success="handleSaveSuccess" />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
   import dayjs from 'dayjs'
-  import { ElButton, ElProgress, ElTag } from 'element-plus'
+  import { ElProgress, ElTag } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
     ArtTableQueryExpose,
@@ -114,6 +113,9 @@
     ArtTableQueryProps
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
+  import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
+  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
@@ -121,7 +123,6 @@
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
-  import { useAuth } from '@/hooks/core/useAuth'
   import { useUserStore } from '@/store/modules/user'
   import { pageInfoHandler } from '@/utils/table/tableUtils'
   import type { ColumnOption, DialogType } from '@/types'
@@ -176,7 +177,6 @@
   ]
   const userStore = useUserStore()
   const { getDictMap, isPlatformSuper } = storeToRefs(userStore)
-  const { hasAuth } = useAuth()
   const { confirmAction, promptText } = useArtFeedback()
   const activeEntity = ref<Entity>('plan')
   const activeTab = computed(() => tabs.find((tab) => tab.entity === activeEntity.value) ?? tabs[0])
@@ -343,58 +343,63 @@
   const actionColumn = (): ColumnOption<RecordItem> => ({
     prop: 'action',
     label: '操作',
-    width: 210,
+    width: 112,
     fixed: 'right',
     formatter: (row) => {
       const status = String('status' in row ? row.status : '')
       return (
-        <div class="succession-page__actions">
-          {activeEntity.value === 'candidate' &&
-          status === 'nominated' &&
-          hasAuth('Hr:Succession:Candidate:Review') ? (
-            <ElButton
-              link
-              type="success"
-              onClick={() => handleReview(row as Api.Hr.SuccessionCandidate, 'activate')}
-            >
-              纳入梯队
-            </ElButton>
-          ) : null}
-          {activeEntity.value === 'candidate' &&
-          status === 'active' &&
-          hasAuth('Hr:Succession:Candidate:Review') ? (
-            <ElButton
-              link
-              type="primary"
-              onClick={() => handleReview(row as Api.Hr.SuccessionCandidate, 'place')}
-            >
-              标记继任
-            </ElButton>
-          ) : null}
-          {activeEntity.value === 'candidate' &&
-          ['nominated', 'active'].includes(status) &&
-          hasAuth('Hr:Succession:Candidate:Review') ? (
-            <ElButton
-              link
-              type="warning"
-              onClick={() => handleReview(row as Api.Hr.SuccessionCandidate, 'withdraw')}
-            >
-              退出
-            </ElButton>
-          ) : null}
+        <HrTableActions>
           <ArtButtonTable
             type="edit"
             permission={permissionFor('Edit')}
             onClick={() => openDialog(activeEntity.value, row)}
           />
-          {canDelete(status) ? (
-            <ArtButtonTable
-              type="delete"
-              permission={permissionFor('Delete')}
-              onClick={() => handleDelete(row)}
-            />
-          ) : null}
-        </div>
+          <ArtButtonMore
+            list={() => {
+              const actions: ButtonMoreItem[] = []
+              if (activeEntity.value === 'candidate' && status === 'nominated')
+                actions.push({
+                  key: 'activate',
+                  label: '纳入继任梯队',
+                  icon: 'ri:user-follow-line',
+                  auth: 'Hr:Succession:Candidate:Review'
+                })
+              if (activeEntity.value === 'candidate' && status === 'active')
+                actions.push({
+                  key: 'place',
+                  label: '标记正式继任',
+                  icon: 'ri:medal-line',
+                  auth: 'Hr:Succession:Candidate:Review'
+                })
+              if (activeEntity.value === 'candidate' && ['nominated', 'active'].includes(status))
+                actions.push({
+                  key: 'withdraw',
+                  label: '退出继任梯队',
+                  icon: 'ri:user-unfollow-line',
+                  auth: 'Hr:Succession:Candidate:Review'
+                })
+              if (canDelete(status))
+                actions.push({
+                  key: 'delete',
+                  label: '删除当前记录',
+                  icon: 'ri:delete-bin-5-line',
+                  color: 'var(--el-color-danger)',
+                  auth: permissionFor('Delete')
+                })
+              return actions
+            }}
+            onClick={(item: ButtonMoreItem) => {
+              if (item.key === 'delete') void handleDelete(row)
+              if (activeEntity.value !== 'candidate') return
+              if (item.key === 'activate')
+                void handleReview(row as Api.Hr.SuccessionCandidate, 'activate')
+              if (item.key === 'place')
+                void handleReview(row as Api.Hr.SuccessionCandidate, 'place')
+              if (item.key === 'withdraw')
+                void handleReview(row as Api.Hr.SuccessionCandidate, 'withdraw')
+            }}
+          />
+        </HrTableActions>
       )
     }
   })

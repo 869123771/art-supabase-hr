@@ -1,113 +1,114 @@
 <template>
-  <div
-    v-auth="'Hr:EmployeeRelations:View'"
-    class="employee-relations-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="EMPLOYEE RELATIONS CASE CONTROL"
-      title="员工关系案件"
-      description="以保密受理、分派调查、纠正行动和结案审计管理敏感员工关系事项，并与普通员工服务工单和正式人事异动保持清晰边界。"
-      icon="ri:shield-user-line"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
-    </BusinessWorkspaceHeader>
+  <ArtPermissionGuard permission="Hr:EmployeeRelations:View">
+    <div class="employee-relations-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="EMPLOYEE RELATIONS CASE CONTROL"
+        title="员工关系案件"
+        description="以保密受理、分派调查、纠正行动和结案审计管理敏感员工关系事项，并与普通员工服务工单和正式人事异动保持清晰边界。"
+        icon="ri:shield-user-line"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+      >
+        <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
+      </BusinessWorkspaceHeader>
 
-    <section class="employee-relations-page__control" aria-labelledby="relations-control-title">
-      <header class="employee-relations-page__heading">
-        <div>
-          <span class="employee-relations-page__section-icon" aria-hidden="true">
-            <ArtSvgIcon icon="ri:git-branch-line" />
-          </span>
-          <span>
-            <strong id="relations-control-title">员工关系案件控制链</strong>
-            <small>把最高风险、待分派和逾期案件放在操作员最短扫描路径内</small>
-          </span>
-        </div>
-        <span
-          class="employee-relations-page__governance"
-          :class="{ 'is-restricted': !overview.sensitiveAccess }"
-        >
-          <ArtSvgIcon
-            :icon="overview.sensitiveAccess ? 'ri:shield-keyhole-line' : 'ri:lock-2-line'"
-          />
-          {{ overview.sensitiveAccess ? '敏感内容授权可见' : '敏感内容服务端脱敏' }}
-        </span>
-      </header>
-
-      <ol class="employee-relations-page__rail" aria-label="员工关系案件阶段">
-        <li v-for="(stage, index) in controlStages" :key="stage.label" :class="stage.state">
-          <span class="employee-relations-page__rail-index">0{{ index + 1 }}</span>
-          <span class="employee-relations-page__rail-icon"><ArtSvgIcon :icon="stage.icon" /></span>
-          <div
-            ><strong>{{ stage.label }}</strong
-            ><small>{{ stage.description }}</small></div
+      <section class="employee-relations-page__control" aria-labelledby="relations-control-title">
+        <header class="employee-relations-page__heading">
+          <div>
+            <span class="employee-relations-page__section-icon" aria-hidden="true">
+              <ArtSvgIcon icon="ri:git-branch-line" />
+            </span>
+            <span>
+              <strong id="relations-control-title">员工关系案件控制链</strong>
+              <small>把最高风险、待分派和逾期案件放在操作员最短扫描路径内</small>
+            </span>
+          </div>
+          <span
+            class="employee-relations-page__governance"
+            :class="{ 'is-restricted': !overview.sensitiveAccess }"
           >
-          <b>{{ stage.value }}</b>
-        </li>
-      </ol>
+            <ArtSvgIcon
+              :icon="overview.sensitiveAccess ? 'ri:shield-keyhole-line' : 'ri:lock-2-line'"
+            />
+            {{ overview.sensitiveAccess ? '敏感内容授权可见' : '敏感内容服务端脱敏' }}
+          </span>
+        </header>
 
-      <HrEntityNavigation
-        v-model="activeEntity"
-        :items="navigationItems"
-        navigation-label="员工关系案件分类"
-        compact
-        @change="handleTabChange"
+        <ol class="employee-relations-page__rail" aria-label="员工关系案件阶段">
+          <li v-for="(stage, index) in controlStages" :key="stage.label" :class="stage.state">
+            <span class="employee-relations-page__rail-index">0{{ index + 1 }}</span>
+            <span class="employee-relations-page__rail-icon"
+              ><ArtSvgIcon :icon="stage.icon"
+            /></span>
+            <div
+              ><strong>{{ stage.label }}</strong
+              ><small>{{ stage.description }}</small></div
+            >
+            <b>{{ stage.value }}</b>
+          </li>
+        </ol>
+
+        <HrEntityNavigation
+          v-model="activeEntity"
+          :items="navigationItems"
+          navigation-label="员工关系案件分类"
+          compact
+          @change="handleTabChange"
+        />
+
+        <div class="employee-relations-page__context" aria-live="polite">
+          <div>
+            <span class="employee-relations-page__context-icon"
+              ><ArtSvgIcon :icon="activeTab.icon"
+            /></span>
+            <span>
+              <small>当前工作视图</small>
+              <strong>{{ activeTab.label }}</strong>
+              <em>{{ activeTab.description }}</em>
+            </span>
+          </div>
+          <dl>
+            <div
+              ><dt>当前结果</dt><dd>{{ tableTotal }}</dd></div
+            >
+            <div :class="attentionValue ? 'is-danger' : 'is-success'">
+              <dt>{{ attentionLabel }}</dt
+              ><dd>{{ attentionValue }}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <footer class="employee-relations-page__note">
+          <ArtSvgIcon icon="ri:information-line" />
+          纠正行动只记录建议、责任人与完成证据，不直接改变员工任职状态；涉及调岗、降职或离职时，必须转入人事异动与正式审批流程。
+        </footer>
+      </section>
+
+      <ArtTableQuery
+        :key="activeEntity"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
+        :table-props="{
+          rowKey: 'id',
+          tableLayout: 'fixed',
+          emptyText: activeEntity === 'case' ? '暂无员工关系案件' : '暂无处置行动',
+          emptyDescription: activeTab.emptyDescription
+        }"
+        :on-success="handleTableSuccess"
+        focusable
       />
 
-      <div class="employee-relations-page__context" aria-live="polite">
-        <div>
-          <span class="employee-relations-page__context-icon"
-            ><ArtSvgIcon :icon="activeTab.icon"
-          /></span>
-          <span>
-            <small>当前工作视图</small>
-            <strong>{{ activeTab.label }}</strong>
-            <em>{{ activeTab.description }}</em>
-          </span>
-        </div>
-        <dl>
-          <div
-            ><dt>当前结果</dt><dd>{{ tableTotal }}</dd></div
-          >
-          <div :class="attentionValue ? 'is-danger' : 'is-success'">
-            <dt>{{ attentionLabel }}</dt
-            ><dd>{{ attentionValue }}</dd>
-          </div>
-        </dl>
-      </div>
-
-      <footer class="employee-relations-page__note">
-        <ArtSvgIcon icon="ri:information-line" />
-        纠正行动只记录建议、责任人与完成证据，不直接改变员工任职状态；涉及调岗、降职或离职时，必须转入人事异动与正式审批流程。
-      </footer>
-    </section>
-
-    <ArtTableQuery
-      :key="activeEntity"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
-      :table-props="{
-        rowKey: 'id',
-        tableLayout: 'fixed',
-        emptyText: activeEntity === 'case' ? '暂无员工关系案件' : '暂无处置行动',
-        emptyDescription: activeTab.emptyDescription
-      }"
-      :on-success="handleTableSuccess"
-      focusable
-    />
-
-    <EmployeeRelationRecordDialog ref="recordDialogRef" @success="handleRecordSuccess" />
-    <EmployeeRelationActionDialog ref="actionDialogRef" @success="refreshAfterAction" />
-    <EmployeeRelationDetailDrawer ref="detailDrawerRef" />
-  </div>
+      <EmployeeRelationRecordDialog ref="recordDialogRef" @success="handleRecordSuccess" />
+      <EmployeeRelationActionDialog ref="actionDialogRef" @success="refreshAfterAction" />
+      <EmployeeRelationDetailDrawer ref="detailDrawerRef" />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
@@ -122,6 +123,8 @@
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
+  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
@@ -361,10 +364,7 @@
   const dictLabel = (code: string, value?: string | null): string =>
     getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
   const identity = (title?: string | null, subtitle?: string | null) => (
-    <div class="employee-relations-page__identity">
-      <strong>{title || '--'}</strong>
-      <small>{subtitle || '--'}</small>
-    </div>
+    <HrTableIdentityCell primary={title} secondary={subtitle} />
   )
   const severityTone = (severity?: string | null): TagProps['type'] =>
     severity === 'critical'
@@ -530,10 +530,10 @@
   const actionColumn = (): ColumnOption<RecordItem> => ({
     prop: 'action',
     label: '操作',
-    width: 118,
+    width: 112,
     fixed: 'right',
     formatter: (row) => (
-      <div class="employee-relations-page__actions">
+      <HrTableActions>
         <ArtButtonTable
           type="view"
           permission="Hr:EmployeeRelations:View"
@@ -544,7 +544,7 @@
           list={() => rowActions(row)}
           onClick={(item: ButtonMoreItem) => void handleRowAction(item, row)}
         />
-      </div>
+      </HrTableActions>
     )
   })
 

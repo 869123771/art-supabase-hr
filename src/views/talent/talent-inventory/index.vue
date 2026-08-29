@@ -1,189 +1,188 @@
 <template>
-  <div
-    v-auth="'Hr:TalentInventory:View'"
-    class="talent-inventory-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="TALENT INVENTORY"
-      title="人才盘点"
-      description="以员工为中心融合最近绩效与岗位胜任力，形成培养、任用与继任决策信号。"
-      icon="ri:team-line"
-      :tags="[
-        { label: '个体人才决策', type: 'primary' },
-        { label: '绩效 × 胜任力', type: 'success' },
-        { label: '发展 / 继任输入', type: 'info' }
-      ]"
-      :metrics="metrics"
-      refreshable
-      refresh-label="刷新人才盘点"
-      :refresh-loading="loading"
-      @metric-click="handleMetricClick"
-      @refresh="loadInventory"
-    />
-
-    <ArtSectionCard
-      class="talent-inventory-page__workspace"
-      title="个体人才决策清单"
-      :subtitle="`回答谁值得培养、谁已胜任、谁需补齐评估；更新时间 ${generatedAt}`"
-      :loading="loading && !overview"
-      :error="errorMessage"
-      :empty="Boolean(overview) && !filteredRecords.length"
-      empty-title="暂无盘点员工"
-      empty-description="当前筛选范围暂无匹配员工，可调整关键词或盘点范围。"
-      :min-height="360"
-      @retry="loadInventory"
-    >
-      <template #actions>
-        <div class="talent-inventory-page__filters">
-          <ElInput
-            v-model="keyword"
-            clearable
-            placeholder="员工、工号、组织或岗位"
-            aria-label="检索人才盘点员工"
-          >
-            <template #prefix><ArtSvgIcon icon="ri:search-line" /></template>
-          </ElInput>
-          <ElRadioGroup v-model="activeScope" size="small" aria-label="人才盘点范围">
-            <ElRadioButton value="all">全部</ElRadioButton>
-            <ElRadioButton value="gap">存在缺口</ElRadioButton>
-            <ElRadioButton value="high">高绩效</ElRadioButton>
-            <ElRadioButton value="unassessed">待评估</ElRadioButton>
-          </ElRadioGroup>
-        </div>
-      </template>
-
-      <div class="talent-inventory-page__decision-strip" aria-label="人才盘点决策摘要">
-        <div class="talent-inventory-page__decision-item is-development">
-          <span class="talent-inventory-page__signal-icon is-primary">
-            <ArtSvgIcon icon="ri:seedling-line" />
-          </span>
-          <span
-            ><strong>{{ decisionSummary.development }}</strong
-            ><small>重点培养</small></span
-          >
-          <p>高绩效且仍有能力提升空间</p>
-        </div>
-        <div class="talent-inventory-page__decision-item is-performance">
-          <span class="talent-inventory-page__signal-icon is-warning">
-            <ArtSvgIcon icon="ri:questionnaire-line" />
-          </span>
-          <span
-            ><strong>{{ decisionSummary.performancePending }}</strong
-            ><small>绩效待确认</small></span
-          >
-          <p>缺少最近绩效结果，暂不宜做人才判断</p>
-        </div>
-        <div class="talent-inventory-page__decision-item is-model">
-          <span class="talent-inventory-page__signal-icon is-info">
-            <ArtSvgIcon icon="ri:node-tree" />
-          </span>
-          <span
-            ><strong>{{ decisionSummary.unmodelled }}</strong
-            ><small>岗位未建模</small></span
-          >
-          <p>应先配置岗位能力要求再开展评估</p>
-        </div>
-      </div>
-
-      <ElAlert
-        v-if="overview?.truncated"
-        class="talent-inventory-page__capacity-alert"
-        type="warning"
-        show-icon
-        :closable="false"
-        :title="`员工数量较大，当前展示 ${overview.returnedRecords} / ${overview.totalRecords} 人`"
-        description="本页统计基于当前返回的数据集；请结合组织范围进一步分析。"
+  <ArtPermissionGuard permission="Hr:TalentInventory:View">
+    <div class="talent-inventory-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="TALENT INVENTORY"
+        title="人才盘点"
+        description="以员工为中心融合最近绩效与岗位胜任力，形成培养、任用与继任决策信号。"
+        icon="ri:team-line"
+        :tags="[
+          { label: '个体人才决策', type: 'primary' },
+          { label: '绩效 × 胜任力', type: 'success' },
+          { label: '发展 / 继任输入', type: 'info' }
+        ]"
+        :metrics="metrics"
+        refreshable
+        refresh-label="刷新人才盘点"
+        :refresh-loading="loading"
+        @metric-click="handleMetricClick"
+        @refresh="loadInventory"
       />
-      <ArtTable
-        :data="filteredRecords"
-        :columns="tableColumns"
-        :loading="loading"
-        :pagination="false"
-        :show-table-header="false"
-        row-key="id"
-        table-layout="fixed"
-        empty-height="220px"
-        empty-text="暂无盘点员工"
+
+      <ArtSectionCard
+        class="talent-inventory-page__workspace"
+        title="个体人才决策清单"
+        :subtitle="`回答谁值得培养、谁已胜任、谁需补齐评估；更新时间 ${generatedAt}`"
+        :loading="loading && !overview"
+        :error="errorMessage"
+        :empty="Boolean(overview) && !filteredRecords.length"
+        empty-title="暂无盘点员工"
         empty-description="当前筛选范围暂无匹配员工，可调整关键词或盘点范围。"
+        :min-height="360"
+        @retry="loadInventory"
       >
-        <template #employeeIdentity="{ row: record }">
-          <HrEmployeeIdentityCell
-            :employee-name="record.employeeName"
-            :employee-no="record.employeeNo"
-            :to="canViewEmployee ? `/hr/personnel/employee-detail/${record.id}` : undefined"
-          />
-        </template>
-        <template #performance="{ row: record }">
-          <div class="talent-inventory-page__stacked-cell">
-            <ElTag
-              v-if="record.performanceLevel"
-              :type="performanceType(record.performanceLevel)"
-              effect="light"
-              round
+        <template #actions>
+          <div class="talent-inventory-page__filters">
+            <ElInput
+              v-model="keyword"
+              clearable
+              placeholder="员工、工号、组织或岗位"
+              aria-label="检索人才盘点员工"
             >
-              {{ record.performanceLevel
-              }}{{ record.totalScore != null ? ` · ${record.totalScore}` : '' }}
-            </ElTag>
-            <span v-else class="talent-inventory-page__muted">待绩效确认</span>
-            <small>{{ record.cycleName || '暂无绩效周期' }}</small>
+              <template #prefix><ArtSvgIcon icon="ri:search-line" /></template>
+            </ElInput>
+            <ElRadioGroup v-model="activeScope" size="small" aria-label="人才盘点范围">
+              <ElRadioButton value="all">全部</ElRadioButton>
+              <ElRadioButton value="gap">存在缺口</ElRadioButton>
+              <ElRadioButton value="high">高绩效</ElRadioButton>
+              <ElRadioButton value="unassessed">待评估</ElRadioButton>
+            </ElRadioGroup>
           </div>
         </template>
-        <template #readiness="{ row: record }">
-          <div class="talent-inventory-page__readiness">
-            <template v-if="record.readinessRate != null">
-              <strong>{{ record.readinessRate }}%</strong>
-              <ElProgress
-                :percentage="record.readinessRate"
-                :stroke-width="7"
-                :show-text="false"
-                :status="record.readinessRate >= 80 ? 'success' : undefined"
-              />
-            </template>
-            <span v-else class="talent-inventory-page__muted">岗位尚未配置能力模型</span>
-          </div>
-        </template>
-        <template #competencyGap="{ row: record }">
-          <div class="talent-inventory-page__stacked-cell">
-            <ElTag
-              :type="
-                record.competencyTotal
-                  ? record.competencyGapCount
-                    ? 'warning'
-                    : 'success'
-                  : 'info'
-              "
-              effect="plain"
-              round
-            >
-              {{
-                record.competencyTotal
-                  ? record.competencyGapCount
-                    ? `${record.competencyGapCount} 项待提升`
-                    : '已达标'
-                  : '待建模'
-              }}
-            </ElTag>
-            <small>
-              {{
-                record.competencyTotal
-                  ? `${record.competencyMet} / ${record.competencyTotal} 项达标`
-                  : '尚无岗位能力评估口径'
-              }}
-            </small>
-          </div>
-        </template>
-        <template #talentSignal="{ row: record }">
-          <div class="talent-inventory-page__stacked-cell">
-            <span class="talent-inventory-page__signal" :class="talentSignal(record).tone">
-              <ArtSvgIcon :icon="talentSignal(record).icon" />
-              {{ talentSignal(record).label }}
+
+        <div class="talent-inventory-page__decision-strip" aria-label="人才盘点决策摘要">
+          <div class="talent-inventory-page__decision-item is-development">
+            <span class="talent-inventory-page__signal-icon is-primary">
+              <ArtSvgIcon icon="ri:seedling-line" />
             </span>
-            <small>{{ talentSignal(record).description }}</small>
+            <span
+              ><strong>{{ decisionSummary.development }}</strong
+              ><small>重点培养</small></span
+            >
+            <p>高绩效且仍有能力提升空间</p>
           </div>
-        </template>
-      </ArtTable>
-    </ArtSectionCard>
-  </div>
+          <div class="talent-inventory-page__decision-item is-performance">
+            <span class="talent-inventory-page__signal-icon is-warning">
+              <ArtSvgIcon icon="ri:questionnaire-line" />
+            </span>
+            <span
+              ><strong>{{ decisionSummary.performancePending }}</strong
+              ><small>绩效待确认</small></span
+            >
+            <p>缺少最近绩效结果，暂不宜做人才判断</p>
+          </div>
+          <div class="talent-inventory-page__decision-item is-model">
+            <span class="talent-inventory-page__signal-icon is-info">
+              <ArtSvgIcon icon="ri:node-tree" />
+            </span>
+            <span
+              ><strong>{{ decisionSummary.unmodelled }}</strong
+              ><small>岗位未建模</small></span
+            >
+            <p>应先配置岗位能力要求再开展评估</p>
+          </div>
+        </div>
+
+        <ElAlert
+          v-if="overview?.truncated"
+          class="talent-inventory-page__capacity-alert"
+          type="warning"
+          show-icon
+          :closable="false"
+          :title="`员工数量较大，当前展示 ${overview.returnedRecords} / ${overview.totalRecords} 人`"
+          description="本页统计基于当前返回的数据集；请结合组织范围进一步分析。"
+        />
+        <ArtTable
+          :data="filteredRecords"
+          :columns="tableColumns"
+          :loading="loading"
+          :pagination="false"
+          :show-table-header="false"
+          row-key="id"
+          table-layout="fixed"
+          empty-height="220px"
+          empty-text="暂无盘点员工"
+          empty-description="当前筛选范围暂无匹配员工，可调整关键词或盘点范围。"
+        >
+          <template #employeeIdentity="{ row: record }">
+            <HrEmployeeIdentityCell
+              :employee-name="record.employeeName"
+              :employee-no="record.employeeNo"
+              :to="canViewEmployee ? `/hr/personnel/employee-detail/${record.id}` : undefined"
+            />
+          </template>
+          <template #performance="{ row: record }">
+            <div class="talent-inventory-page__stacked-cell">
+              <ElTag
+                v-if="record.performanceLevel"
+                :type="performanceType(record.performanceLevel)"
+                effect="light"
+                round
+              >
+                {{ record.performanceLevel
+                }}{{ record.totalScore != null ? ` · ${record.totalScore}` : '' }}
+              </ElTag>
+              <span v-else class="talent-inventory-page__muted">待绩效确认</span>
+              <small>{{ record.cycleName || '暂无绩效周期' }}</small>
+            </div>
+          </template>
+          <template #readiness="{ row: record }">
+            <div class="talent-inventory-page__readiness">
+              <template v-if="record.readinessRate != null">
+                <strong>{{ record.readinessRate }}%</strong>
+                <ElProgress
+                  :percentage="record.readinessRate"
+                  :stroke-width="7"
+                  :show-text="false"
+                  :status="record.readinessRate >= 80 ? 'success' : undefined"
+                />
+              </template>
+              <span v-else class="talent-inventory-page__muted">岗位尚未配置能力模型</span>
+            </div>
+          </template>
+          <template #competencyGap="{ row: record }">
+            <div class="talent-inventory-page__stacked-cell">
+              <ElTag
+                :type="
+                  record.competencyTotal
+                    ? record.competencyGapCount
+                      ? 'warning'
+                      : 'success'
+                    : 'info'
+                "
+                effect="plain"
+                round
+              >
+                {{
+                  record.competencyTotal
+                    ? record.competencyGapCount
+                      ? `${record.competencyGapCount} 项待提升`
+                      : '已达标'
+                    : '待建模'
+                }}
+              </ElTag>
+              <small>
+                {{
+                  record.competencyTotal
+                    ? `${record.competencyMet} / ${record.competencyTotal} 项达标`
+                    : '尚无岗位能力评估口径'
+                }}
+              </small>
+            </div>
+          </template>
+          <template #talentSignal="{ row: record }">
+            <div class="talent-inventory-page__stacked-cell">
+              <span class="talent-inventory-page__signal" :class="talentSignal(record).tone">
+                <ArtSvgIcon :icon="talentSignal(record).icon" />
+                {{ talentSignal(record).label }}
+              </span>
+              <small>{{ talentSignal(record).description }}</small>
+            </div>
+          </template>
+        </ArtTable>
+      </ArtSectionCard>
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="ts">

@@ -1,273 +1,272 @@
 <template>
-  <div
-    v-auth="'Hr:PeopleAnalytics:View'"
-    class="people-analytics-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="PEOPLE ANALYTICS"
-      title="人力分析"
-      description="以可信任职与员工主数据观察人员存量、流动和组织结构，支持周期性人力盘点与管理决策。"
-      icon="ri:line-chart-line"
-      :tags="[
-        { label: '聚合分析', type: 'primary' },
-        { label: `小于 ${privacyThreshold} 人自动保护`, type: 'success' },
-        { label: '不返回个人明细', type: 'info' }
-      ]"
-      :metrics="headerMetrics"
-      refreshable
-      refresh-label="刷新人力分析"
-      :refresh-loading="loading"
-      @refresh="loadOverview"
-    />
+  <ArtPermissionGuard permission="Hr:PeopleAnalytics:View">
+    <div class="people-analytics-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="PEOPLE ANALYTICS"
+        title="人力分析"
+        description="以可信任职与员工主数据观察人员存量、流动和组织结构，支持周期性人力盘点与管理决策。"
+        icon="ri:line-chart-line"
+        :tags="[
+          { label: '聚合分析', type: 'primary' },
+          { label: `小于 ${privacyThreshold} 人自动保护`, type: 'success' },
+          { label: '不返回个人明细', type: 'info' }
+        ]"
+        :metrics="headerMetrics"
+        refreshable
+        refresh-label="刷新人力分析"
+        :refresh-loading="loading"
+        @refresh="loadOverview"
+      />
 
-    <ArtSectionCard class="people-analytics-page__control" preserve-content-structure>
-      <div class="people-analytics-page__control-copy">
-        <span>分析口径</span>
-        <strong>{{ periodCaption }}</strong>
-        <small>期末人数按生效任职计算，流入流出按员工入离职日期计算</small>
-      </div>
-      <div class="people-analytics-page__filters" aria-label="人力分析筛选条件">
-        <label>
-          <span>观察周期</span>
-          <ElSelect v-model="periodMonths" aria-label="观察周期" @change="loadOverview">
-            <ElOption
-              v-for="option in periodOptions"
-              :key="option.value"
-              :label="option.label"
-              :value="option.value"
+      <ArtSectionCard class="people-analytics-page__control" preserve-content-structure>
+        <div class="people-analytics-page__control-copy">
+          <span>分析口径</span>
+          <strong>{{ periodCaption }}</strong>
+          <small>期末人数按生效任职计算，流入流出按员工入离职日期计算</small>
+        </div>
+        <div class="people-analytics-page__filters" aria-label="人力分析筛选条件">
+          <label>
+            <span>观察周期</span>
+            <ElSelect v-model="periodMonths" aria-label="观察周期" @change="loadOverview">
+              <ElOption
+                v-for="option in periodOptions"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
+            </ElSelect>
+          </label>
+          <label>
+            <span>统计截止日</span>
+            <ElDatePicker
+              v-model="asOfDate"
+              type="date"
+              value-format="YYYY-MM-DD"
+              format="YYYY-MM-DD"
+              aria-label="统计截止日"
+              :clearable="false"
+              :disabled-date="disableFutureDate"
+              @change="loadOverview"
             />
-          </ElSelect>
-        </label>
-        <label>
-          <span>统计截止日</span>
-          <ElDatePicker
-            v-model="asOfDate"
-            type="date"
-            value-format="YYYY-MM-DD"
-            format="YYYY-MM-DD"
-            aria-label="统计截止日"
-            :clearable="false"
-            :disabled-date="disableFutureDate"
-            @change="loadOverview"
-          />
-        </label>
-      </div>
-    </ArtSectionCard>
-
-    <ElAlert
-      v-if="errorMessage"
-      class="people-analytics-page__alert"
-      type="error"
-      show-icon
-      :closable="false"
-      title="人力分析暂时无法加载"
-    >
-      <template #default>
-        <span>{{ errorMessage }}</span>
-        <ElButton type="primary" link @click="loadOverview">重新加载</ElButton>
-      </template>
-    </ElAlert>
-
-    <template v-if="loading && !analytics">
-      <ArtSectionCard class="people-analytics-page__skeleton" preserve-content-structure>
-        <ElSkeleton :rows="8" animated />
+          </label>
+        </div>
       </ArtSectionCard>
-    </template>
 
-    <ArtSectionCard
-      v-else-if="isEmpty"
-      title="尚无可分析的人力存量"
-      subtitle="员工建立生效任职后，系统会自动形成趋势、结构与数据质量分析。"
-      empty
-      empty-title="当前截止日没有生效任职"
-      empty-description="请检查员工入职与主任职的生效日期，或调整统计截止日。"
-      :empty-visual-size="104"
-      :min-height="320"
-    />
-
-    <template v-else-if="analytics">
-      <ArtSectionCard class="people-analytics-page__flow" preserve-content-structure>
-        <template #header>
-          <header class="people-analytics-page__section-heading">
-            <div>
-              <ArtSectionTitle :show-line="false">人员存量对账</ArtSectionTitle>
-              <p>把期初存量、入离职流动与任职口径差异连接到期末人数</p>
-            </div>
-            <ElTag type="info" effect="plain" round>{{ periodCaption }}</ElTag>
-          </header>
+      <ElAlert
+        v-if="errorMessage"
+        class="people-analytics-page__alert"
+        type="error"
+        show-icon
+        :closable="false"
+        title="人力分析暂时无法加载"
+      >
+        <template #default>
+          <span>{{ errorMessage }}</span>
+          <ElButton type="primary" link @click="loadOverview">重新加载</ElButton>
         </template>
+      </ElAlert>
 
-        <div class="people-analytics-page__bridge" aria-label="人员存量变化对账">
-          <template v-for="(item, index) in flowBridge" :key="item.key">
-            <article :class="['people-analytics-page__bridge-node', `is-${item.tone}`]">
-              <span>{{ item.label }}</span>
-              <strong>{{ item.value }}</strong>
-              <small>{{ item.description }}</small>
-            </article>
-            <span
-              v-if="index < flowBridge.length - 1"
-              class="people-analytics-page__bridge-connector"
-              aria-hidden="true"
-            >
-              <ArtSvgIcon icon="ri:arrow-right-line" />
+      <template v-if="loading && !analytics">
+        <ArtSectionCard class="people-analytics-page__skeleton" preserve-content-structure>
+          <ElSkeleton :rows="8" animated />
+        </ArtSectionCard>
+      </template>
+
+      <ArtSectionCard
+        v-else-if="isEmpty"
+        title="尚无可分析的人力存量"
+        subtitle="员工建立生效任职后，系统会自动形成趋势、结构与数据质量分析。"
+        empty
+        empty-title="当前截止日没有生效任职"
+        empty-description="请检查员工入职与主任职的生效日期，或调整统计截止日。"
+        :empty-visual-size="104"
+        :min-height="320"
+      />
+
+      <template v-else-if="analytics">
+        <ArtSectionCard class="people-analytics-page__flow" preserve-content-structure>
+          <template #header>
+            <header class="people-analytics-page__section-heading">
+              <div>
+                <ArtSectionTitle :show-line="false">人员存量对账</ArtSectionTitle>
+                <p>把期初存量、入离职流动与任职口径差异连接到期末人数</p>
+              </div>
+              <ElTag type="info" effect="plain" round>{{ periodCaption }}</ElTag>
+            </header>
+          </template>
+
+          <div class="people-analytics-page__bridge" aria-label="人员存量变化对账">
+            <template v-for="(item, index) in flowBridge" :key="item.key">
+              <article :class="['people-analytics-page__bridge-node', `is-${item.tone}`]">
+                <span>{{ item.label }}</span>
+                <strong>{{ item.value }}</strong>
+                <small>{{ item.description }}</small>
+              </article>
+              <span
+                v-if="index < flowBridge.length - 1"
+                class="people-analytics-page__bridge-connector"
+                aria-hidden="true"
+              >
+                <ArtSvgIcon icon="ri:arrow-right-line" />
+              </span>
+            </template>
+          </div>
+
+          <div class="people-analytics-page__formula">
+            <ArtSvgIcon icon="ri:information-line" />
+            <span>
+              “其他净变化”用于对账缺少入离职日期、历史任职切换等差异，不会被隐藏在入职或离职指标中。
             </span>
-          </template>
-        </div>
-
-        <div class="people-analytics-page__formula">
-          <ArtSvgIcon icon="ri:information-line" />
-          <span>
-            “其他净变化”用于对账缺少入离职日期、历史任职切换等差异，不会被隐藏在入职或离职指标中。
-          </span>
-        </div>
-      </ArtSectionCard>
-
-      <div class="people-analytics-page__primary-grid">
-        <ArtSectionCard
-          class="people-analytics-page__trend-card"
-          title="人员趋势"
-          subtitle="月末生效人数与期间入离职流量"
-          preserve-content-structure
-        >
-          <template #actions>
-            <div class="people-analytics-page__legend" aria-label="图例">
-              <span class="is-headcount">人数</span>
-              <span class="is-hire">入职</span>
-              <span class="is-exit">离职</span>
-            </div>
-          </template>
-          <div class="people-analytics-page__trend-chart">
-            <ArtLineChart
-              height="100%"
-              :data="trendSeries"
-              :x-axis-data="trendLabels"
-              :colors="['#5b6cf9', '#27b88d', '#ec6f76']"
-              :show-area-color="true"
-              :show-axis-line="false"
-              :show-legend="false"
-            />
           </div>
         </ArtSectionCard>
 
-        <ArtSectionCard
-          class="people-analytics-page__composition-card"
-          title="用工结构"
-          subtitle="低于隐私阈值的类别合并展示"
-          preserve-content-structure
-        >
-          <div class="people-analytics-page__composition">
-            <div class="people-analytics-page__composition-chart">
-              <ArtRingChart
+        <div class="people-analytics-page__primary-grid">
+          <ArtSectionCard
+            class="people-analytics-page__trend-card"
+            title="人员趋势"
+            subtitle="月末生效人数与期间入离职流量"
+            preserve-content-structure
+          >
+            <template #actions>
+              <div class="people-analytics-page__legend" aria-label="图例">
+                <span class="is-headcount">人数</span>
+                <span class="is-hire">入职</span>
+                <span class="is-exit">离职</span>
+              </div>
+            </template>
+            <div class="people-analytics-page__trend-chart">
+              <ArtLineChart
                 height="100%"
-                :data="employmentChartData"
-                :colors="['#5b6cf9', '#27b88d', '#f2b35c', '#7d8ba6', '#b488e8']"
-                :center-text="`${summary.endingHeadcount} 人`"
+                :data="trendSeries"
+                :x-axis-data="trendLabels"
+                :colors="['#5b6cf9', '#27b88d', '#ec6f76']"
+                :show-area-color="true"
+                :show-axis-line="false"
+                :show-legend="false"
               />
             </div>
-            <ul class="people-analytics-page__composition-list">
-              <li v-for="item in employmentRows" :key="item.key">
-                <span>{{ item.label }}</span>
-                <strong>{{ item.headcount }} 人</strong>
-                <small>{{ formatPercent(item.share) }}</small>
-              </li>
-            </ul>
-          </div>
-        </ArtSectionCard>
-      </div>
+          </ArtSectionCard>
 
-      <div class="people-analytics-page__distribution-grid">
-        <ArtSectionCard
-          class="people-analytics-page__distribution-card"
-          title="组织分布"
-          :subtitle="`组织样本少于 ${privacyThreshold} 人时合并为受保护组织`"
-          preserve-content-structure
-        >
-          <div class="people-analytics-page__bar-chart">
-            <ArtHBarChart
-              height="100%"
-              :data="organizationValues"
-              :x-axis-data="organizationLabels"
-              :colors="['#5b6cf9']"
-              :show-axis-line="false"
-            />
-          </div>
-          <p v-if="hasProtectedOrganization" class="people-analytics-page__privacy-note">
-            <ArtSvgIcon icon="ri:shield-check-line" />
-            已合并低于 {{ privacyThreshold }} 人的组织，避免通过小样本反推个人。
-          </p>
-        </ArtSectionCard>
-
-        <ArtSectionCard
-          class="people-analytics-page__distribution-card"
-          title="任期结构"
-          subtitle="按统计截止日与已维护入职日期计算"
-          preserve-content-structure
-        >
-          <div class="people-analytics-page__bar-chart">
-            <ArtBarChart
-              height="100%"
-              :data="tenureValues"
-              :x-axis-data="tenureLabels"
-              :colors="['#27b88d']"
-              :show-axis-line="false"
-              :bar-width="22"
-              :border-radius="6"
-            />
-          </div>
-        </ArtSectionCard>
-      </div>
-
-      <div class="people-analytics-page__governance-grid">
-        <ArtSectionCard
-          class="people-analytics-page__quality-card"
-          title="数据质量"
-          subtitle="分析可信度取决于关键字段维护完整度"
-          preserve-content-structure
-        >
-          <div class="people-analytics-page__quality-list">
-            <article v-for="item in analytics.dataQuality" :key="item.key">
-              <div>
-                <span>{{ item.label }}</span>
-                <small>{{ item.completeCount }} / {{ item.totalCount }} 人已维护</small>
+          <ArtSectionCard
+            class="people-analytics-page__composition-card"
+            title="用工结构"
+            subtitle="低于隐私阈值的类别合并展示"
+            preserve-content-structure
+          >
+            <div class="people-analytics-page__composition">
+              <div class="people-analytics-page__composition-chart">
+                <ArtRingChart
+                  height="100%"
+                  :data="employmentChartData"
+                  :colors="['#5b6cf9', '#27b88d', '#f2b35c', '#7d8ba6', '#b488e8']"
+                  :center-text="`${summary.endingHeadcount} 人`"
+                />
               </div>
-              <ElProgress
-                :percentage="item.rate"
-                :stroke-width="8"
-                :show-text="false"
-                :color="qualityColor(item.rate)"
+              <ul class="people-analytics-page__composition-list">
+                <li v-for="item in employmentRows" :key="item.key">
+                  <span>{{ item.label }}</span>
+                  <strong>{{ item.headcount }} 人</strong>
+                  <small>{{ formatPercent(item.share) }}</small>
+                </li>
+              </ul>
+            </div>
+          </ArtSectionCard>
+        </div>
+
+        <div class="people-analytics-page__distribution-grid">
+          <ArtSectionCard
+            class="people-analytics-page__distribution-card"
+            title="组织分布"
+            :subtitle="`组织样本少于 ${privacyThreshold} 人时合并为受保护组织`"
+            preserve-content-structure
+          >
+            <div class="people-analytics-page__bar-chart">
+              <ArtHBarChart
+                height="100%"
+                :data="organizationValues"
+                :x-axis-data="organizationLabels"
+                :colors="['#5b6cf9']"
+                :show-axis-line="false"
               />
-              <strong>{{ formatPercent(item.rate) }}</strong>
-            </article>
-          </div>
-        </ArtSectionCard>
+            </div>
+            <p v-if="hasProtectedOrganization" class="people-analytics-page__privacy-note">
+              <ArtSvgIcon icon="ri:shield-check-line" />
+              已合并低于 {{ privacyThreshold }} 人的组织，避免通过小样本反推个人。
+            </p>
+          </ArtSectionCard>
 
-        <ArtSectionCard
-          class="people-analytics-page__insight-card"
-          title="管理解读"
-          subtitle="从当前周期自动提炼需要关注的信号"
-          preserve-content-structure
-        >
-          <ol class="people-analytics-page__insights">
-            <li v-for="(insight, index) in managementInsights" :key="insight.title">
-              <span>{{ String(index + 1).padStart(2, '0') }}</span>
-              <div>
-                <strong>{{ insight.title }}</strong>
-                <p>{{ insight.description }}</p>
-              </div>
-            </li>
-          </ol>
-        </ArtSectionCard>
-      </div>
+          <ArtSectionCard
+            class="people-analytics-page__distribution-card"
+            title="任期结构"
+            subtitle="按统计截止日与已维护入职日期计算"
+            preserve-content-structure
+          >
+            <div class="people-analytics-page__bar-chart">
+              <ArtBarChart
+                height="100%"
+                :data="tenureValues"
+                :x-axis-data="tenureLabels"
+                :colors="['#27b88d']"
+                :show-axis-line="false"
+                :bar-width="22"
+                :border-radius="6"
+              />
+            </div>
+          </ArtSectionCard>
+        </div>
 
-      <footer class="people-analytics-page__footnote">
-        <ArtSvgIcon icon="ri:lock-2-line" />
-        <span>
-          本页仅返回租户内聚合结果；组织与用工类别的小样本会合并保护，接口不包含员工姓名、工号或任职标识。
-        </span>
-        <time>数据生成于 {{ generatedAt }}</time>
-      </footer>
-    </template>
-  </div>
+        <div class="people-analytics-page__governance-grid">
+          <ArtSectionCard
+            class="people-analytics-page__quality-card"
+            title="数据质量"
+            subtitle="分析可信度取决于关键字段维护完整度"
+            preserve-content-structure
+          >
+            <div class="people-analytics-page__quality-list">
+              <article v-for="item in analytics.dataQuality" :key="item.key">
+                <div>
+                  <span>{{ item.label }}</span>
+                  <small>{{ item.completeCount }} / {{ item.totalCount }} 人已维护</small>
+                </div>
+                <ElProgress
+                  :percentage="item.rate"
+                  :stroke-width="8"
+                  :show-text="false"
+                  :color="qualityColor(item.rate)"
+                />
+                <strong>{{ formatPercent(item.rate) }}</strong>
+              </article>
+            </div>
+          </ArtSectionCard>
+
+          <ArtSectionCard
+            class="people-analytics-page__insight-card"
+            title="管理解读"
+            subtitle="从当前周期自动提炼需要关注的信号"
+            preserve-content-structure
+          >
+            <ol class="people-analytics-page__insights">
+              <li v-for="(insight, index) in managementInsights" :key="insight.title">
+                <span>{{ String(index + 1).padStart(2, '0') }}</span>
+                <div>
+                  <strong>{{ insight.title }}</strong>
+                  <p>{{ insight.description }}</p>
+                </div>
+              </li>
+            </ol>
+          </ArtSectionCard>
+        </div>
+
+        <footer class="people-analytics-page__footnote">
+          <ArtSvgIcon icon="ri:lock-2-line" />
+          <span>
+            本页仅返回租户内聚合结果；组织与用工类别的小样本会合并保护，接口不包含员工姓名、工号或任职标识。
+          </span>
+          <time>数据生成于 {{ generatedAt }}</time>
+        </footer>
+      </template>
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="ts">

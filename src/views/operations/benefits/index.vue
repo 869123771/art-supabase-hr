@@ -1,111 +1,113 @@
 <template>
-  <div v-auth="'Hr:Benefits:View'" class="benefits-page business-workspace-page art-full-height">
-    <BusinessWorkspaceHeader
-      eyebrow="BENEFITS & ENROLLMENT CONTROL"
-      title="福利与参保"
-      description="统一福利计划、覆盖方案、人生事件与员工参保；审核后的缴费快照作为薪资受控输入，避免福利经办直接修改薪资或财务结果。"
-      icon="ri:heart-pulse-line"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
-    </BusinessWorkspaceHeader>
+  <ArtPermissionGuard permission="Hr:Benefits:View">
+    <div class="benefits-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="BENEFITS & ENROLLMENT CONTROL"
+        title="福利与参保"
+        description="统一福利计划、覆盖方案、人生事件与员工参保；审核后的缴费快照作为薪资受控输入，避免福利经办直接修改薪资或财务结果。"
+        icon="ri:heart-pulse-line"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+      >
+        <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
+      </BusinessWorkspaceHeader>
 
-    <section class="benefits-page__control" aria-labelledby="benefit-control-title">
-      <header class="benefits-page__heading">
-        <div>
-          <span class="benefits-page__section-icon" aria-hidden="true"
-            ><ArtSvgIcon icon="ri:route-line"
-          /></span>
-          <span>
-            <strong id="benefit-control-title">从福利政策到薪资输入</strong>
-            <small>按计划有效性、参保窗口和审核结果控制每一笔员工保障</small>
-          </span>
-        </div>
-        <span
-          class="benefits-page__governance"
-          :class="{ 'is-restricted': !overview.amountVisible }"
-        >
-          <ArtSvgIcon
-            :icon="overview.amountVisible ? 'ri:money-cny-circle-line' : 'ri:lock-2-line'"
-          />
-          {{ overview.amountVisible ? '缴费金额已授权' : '缴费金额服务端隐藏' }}
-        </span>
-      </header>
-
-      <ol class="benefits-page__rail" aria-label="福利管理控制阶段">
-        <li v-for="(stage, index) in controlStages" :key="stage.label" :class="stage.state">
-          <span class="benefits-page__rail-index">0{{ index + 1 }}</span>
-          <span class="benefits-page__rail-icon"><ArtSvgIcon :icon="stage.icon" /></span>
-          <div
-            ><strong>{{ stage.label }}</strong
-            ><small>{{ stage.description }}</small></div
+      <section class="benefits-page__control" aria-labelledby="benefit-control-title">
+        <header class="benefits-page__heading">
+          <div>
+            <span class="benefits-page__section-icon" aria-hidden="true"
+              ><ArtSvgIcon icon="ri:route-line"
+            /></span>
+            <span>
+              <strong id="benefit-control-title">从福利政策到薪资输入</strong>
+              <small>按计划有效性、参保窗口和审核结果控制每一笔员工保障</small>
+            </span>
+          </div>
+          <span
+            class="benefits-page__governance"
+            :class="{ 'is-restricted': !overview.amountVisible }"
           >
-          <b>{{ stage.value }}</b>
-        </li>
-      </ol>
+            <ArtSvgIcon
+              :icon="overview.amountVisible ? 'ri:money-cny-circle-line' : 'ri:lock-2-line'"
+            />
+            {{ overview.amountVisible ? '缴费金额已授权' : '缴费金额服务端隐藏' }}
+          </span>
+        </header>
 
-      <HrEntityNavigation
-        v-model="activeEntity"
-        :items="navigationItems"
-        navigation-label="福利与参保分类"
-        compact
-        @change="handleTabChange"
+        <ol class="benefits-page__rail" aria-label="福利管理控制阶段">
+          <li v-for="(stage, index) in controlStages" :key="stage.label" :class="stage.state">
+            <span class="benefits-page__rail-index">0{{ index + 1 }}</span>
+            <span class="benefits-page__rail-icon"><ArtSvgIcon :icon="stage.icon" /></span>
+            <div
+              ><strong>{{ stage.label }}</strong
+              ><small>{{ stage.description }}</small></div
+            >
+            <b>{{ stage.value }}</b>
+          </li>
+        </ol>
+
+        <HrEntityNavigation
+          v-model="activeEntity"
+          :items="navigationItems"
+          navigation-label="福利与参保分类"
+          compact
+          @change="handleTabChange"
+        />
+
+        <div class="benefits-page__context" aria-live="polite">
+          <div>
+            <span class="benefits-page__context-icon"><ArtSvgIcon :icon="activeTab.icon" /></span>
+            <span
+              ><small>当前工作视图</small><strong>{{ activeTab.label }}</strong
+              ><em>{{ activeTab.description }}</em></span
+            >
+          </div>
+          <dl>
+            <div
+              ><dt>当前结果</dt><dd>{{ tableTotal }}</dd></div
+            >
+            <div :class="attentionValue ? 'is-warning' : 'is-success'"
+              ><dt>{{ attentionLabel }}</dt
+              ><dd>{{ attentionValue }}</dd></div
+            >
+          </dl>
+        </div>
+
+        <footer class="benefits-page__note">
+          <ArtSvgIcon icon="ri:information-line" />
+          福利模块管理计划、资格、员工选择与缴费快照；薪资模块只读取审核后且处于有效保障期的输入，财务仍负责计算、入账与支付。
+        </footer>
+      </section>
+
+      <ArtTableQuery
+        :key="activeEntity"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
+        :table-props="{
+          rowKey: 'id',
+          tableLayout: 'fixed',
+          emptyText: activeTab.emptyTitle,
+          emptyDescription: activeTab.emptyDescription
+        }"
+        :on-success="handleTableSuccess"
+        focusable
       />
 
-      <div class="benefits-page__context" aria-live="polite">
-        <div>
-          <span class="benefits-page__context-icon"><ArtSvgIcon :icon="activeTab.icon" /></span>
-          <span
-            ><small>当前工作视图</small><strong>{{ activeTab.label }}</strong
-            ><em>{{ activeTab.description }}</em></span
-          >
-        </div>
-        <dl>
-          <div
-            ><dt>当前结果</dt><dd>{{ tableTotal }}</dd></div
-          >
-          <div :class="attentionValue ? 'is-warning' : 'is-success'"
-            ><dt>{{ attentionLabel }}</dt
-            ><dd>{{ attentionValue }}</dd></div
-          >
-        </dl>
-      </div>
-
-      <footer class="benefits-page__note">
-        <ArtSvgIcon icon="ri:information-line" />
-        福利模块管理计划、资格、员工选择与缴费快照；薪资模块只读取审核后且处于有效保障期的输入，财务仍负责计算、入账与支付。
-      </footer>
-    </section>
-
-    <ArtTableQuery
-      :key="activeEntity"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
-      :table-props="{
-        rowKey: 'id',
-        tableLayout: 'fixed',
-        emptyText: activeTab.emptyTitle,
-        emptyDescription: activeTab.emptyDescription
-      }"
-      :on-success="handleTableSuccess"
-      focusable
-    />
-
-    <BenefitRecordDialog ref="recordDialogRef" @success="handleRecordSuccess" />
-    <BenefitOptionDialog ref="optionDialogRef" @success="handleOptionSuccess" />
-    <BenefitDetailDrawer
-      ref="detailDrawerRef"
-      @add-option="openAddOption"
-      @edit-option="openEditOption"
-    />
-  </div>
+      <BenefitRecordDialog ref="recordDialogRef" @success="handleRecordSuccess" />
+      <BenefitOptionDialog ref="optionDialogRef" @success="handleOptionSuccess" />
+      <BenefitDetailDrawer
+        ref="detailDrawerRef"
+        @add-option="openAddOption"
+        @edit-option="openEditOption"
+      />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
@@ -121,6 +123,8 @@
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
+  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
     type BusinessWorkspaceTag
@@ -372,10 +376,7 @@
   const dateText = (value?: string | null): string =>
     value ? dayjs(value).format('YYYY-MM-DD') : '--'
   const identity = (title?: string | null, subtitle?: string | null) => (
-    <div class="benefits-page__identity">
-      <strong>{title || '--'}</strong>
-      <small>{subtitle || '--'}</small>
-    </div>
+    <HrTableIdentityCell primary={title} secondary={subtitle} />
   )
   const dueTone = (status?: Api.Hr.BenefitDueStatus): TagProps['type'] =>
     status === 'expired'
@@ -562,11 +563,11 @@
   const operationColumn = (): ColumnOption<RecordItem> => ({
     prop: 'operation',
     label: '操作',
-    width: 178,
+    width: 112,
     fixed: 'right',
     align: 'center',
     formatter: (row) => (
-      <div class="benefits-page__operations">
+      <HrTableActions>
         <ArtButtonTable
           type="view"
           permission="Hr:Benefits:View"
@@ -577,7 +578,7 @@
           list={() => rowActions(row)}
           onClick={(item: ButtonMoreItem) => void handleRowAction(item, row)}
         />
-      </div>
+      </HrTableActions>
     )
   })
 

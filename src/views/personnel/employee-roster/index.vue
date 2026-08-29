@@ -85,7 +85,6 @@
 </template>
 
 <script setup lang="tsx">
-  import { ElAvatar } from 'element-plus'
   import { useMediaQuery } from '@vueuse/core'
   import type { ColumnOption } from '@/types'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
@@ -95,6 +94,8 @@
     ArtTableQueryProps
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
+  import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
   import BusinessWorkspaceHeader, {
@@ -113,6 +114,9 @@
   import { useUserStore } from '@/store/modules/user'
   import { useTenantScopeStore } from '@/store/modules/tenantScope'
   import { deleteEmployee, fetchEmployeeList, fetchEmployeeOrganizationTree } from '@hr/api'
+  import HrEmployeeIdentityCell from '@hr/views/shared/hr-employee-identity-cell.vue'
+  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
 
   defineOptions({ name: 'HrEmployeeRoster' })
   type Employee = Api.Hr.Employee
@@ -272,17 +276,11 @@
       minWidth: 210,
       fixed: 'left',
       formatter: (row) =>
-        h('div', { class: 'hr-roster-cell' }, [
-          h(
-            ElAvatar,
-            { size: 38, src: row.avatarUrl || undefined, alt: `${row.employeeName}的头像` },
-            () => row.employeeName.slice(0, 1)
-          ),
-          h('div', null, [
-            h('strong', { title: row.employeeName }, row.employeeName),
-            h('small', { title: row.employeeNo }, row.employeeNo)
-          ])
-        ])
+        h(HrEmployeeIdentityCell, {
+          employeeName: row.employeeName,
+          employeeNo: row.employeeNo,
+          avatarUrl: row.avatarUrl
+        })
     },
     {
       prop: 'employmentStatus',
@@ -295,14 +293,10 @@
       label: '所属租户',
       minWidth: 180,
       formatter: (row: Employee) =>
-        h('div', { class: 'hr-roster-cell' }, [
-          h('div', null, [
-            h('strong', { title: row.tenant?.tenantName }, row.tenant?.tenantName || '--'),
-            row.tenant?.tenantCode
-              ? h('small', { title: row.tenant.tenantCode }, row.tenant.tenantCode)
-              : null
-          ])
-        ])
+        h(HrTableIdentityCell, {
+          primary: row.tenant?.tenantName,
+          secondary: row.tenant?.tenantCode
+        })
     },
     {
       prop: 'organization',
@@ -376,25 +370,19 @@
     {
       prop: 'operation',
       label: '操作',
-      width: 196,
+      width: 112,
       fixed: 'right',
       formatter: (row) =>
-        h('div', { class: 'hr-roster-actions' }, [
+        h(HrTableActions, null, () => [
           h(ArtButtonTable, {
             type: 'view',
-            label: '查看',
+            label: '查看员工详情',
             permission: 'Hr:Employee:View',
             onClick: () => openEmployeeDetail(row)
           }),
-          h(ArtButtonTable, {
-            type: 'edit',
-            permission: 'Hr:Employee:Edit',
-            onClick: () => openProfile(row)
-          }),
-          h(ArtButtonTable, {
-            type: 'delete',
-            permission: 'Hr:Employee:Delete',
-            onClick: () => handleDelete(row)
+          h(ArtButtonMore, {
+            list: rowActions,
+            onClick: (item: ButtonMoreItem) => handleRowAction(item, row)
           })
         ])
     }
@@ -461,6 +449,25 @@
   const openEmployeeDetail = (row: Employee): void => {
     if (!row.id) return
     void router.push(`/hr/personnel/employee-detail/${row.id}`)
+  }
+  const rowActions = (): ButtonMoreItem[] => [
+    {
+      key: 'edit',
+      label: '编辑员工档案',
+      icon: 'ri:edit-line',
+      auth: 'Hr:Employee:Edit'
+    },
+    {
+      key: 'delete',
+      label: '删除员工档案',
+      icon: 'ri:delete-bin-5-line',
+      color: 'var(--el-color-danger)',
+      auth: 'Hr:Employee:Delete'
+    }
+  ]
+  const handleRowAction = (item: ButtonMoreItem, row: Employee): void => {
+    if (item.key === 'edit') openProfile(row)
+    if (item.key === 'delete') void handleDelete(row)
   }
   const handleDelete = async (row: Employee): Promise<void> => {
     if (!row.id) return
@@ -592,12 +599,6 @@
 
     :deep(.hr-roster-account.is-linked) {
       color: var(--el-color-success);
-    }
-
-    :deep(.hr-roster-actions) {
-      display: flex;
-      gap: 2px;
-      align-items: center;
     }
   }
 </style>

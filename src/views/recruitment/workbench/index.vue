@@ -1,86 +1,85 @@
 <template>
-  <div
-    v-auth="'Hr:Recruitment:View'"
-    class="recruitment-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="RECRUITMENT OPERATIONS"
-      title="招聘运营工作台"
-      description="从用人需求、候选人评估、面试决策到 Offer 与入职交接，形成可追踪、可审计、可量化的招聘闭环。"
-      icon="ri:user-add-line"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
-    </BusinessWorkspaceHeader>
-
-    <section class="recruitment-page__pipeline" aria-label="招聘业务闭环">
-      <div
-        v-for="(step, index) in pipelineSteps"
-        :key="step.label"
-        class="recruitment-page__pipeline-step"
+  <ArtPermissionGuard permission="Hr:Recruitment:View">
+    <div class="recruitment-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="RECRUITMENT OPERATIONS"
+        title="招聘运营工作台"
+        description="从用人需求、候选人评估、面试决策到 Offer 与入职交接，形成可追踪、可审计、可量化的招聘闭环。"
+        icon="ri:user-add-line"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
       >
-        <span><ArtSvgIcon :icon="step.icon" /></span>
+        <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
+      </BusinessWorkspaceHeader>
+
+      <section class="recruitment-page__pipeline" aria-label="招聘业务闭环">
         <div
-          ><strong>{{ step.label }}</strong
-          ><small>{{ step.description }}</small></div
+          v-for="(step, index) in pipelineSteps"
+          :key="step.label"
+          class="recruitment-page__pipeline-step"
         >
-        <ArtSvgIcon
-          v-if="index < pipelineSteps.length - 1"
-          class="recruitment-page__pipeline-arrow"
-          icon="ri:arrow-right-line"
-        />
-      </div>
-      <p
-        ><ArtSvgIcon icon="ri:shield-check-line" />
-        联系方式与薪资按敏感权限遮罩；阶段变化与评价结果保留审计轨迹。</p
-      >
-    </section>
+          <span><ArtSvgIcon :icon="step.icon" /></span>
+          <div
+            ><strong>{{ step.label }}</strong
+            ><small>{{ step.description }}</small></div
+          >
+          <ArtSvgIcon
+            v-if="index < pipelineSteps.length - 1"
+            class="recruitment-page__pipeline-arrow"
+            icon="ri:arrow-right-line"
+          />
+        </div>
+        <p
+          ><ArtSvgIcon icon="ri:shield-check-line" />
+          联系方式与薪资按敏感权限遮罩；阶段变化与评价结果保留审计轨迹。</p
+        >
+      </section>
 
-    <section class="recruitment-page__tabs" aria-label="招聘管理分类">
-      <ElTabs v-model="activeEntity" @tab-change="handleTabChange">
-        <ElTabPane v-for="tab in tabs" :key="tab.entity" :name="tab.entity">
-          <template #label>
-            <span class="recruitment-page__tab-label">
-              <ArtSvgIcon :icon="tab.icon" />
-              <span
-                ><strong>{{ tab.label }}</strong
-                ><small>{{ tab.description }}</small></span
-              >
-            </span>
-          </template>
-        </ElTabPane>
-      </ElTabs>
-    </section>
+      <section class="recruitment-page__tabs" aria-label="招聘管理分类">
+        <ElTabs v-model="activeEntity" @tab-change="handleTabChange">
+          <ElTabPane v-for="tab in tabs" :key="tab.entity" :name="tab.entity">
+            <template #label>
+              <span class="recruitment-page__tab-label">
+                <ArtSvgIcon :icon="tab.icon" />
+                <span
+                  ><strong>{{ tab.label }}</strong
+                  ><small>{{ tab.description }}</small></span
+                >
+              </span>
+            </template>
+          </ElTabPane>
+        </ElTabs>
+      </section>
 
-    <ArtTableQuery
-      :key="activeEntity"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
-      :table-props="{
-        rowKey: 'id',
-        tableLayout: 'fixed',
-        emptyText: `暂无${activeTab.label}`,
-        emptyDescription: activeTab.emptyDescription
-      }"
-      :on-success="handleTableSuccess"
-      focusable
-    />
+      <ArtTableQuery
+        :key="activeEntity"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
+        :table-props="{
+          rowKey: 'id',
+          tableLayout: 'fixed',
+          emptyText: `暂无${activeTab.label}`,
+          emptyDescription: activeTab.emptyDescription
+        }"
+        :on-success="handleTableSuccess"
+        focusable
+      />
 
-    <RecruitmentDialog ref="dialogRef" @success="handleSaveSuccess" />
-    <RecruitmentActionDialog ref="actionDialogRef" @success="handleActionSuccess" />
-  </div>
+      <RecruitmentDialog ref="dialogRef" @success="handleSaveSuccess" />
+      <RecruitmentActionDialog ref="actionDialogRef" @success="handleActionSuccess" />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
   import dayjs from 'dayjs'
-  import { ElButton, ElProgress } from 'element-plus'
+  import { ElProgress } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
     ArtTableQueryApiFn,
@@ -88,6 +87,10 @@
     ArtTableQueryHeaderAction
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
+  import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
+  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtDictDisplay from '@/components/core/base/art-dict-display/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
@@ -309,12 +312,12 @@
     <ArtDictDisplay dictCode={code} value={String(value ?? '')} display="auto" />
   )
   const identity = (primary?: string | null, secondary?: string | null) => (
-    <div class="recruitment-page__identity">
-      <strong>{primary || '--'}</strong>
-      <small>{secondary || '—'}</small>
-    </div>
+    <HrTableIdentityCell primary={primary} secondary={secondary} />
   )
-  const actionWrap = (children: unknown) => <div class="recruitment-page__actions">{children}</div>
+  const actionWrap = (children: unknown) => <HrTableActions>{children}</HrTableActions>
+  interface RecruitmentMoreAction extends ButtonMoreItem {
+    run: () => void
+  }
   const editButton = (permission: string, row: RecordItem) => (
     <ArtButtonTable
       type="edit"
@@ -322,249 +325,284 @@
       onClick={() => void dialogRef.value?.handleOpen(activeEntity.value, row)}
     />
   )
-  const linkButton = (
+  const moreAction = (
+    key: string,
     label: string,
     permission: string,
-    onClick: () => void,
-    type: 'primary' | 'success' | 'warning' | 'danger' = 'primary'
-  ) =>
-    hasAuth(permission) ? (
-      <ElButton link type={type} onClick={onClick}>
-        {label}
-      </ElButton>
-    ) : null
+    run: () => void,
+    icon: string,
+    color?: string
+  ): RecruitmentMoreAction => ({ key, label, auth: permission, run, icon, color })
+  const renderActions = (primary: unknown, actions: RecruitmentMoreAction[]) =>
+    actionWrap(
+      <>
+        {primary}
+        <ArtButtonMore
+          list={actions}
+          onClick={(item: ButtonMoreItem) =>
+            actions.find((action) => action.key === item.key)?.run()
+          }
+        />
+      </>
+    )
 
-  const requisitionActions = (row: Api.Hr.RecruitmentRequisition) =>
-    actionWrap(
-      <>
-        {['draft', 'rejected'].includes(row.status) ? editButton('Hr:Recruitment:Edit', row) : null}
-        {['draft', 'rejected'].includes(row.status)
-          ? linkButton('提交审批', 'Hr:Recruitment:Submit', () => void submitRequisition(row))
-          : null}
-        {row.status === 'approved'
-          ? linkButton(
-              '启动招聘',
-              'Hr:Recruitment:Effect',
-              () => void effectRequisition(row),
-              'success'
-            )
-          : null}
-        {['draft', 'rejected'].includes(row.status) ? (
-          <ArtButtonTable
-            type="delete"
-            permission="Hr:Recruitment:Delete"
-            onClick={() => void handleDelete(row)}
-          />
-        ) : null}
-      </>
+  const requisitionActions = (row: Api.Hr.RecruitmentRequisition) => {
+    const editable = ['draft', 'rejected'].includes(row.status)
+    const actions: RecruitmentMoreAction[] = []
+    if (editable) {
+      actions.push(
+        moreAction(
+          'submit',
+          '提交审批',
+          'Hr:Recruitment:Submit',
+          () => void submitRequisition(row),
+          'ri:send-plane-line'
+        ),
+        moreAction(
+          'delete',
+          '删除招聘需求',
+          'Hr:Recruitment:Delete',
+          () => void handleDelete(row),
+          'ri:delete-bin-5-line',
+          'var(--el-color-danger)'
+        )
+      )
+    }
+    if (row.status === 'approved')
+      actions.push(
+        moreAction(
+          'effect',
+          '启动招聘',
+          'Hr:Recruitment:Effect',
+          () => void effectRequisition(row),
+          'ri:play-circle-line'
+        )
+      )
+    return renderActions(editable ? editButton('Hr:Recruitment:Edit', row) : null, actions)
+  }
+  const candidateActions = (row: Api.Hr.RecruitmentCandidate) => {
+    const editable = !['hired', 'rejected', 'withdrawn'].includes(row.stage)
+    const actions: RecruitmentMoreAction[] = []
+    if (row.stage === 'new')
+      actions.push(
+        moreAction(
+          'screen',
+          '进入筛选',
+          'Hr:Recruitment:Candidate:Move',
+          () => void screenCandidate(row),
+          'ri:filter-3-line'
+        )
+      )
+    if (editable) {
+      actions.push(
+        moreAction(
+          'reject',
+          '淘汰候选人',
+          'Hr:Recruitment:Candidate:Move',
+          () => void openAction('candidate_reject', row.id!, `淘汰候选人 ${row.candidateName}`),
+          'ri:close-circle-line',
+          'var(--el-color-danger)'
+        ),
+        moreAction(
+          'withdraw',
+          '记录候选人放弃',
+          'Hr:Recruitment:Candidate:Move',
+          () =>
+            void openAction('candidate_withdraw', row.id!, `记录候选人 ${row.candidateName} 放弃`),
+          'ri:arrow-go-back-line'
+        )
+      )
+    }
+    if (row.stage === 'new')
+      actions.push(
+        moreAction(
+          'delete',
+          '删除候选人',
+          'Hr:Recruitment:Delete',
+          () => void handleDelete(row),
+          'ri:delete-bin-5-line',
+          'var(--el-color-danger)'
+        )
+      )
+    return renderActions(editable ? editButton('Hr:Recruitment:Edit', row) : null, actions)
+  }
+  const interviewActions = (row: Api.Hr.RecruitmentInterview) => {
+    const scheduled = row.status === 'scheduled'
+    const actions = scheduled
+      ? [
+          moreAction(
+            'complete',
+            '提交面试评价',
+            'Hr:Recruitment:Interview:Complete',
+            () => void openAction('interview_complete', row.id!, row.candidate?.name ?? '候选人'),
+            'ri:checkbox-circle-line'
+          ),
+          moreAction(
+            'cancel',
+            '取消面试',
+            'Hr:Recruitment:Interview:Edit',
+            () =>
+              void openAction(
+                'interview_cancel',
+                row.id!,
+                `取消 ${row.candidate?.name ?? ''} 的面试`
+              ),
+            'ri:close-circle-line'
+          ),
+          moreAction(
+            'no_show',
+            '记录未到场',
+            'Hr:Recruitment:Interview:Edit',
+            () =>
+              void openAction(
+                'interview_no_show',
+                row.id!,
+                `记录 ${row.candidate?.name ?? ''} 未到场`
+              ),
+            'ri:user-unfollow-line',
+            'var(--el-color-danger)'
+          )
+        ]
+      : []
+    return renderActions(
+      scheduled ? editButton('Hr:Recruitment:Interview:Edit', row) : null,
+      actions
     )
-  const candidateActions = (row: Api.Hr.RecruitmentCandidate) =>
-    actionWrap(
-      <>
-        {!['hired', 'rejected', 'withdrawn'].includes(row.stage)
-          ? editButton('Hr:Recruitment:Edit', row)
-          : null}
-        {row.stage === 'new'
-          ? linkButton(
-              '进入筛选',
-              'Hr:Recruitment:Candidate:Move',
-              () => void screenCandidate(row),
-              'success'
-            )
-          : null}
-        {!['hired', 'rejected', 'withdrawn'].includes(row.stage)
-          ? linkButton(
-              '淘汰',
-              'Hr:Recruitment:Candidate:Move',
-              () => void openAction('candidate_reject', row.id!, `淘汰候选人 ${row.candidateName}`),
-              'danger'
-            )
-          : null}
-        {!['hired', 'rejected', 'withdrawn'].includes(row.stage)
-          ? linkButton(
-              '放弃',
-              'Hr:Recruitment:Candidate:Move',
-              () =>
-                void openAction(
-                  'candidate_withdraw',
-                  row.id!,
-                  `记录候选人 ${row.candidateName} 放弃`
-                ),
-              'warning'
-            )
-          : null}
-        {row.stage === 'new' ? (
-          <ArtButtonTable
-            type="delete"
-            permission="Hr:Recruitment:Delete"
-            onClick={() => void handleDelete(row)}
-          />
-        ) : null}
-      </>
-    )
-  const interviewActions = (row: Api.Hr.RecruitmentInterview) =>
-    actionWrap(
-      <>
-        {row.status === 'scheduled' ? editButton('Hr:Recruitment:Interview:Edit', row) : null}
-        {row.status === 'scheduled'
-          ? linkButton(
-              '提交评价',
-              'Hr:Recruitment:Interview:Complete',
-              () => void openAction('interview_complete', row.id!, row.candidate?.name ?? '候选人'),
-              'success'
-            )
-          : null}
-        {row.status === 'scheduled'
-          ? linkButton(
-              '取消',
-              'Hr:Recruitment:Interview:Edit',
-              () =>
-                void openAction(
-                  'interview_cancel',
-                  row.id!,
-                  `取消 ${row.candidate?.name ?? ''} 的面试`
-                ),
-              'warning'
-            )
-          : null}
-        {row.status === 'scheduled'
-          ? linkButton(
-              '未到场',
-              'Hr:Recruitment:Interview:Edit',
-              () =>
-                void openAction(
-                  'interview_no_show',
-                  row.id!,
-                  `记录 ${row.candidate?.name ?? ''} 未到场`
-                ),
-              'danger'
-            )
-          : null}
-      </>
-    )
-  const offerActions = (row: Api.Hr.RecruitmentOffer) =>
-    actionWrap(
-      <>
-        {['draft', 'rejected'].includes(row.status)
-          ? editButton('Hr:Recruitment:Offer:Edit', row)
-          : null}
-        {['draft', 'rejected'].includes(row.status)
-          ? linkButton(
-              '提交审批',
-              'Hr:Recruitment:Offer:Submit',
-              () => void offerAction(row, 'submit')
-            )
-          : null}
-        {row.status === 'pending_approval'
-          ? linkButton(
-              '批准',
-              'Hr:Recruitment:Offer:Approve',
-              () => void offerAction(row, 'approve'),
-              'success'
-            )
-          : null}
-        {row.status === 'pending_approval'
-          ? linkButton(
-              '驳回',
-              'Hr:Recruitment:Offer:Approve',
-              () => void openAction('offer_reject', row.id!, `驳回 ${row.offerNo}`),
-              'danger'
-            )
-          : null}
-        {row.status === 'approved'
-          ? linkButton(
-              '发送',
-              'Hr:Recruitment:Offer:Send',
-              () => void offerAction(row, 'send'),
-              'success'
-            )
-          : null}
-        {row.status === 'sent'
-          ? linkButton(
-              '已接受',
-              'Hr:Recruitment:Offer:Respond',
-              () => void offerAction(row, 'accept'),
-              'success'
-            )
-          : null}
-        {row.status === 'sent'
-          ? linkButton(
-              '已拒绝',
-              'Hr:Recruitment:Offer:Respond',
-              () => void openAction('offer_decline', row.id!, `登记 ${row.offerNo} 被拒绝`),
-              'danger'
-            )
-          : null}
-        {['approved', 'sent'].includes(row.status)
-          ? linkButton(
-              '撤回',
-              'Hr:Recruitment:Offer:Send',
-              () => void openAction('offer_withdraw', row.id!, `撤回 ${row.offerNo}`),
-              'warning'
-            )
-          : null}
-      </>
-    )
-  const handoffActions = (row: Api.Hr.RecruitmentHandoff) =>
-    actionWrap(
-      <>
-        {['pending', 'ready'].includes(row.status)
-          ? editButton('Hr:Recruitment:Handoff:Edit', row)
-          : null}
-        {row.status === 'pending'
-          ? linkButton(
-              '标记就绪',
-              'Hr:Recruitment:Handoff:Complete',
-              () => void handoffAction(row, 'ready')
-            )
-          : null}
-        {['pending', 'ready'].includes(row.status)
-          ? linkButton(
-              '完成交接',
-              'Hr:Recruitment:Handoff:Complete',
-              () => void handoffAction(row, 'complete'),
-              'success'
-            )
-          : null}
-        {['pending', 'ready'].includes(row.status)
-          ? linkButton(
-              '取消',
-              'Hr:Recruitment:Handoff:Complete',
-              () =>
-                void openAction(
-                  'handoff_cancel',
-                  row.id!,
-                  `取消 ${row.candidate?.name ?? ''} 的入职交接`
-                ),
-              'danger'
-            )
-          : null}
-      </>
-    )
-  const taskActions = (row: Api.Hr.RecruitmentTask) =>
-    actionWrap(
-      <>
-        {['pending', 'in_progress'].includes(row.status)
-          ? editButton('Hr:Recruitment:Task:Manage', row)
-          : null}
-        {['pending', 'in_progress'].includes(row.status)
-          ? linkButton(
-              '完成',
-              'Hr:Recruitment:Task:Manage',
-              () => void taskComplete(row),
-              'success'
-            )
-          : null}
-        {['pending', 'in_progress'].includes(row.status)
-          ? linkButton(
-              '跳过',
-              'Hr:Recruitment:Task:Manage',
-              () => void openAction('task_skip', row.id!, `跳过任务：${row.taskTitle}`),
-              'warning'
-            )
-          : null}
-      </>
-    )
+  }
+  const offerActions = (row: Api.Hr.RecruitmentOffer) => {
+    const editable = ['draft', 'rejected'].includes(row.status)
+    const actions: RecruitmentMoreAction[] = []
+    if (editable)
+      actions.push(
+        moreAction(
+          'submit',
+          '提交审批',
+          'Hr:Recruitment:Offer:Submit',
+          () => void offerAction(row, 'submit'),
+          'ri:send-plane-line'
+        )
+      )
+    if (row.status === 'pending_approval') {
+      actions.push(
+        moreAction(
+          'approve',
+          '批准 Offer',
+          'Hr:Recruitment:Offer:Approve',
+          () => void offerAction(row, 'approve'),
+          'ri:checkbox-circle-line'
+        ),
+        moreAction(
+          'reject',
+          '驳回 Offer',
+          'Hr:Recruitment:Offer:Approve',
+          () => void openAction('offer_reject', row.id!, `驳回 ${row.offerNo}`),
+          'ri:close-circle-line',
+          'var(--el-color-danger)'
+        )
+      )
+    }
+    if (row.status === 'approved')
+      actions.push(
+        moreAction(
+          'send',
+          '发送 Offer',
+          'Hr:Recruitment:Offer:Send',
+          () => void offerAction(row, 'send'),
+          'ri:mail-send-line'
+        )
+      )
+    if (row.status === 'sent') {
+      actions.push(
+        moreAction(
+          'accept',
+          '登记已接受',
+          'Hr:Recruitment:Offer:Respond',
+          () => void offerAction(row, 'accept'),
+          'ri:checkbox-circle-line'
+        ),
+        moreAction(
+          'decline',
+          '登记已拒绝',
+          'Hr:Recruitment:Offer:Respond',
+          () => void openAction('offer_decline', row.id!, `登记 ${row.offerNo} 被拒绝`),
+          'ri:close-circle-line',
+          'var(--el-color-danger)'
+        )
+      )
+    }
+    if (['approved', 'sent'].includes(row.status))
+      actions.push(
+        moreAction(
+          'withdraw',
+          '撤回 Offer',
+          'Hr:Recruitment:Offer:Send',
+          () => void openAction('offer_withdraw', row.id!, `撤回 ${row.offerNo}`),
+          'ri:arrow-go-back-line'
+        )
+      )
+    return renderActions(editable ? editButton('Hr:Recruitment:Offer:Edit', row) : null, actions)
+  }
+  const handoffActions = (row: Api.Hr.RecruitmentHandoff) => {
+    const editable = ['pending', 'ready'].includes(row.status)
+    const actions: RecruitmentMoreAction[] = []
+    if (row.status === 'pending')
+      actions.push(
+        moreAction(
+          'ready',
+          '标记交接就绪',
+          'Hr:Recruitment:Handoff:Complete',
+          () => void handoffAction(row, 'ready'),
+          'ri:flag-line'
+        )
+      )
+    if (editable) {
+      actions.push(
+        moreAction(
+          'complete',
+          '完成入职交接',
+          'Hr:Recruitment:Handoff:Complete',
+          () => void handoffAction(row, 'complete'),
+          'ri:checkbox-circle-line'
+        ),
+        moreAction(
+          'cancel',
+          '取消入职交接',
+          'Hr:Recruitment:Handoff:Complete',
+          () =>
+            void openAction(
+              'handoff_cancel',
+              row.id!,
+              `取消 ${row.candidate?.name ?? ''} 的入职交接`
+            ),
+          'ri:close-circle-line',
+          'var(--el-color-danger)'
+        )
+      )
+    }
+    return renderActions(editable ? editButton('Hr:Recruitment:Handoff:Edit', row) : null, actions)
+  }
+  const taskActions = (row: Api.Hr.RecruitmentTask) => {
+    const editable = ['pending', 'in_progress'].includes(row.status)
+    const actions = editable
+      ? [
+          moreAction(
+            'complete',
+            '完成任务',
+            'Hr:Recruitment:Task:Manage',
+            () => void taskComplete(row),
+            'ri:checkbox-circle-line'
+          ),
+          moreAction(
+            'skip',
+            '跳过任务',
+            'Hr:Recruitment:Task:Manage',
+            () => void openAction('task_skip', row.id!, `跳过任务：${row.taskTitle}`),
+            'ri:skip-forward-line'
+          )
+        ]
+      : []
+    return renderActions(editable ? editButton('Hr:Recruitment:Task:Manage', row) : null, actions)
+  }
 
   const requisitionColumns = (): ColumnOption<RecordItem>[] => [
     {
@@ -626,7 +664,7 @@
     {
       prop: 'operation',
       label: '操作',
-      width: 300,
+      width: 112,
       fixed: 'right',
       formatter: (row) => requisitionActions(row as Api.Hr.RecruitmentRequisition)
     }
@@ -689,7 +727,7 @@
     {
       prop: 'operation',
       label: '操作',
-      width: 330,
+      width: 112,
       fixed: 'right',
       formatter: (row) => candidateActions(row as Api.Hr.RecruitmentCandidate)
     }
@@ -760,7 +798,7 @@
     {
       prop: 'operation',
       label: '操作',
-      width: 300,
+      width: 112,
       fixed: 'right',
       formatter: (row) => interviewActions(row as Api.Hr.RecruitmentInterview)
     }
@@ -817,7 +855,7 @@
     {
       prop: 'operation',
       label: '操作',
-      width: 340,
+      width: 112,
       fixed: 'right',
       formatter: (row) => offerActions(row as Api.Hr.RecruitmentOffer)
     }
@@ -882,7 +920,7 @@
     {
       prop: 'operation',
       label: '操作',
-      width: 300,
+      width: 112,
       fixed: 'right',
       formatter: (row) => handoffActions(row as Api.Hr.RecruitmentHandoff)
     }
@@ -945,7 +983,7 @@
     {
       prop: 'operation',
       label: '操作',
-      width: 250,
+      width: 112,
       fixed: 'right',
       formatter: (row) => taskActions(row as Api.Hr.RecruitmentTask)
     }

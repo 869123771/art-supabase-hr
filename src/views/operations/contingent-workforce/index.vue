@@ -1,138 +1,139 @@
 <template>
-  <div
-    v-auth="'Hr:ContingentWorkforce:View'"
-    class="contingent-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="CONTINGENT WORKFORCE & ACCESS GOVERNANCE"
-      title="外部用工"
-      description="将供应商、外部人员、用工任务、准入控制与退场回收纳入同一套可审计闭环，同时与正式员工编制、薪酬、福利和法定报表保持清晰边界。"
-      icon="ri:team-line"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
-    </BusinessWorkspaceHeader>
+  <ArtPermissionGuard permission="Hr:ContingentWorkforce:View">
+    <div class="contingent-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="CONTINGENT WORKFORCE & ACCESS GOVERNANCE"
+        title="外部用工"
+        description="将供应商、外部人员、用工任务、准入控制与退场回收纳入同一套可审计闭环，同时与正式员工编制、薪酬、福利和法定报表保持清晰边界。"
+        icon="ri:team-line"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+      >
+        <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
+      </BusinessWorkspaceHeader>
 
-    <section class="contingent-page__command" aria-labelledby="contingent-command-title">
-      <header>
-        <div>
-          <span class="contingent-page__command-icon"><ArtSvgIcon icon="ri:route-line" /></span>
-          <span>
-            <small>WORKFORCE ASSURANCE PATH</small>
-            <strong id="contingent-command-title">从供应商准入到权限回收</strong>
-            <em>任何在场任务都必须有内部负责人、有效周期和完整的准入控制</em>
+      <section class="contingent-page__command" aria-labelledby="contingent-command-title">
+        <header>
+          <div>
+            <span class="contingent-page__command-icon"><ArtSvgIcon icon="ri:route-line" /></span>
+            <span>
+              <small>WORKFORCE ASSURANCE PATH</small>
+              <strong id="contingent-command-title">从供应商准入到权限回收</strong>
+              <em>任何在场任务都必须有内部负责人、有效周期和完整的准入控制</em>
+            </span>
+          </div>
+          <ElTag :type="overview.blockedCount ? 'danger' : 'success'" effect="light" round>
+            <ArtSvgIcon
+              :icon="overview.blockedCount ? 'ri:alarm-warning-line' : 'ri:shield-check-line'"
+            />
+            {{ overview.blockedCount ? `${overview.blockedCount} 项合规阻断` : '当前无合规阻断' }}
+          </ElTag>
+        </header>
+
+        <ol class="contingent-page__lifecycle" aria-label="外部用工治理链路">
+          <li v-for="(stage, index) in lifecycleStages" :key="stage.label" :class="stage.state">
+            <span class="contingent-page__stage-index">0{{ index + 1 }}</span>
+            <span class="contingent-page__stage-icon"><ArtSvgIcon :icon="stage.icon" /></span>
+            <div
+              ><strong>{{ stage.label }}</strong
+              ><small>{{ stage.description }}</small></div
+            >
+            <b>{{ stage.value }}</b>
+          </li>
+        </ol>
+
+        <div class="contingent-page__guardrails">
+          <article :class="overview.pendingControlCount ? 'is-warning' : 'is-success'">
+            <span><ArtSvgIcon icon="ri:shield-keyhole-line" /></span>
+            <div>
+              <small>准入控制</small><strong>{{ overview.pendingControlCount }} 项待完成</strong>
+              <em>身份、合同、保密、培训、门禁与账号</em>
+            </div>
+          </article>
+          <article :class="overview.endingSoonCount ? 'is-warning' : ''">
+            <span><ArtSvgIcon icon="ri:calendar-close-line" /></span>
+            <div>
+              <small>任务到期</small><strong>{{ overview.endingSoonCount }} 项 30 天内结束</strong>
+              <em>提前确认续期或启动退场</em>
+            </div>
+          </article>
+          <article :class="overview.accessExpiringCount ? 'is-danger' : 'is-success'">
+            <span><ArtSvgIcon icon="ri:key-2-line" /></span>
+            <div>
+              <small>访问权限</small
+              ><strong>{{ overview.accessExpiringCount }} 项 14 天内到期</strong>
+              <em>系统与现场权限不得晚于任务结束</em>
+            </div>
+          </article>
+          <article class="is-restricted">
+            <span><ArtSvgIcon icon="ri:git-branch-line" /></span>
+            <div>
+              <small>主数据边界</small><strong>外部人员独立建模</strong>
+              <em>不计正式编制，不进入薪酬、社保与福利</em>
+            </div>
+          </article>
+        </div>
+
+        <footer>
+          <ArtSvgIcon icon="ri:information-line" />
+          在任务激活和退场时，服务端会重新校验供应商合同、身份状态、必需控制项和访问权限；前端显示状态不构成绕过治理门禁的依据。
+        </footer>
+      </section>
+
+      <section class="contingent-page__workspace" aria-labelledby="contingent-workspace-title">
+        <header>
+          <div>
+            <small>OPERATING WORKSPACE</small>
+            <strong id="contingent-workspace-title">{{ activeTab.label }}</strong>
+            <span>{{ activeTab.description }}</span>
+          </div>
+          <span class="contingent-page__result">
+            <ArtSvgIcon :icon="activeTab.icon" />{{ tableTotal }} 条当前结果
           </span>
+        </header>
+        <HrEntityNavigation
+          v-model="activeEntity"
+          :items="navigationItems"
+          navigation-label="外部用工工作视图"
+          compact
+          @change="handleTabChange"
+        />
+        <div v-if="activeEntity === 'control' && focusedEngagement" class="contingent-page__focus">
+          <span><ArtSvgIcon icon="ri:focus-3-line" /></span>
+          <div>
+            <small>当前仅查看</small>
+            <strong
+              >{{ focusedEngagement.workerName }} · {{ focusedEngagement.serviceTitle }}</strong
+            >
+            <em>{{ focusedEngagement.engagementNo }}</em>
+          </div>
+          <ElButton text type="primary" @click="clearEngagementFocus">查看全部控制项</ElButton>
         </div>
-        <ElTag :type="overview.blockedCount ? 'danger' : 'success'" effect="light" round>
-          <ArtSvgIcon
-            :icon="overview.blockedCount ? 'ri:alarm-warning-line' : 'ri:shield-check-line'"
-          />
-          {{ overview.blockedCount ? `${overview.blockedCount} 项合规阻断` : '当前无合规阻断' }}
-        </ElTag>
-      </header>
+      </section>
 
-      <ol class="contingent-page__lifecycle" aria-label="外部用工治理链路">
-        <li v-for="(stage, index) in lifecycleStages" :key="stage.label" :class="stage.state">
-          <span class="contingent-page__stage-index">0{{ index + 1 }}</span>
-          <span class="contingent-page__stage-icon"><ArtSvgIcon :icon="stage.icon" /></span>
-          <div
-            ><strong>{{ stage.label }}</strong
-            ><small>{{ stage.description }}</small></div
-          >
-          <b>{{ stage.value }}</b>
-        </li>
-      </ol>
-
-      <div class="contingent-page__guardrails">
-        <article :class="overview.pendingControlCount ? 'is-warning' : 'is-success'">
-          <span><ArtSvgIcon icon="ri:shield-keyhole-line" /></span>
-          <div>
-            <small>准入控制</small><strong>{{ overview.pendingControlCount }} 项待完成</strong>
-            <em>身份、合同、保密、培训、门禁与账号</em>
-          </div>
-        </article>
-        <article :class="overview.endingSoonCount ? 'is-warning' : ''">
-          <span><ArtSvgIcon icon="ri:calendar-close-line" /></span>
-          <div>
-            <small>任务到期</small><strong>{{ overview.endingSoonCount }} 项 30 天内结束</strong>
-            <em>提前确认续期或启动退场</em>
-          </div>
-        </article>
-        <article :class="overview.accessExpiringCount ? 'is-danger' : 'is-success'">
-          <span><ArtSvgIcon icon="ri:key-2-line" /></span>
-          <div>
-            <small>访问权限</small
-            ><strong>{{ overview.accessExpiringCount }} 项 14 天内到期</strong>
-            <em>系统与现场权限不得晚于任务结束</em>
-          </div>
-        </article>
-        <article class="is-restricted">
-          <span><ArtSvgIcon icon="ri:git-branch-line" /></span>
-          <div>
-            <small>主数据边界</small><strong>外部人员独立建模</strong>
-            <em>不计正式编制，不进入薪酬、社保与福利</em>
-          </div>
-        </article>
-      </div>
-
-      <footer>
-        <ArtSvgIcon icon="ri:information-line" />
-        在任务激活和退场时，服务端会重新校验供应商合同、身份状态、必需控制项和访问权限；前端显示状态不构成绕过治理门禁的依据。
-      </footer>
-    </section>
-
-    <section class="contingent-page__workspace" aria-labelledby="contingent-workspace-title">
-      <header>
-        <div>
-          <small>OPERATING WORKSPACE</small>
-          <strong id="contingent-workspace-title">{{ activeTab.label }}</strong>
-          <span>{{ activeTab.description }}</span>
-        </div>
-        <span class="contingent-page__result">
-          <ArtSvgIcon :icon="activeTab.icon" />{{ tableTotal }} 条当前结果
-        </span>
-      </header>
-      <HrEntityNavigation
-        v-model="activeEntity"
-        :items="navigationItems"
-        navigation-label="外部用工工作视图"
-        compact
-        @change="handleTabChange"
+      <ArtTableQuery
+        :key="`${activeEntity}-${focusedEngagement?.id || 'all'}`"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
+        :table-props="{
+          rowKey: 'id',
+          tableLayout: 'fixed',
+          emptyText: activeTab.emptyTitle,
+          emptyDescription: activeTab.emptyDescription
+        }"
+        :on-success="handleTableSuccess"
+        focusable
       />
-      <div v-if="activeEntity === 'control' && focusedEngagement" class="contingent-page__focus">
-        <span><ArtSvgIcon icon="ri:focus-3-line" /></span>
-        <div>
-          <small>当前仅查看</small>
-          <strong>{{ focusedEngagement.workerName }} · {{ focusedEngagement.serviceTitle }}</strong>
-          <em>{{ focusedEngagement.engagementNo }}</em>
-        </div>
-        <ElButton text type="primary" @click="clearEngagementFocus">查看全部控制项</ElButton>
-      </div>
-    </section>
 
-    <ArtTableQuery
-      :key="`${activeEntity}-${focusedEngagement?.id || 'all'}`"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
-      :table-props="{
-        rowKey: 'id',
-        tableLayout: 'fixed',
-        emptyText: activeTab.emptyTitle,
-        emptyDescription: activeTab.emptyDescription
-      }"
-      :on-success="handleTableSuccess"
-      focusable
-    />
-
-    <ContingentWorkforceDialog ref="dialogRef" @success="handleDialogSuccess" />
-  </div>
+      <ContingentWorkforceDialog ref="dialogRef" @success="handleDialogSuccess" />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
@@ -146,6 +147,8 @@
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
+  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
@@ -369,11 +372,7 @@
     </ElTag>
   )
   const identity = (title?: string | null, subtitle?: string | null, extra?: string | null) => (
-    <div class="contingent-page__identity">
-      <strong>{title || '--'}</strong>
-      <small>{subtitle || '--'}</small>
-      {extra ? <em>{extra}</em> : null}
-    </div>
+    <HrTableIdentityCell primary={title} secondary={subtitle} tertiary={extra} />
   )
   const countBadge = (value: number, label: string, warning = false) => (
     <span class={['contingent-page__count', warning && value ? 'is-warning' : '']}>
@@ -560,7 +559,7 @@
     {
       prop: 'action',
       label: '操作',
-      width: 150,
+      width: 112,
       fixed: 'right',
       formatter: (row) => engagementActions(row as Api.Hr.ExternalEngagement)
     }
@@ -624,7 +623,7 @@
     {
       prop: 'action',
       label: '操作',
-      width: 130,
+      width: 112,
       fixed: 'right',
       formatter: (row) => workerActions(row as Api.Hr.ExternalWorker)
     }
@@ -695,7 +694,7 @@
     {
       prop: 'action',
       label: '操作',
-      width: 130,
+      width: 112,
       fixed: 'right',
       formatter: (row) => vendorActions(row as Api.Hr.ExternalVendor)
     }
@@ -759,7 +758,7 @@
     {
       prop: 'action',
       label: '操作',
-      width: 96,
+      width: 112,
       fixed: 'right',
       formatter: (row) => controlActions(row as Api.Hr.ExternalEngagementControl)
     }
@@ -819,7 +818,7 @@
         color: 'var(--el-color-danger)'
       })
     return (
-      <div class="contingent-page__actions">
+      <HrTableActions>
         <ArtButtonTable type="view" label="准入清单" onClick={() => focusControls(row)} />
         {actions.length ? (
           <ArtButtonMore
@@ -827,7 +826,7 @@
             onClick={(item: ButtonMoreItem) => void handleEngagementMore(item, row)}
           />
         ) : null}
-      </div>
+      </HrTableActions>
     )
   }
 

@@ -1,220 +1,219 @@
 <template>
-  <div
-    v-auth="'Hr:OrganizationPosition:View'"
-    class="organization-position-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="ORGANIZATION DIRECTORY"
-      title="组织岗位人员"
-      description="从系统组织逐级查看部门岗位与直接任职员工，统一核对部门、岗位和人员关系。"
-      icon="ri:organization-chart"
-      density="compact"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    />
+  <ArtPermissionGuard permission="Hr:OrganizationPosition:View">
+    <div class="organization-position-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="ORGANIZATION DIRECTORY"
+        title="组织岗位人员"
+        description="从系统组织逐级查看部门岗位与直接任职员工，统一核对部门、岗位和人员关系。"
+        icon="ri:organization-chart"
+        density="compact"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+      />
 
-    <div class="organization-position-page__workspace">
-      <ArtWorkspaceSplitter
-        primary-size="280px"
-        primary-min="250px"
-        primary-max="380px"
-        :breakpoint="920"
-        stacked-primary-size="360px"
-      >
-        <template #primary>
-          <ArtSectionCard
-            class="organization-position-page__organization-card"
-            title="组织"
-            :subtitle="`${flatOrganizations.length} 个可用节点`"
-            :loading="organizationState.loading"
-            :error="organizationState.error"
-            :empty="
-              !organizationState.loading &&
-              !organizationState.error &&
-              !organizationState.tree.length
-            "
-            empty-title="暂无可用组织"
-            empty-description="请先在系统管理 / 部门管理中维护并启用组织。"
-            :min-height="280"
-            @retry="loadOrganizations"
-          >
-            <template #actions>
-              <ArtIconButton
-                icon="ri:refresh-line"
-                label="刷新组织"
-                :loading="organizationState.loading"
-                @click="loadOrganizations"
-              />
-            </template>
+      <div class="organization-position-page__workspace">
+        <ArtWorkspaceSplitter
+          primary-size="280px"
+          primary-min="250px"
+          primary-max="380px"
+          :breakpoint="920"
+          stacked-primary-size="360px"
+        >
+          <template #primary>
+            <ArtSectionCard
+              class="organization-position-page__organization-card"
+              title="组织"
+              :subtitle="`${flatOrganizations.length} 个可用节点`"
+              :loading="organizationState.loading"
+              :error="organizationState.error"
+              :empty="
+                !organizationState.loading &&
+                !organizationState.error &&
+                !organizationState.tree.length
+              "
+              empty-title="暂无可用组织"
+              empty-description="请先在系统管理 / 部门管理中维护并启用组织。"
+              :min-height="280"
+              @retry="loadOrganizations"
+            >
+              <template #actions>
+                <ArtIconButton
+                  icon="ri:refresh-line"
+                  label="刷新组织"
+                  :loading="organizationState.loading"
+                  @click="loadOrganizations"
+                />
+              </template>
 
-            <div class="organization-position-page__navigator">
-              <ElInput
-                v-model="organizationState.keyword"
-                clearable
-                placeholder="搜索组织名称或编码"
-                aria-label="搜索组织"
-              >
-                <template #prefix><ArtSvgIcon icon="ri:search-line" /></template>
-              </ElInput>
-              <ElScrollbar class="organization-position-page__organization-scrollbar">
-                <ElTree
-                  ref="organizationTreeRef"
-                  :data="organizationState.tree"
-                  :props="organizationTreeProps"
-                  :filter-node-method="filterOrganizationNode"
-                  node-key="id"
-                  default-expand-all
-                  highlight-current
-                  :expand-on-click-node="false"
-                  aria-label="组织树"
-                  @node-click="handleOrganizationSelect"
+              <div class="organization-position-page__navigator">
+                <ElInput
+                  v-model="organizationState.keyword"
+                  clearable
+                  placeholder="搜索组织名称或编码"
+                  aria-label="搜索组织"
                 >
-                  <template #default="{ data: organization }">
-                    <div class="organization-position-page__organization-node">
-                      <span aria-hidden="true">
-                        <ArtSvgIcon :icon="getOrganizationIcon(organization.organizationType)" />
+                  <template #prefix><ArtSvgIcon icon="ri:search-line" /></template>
+                </ElInput>
+                <ElScrollbar class="organization-position-page__organization-scrollbar">
+                  <ElTree
+                    ref="organizationTreeRef"
+                    :data="organizationState.tree"
+                    :props="organizationTreeProps"
+                    :filter-node-method="filterOrganizationNode"
+                    node-key="id"
+                    default-expand-all
+                    highlight-current
+                    :expand-on-click-node="false"
+                    aria-label="组织树"
+                    @node-click="handleOrganizationSelect"
+                  >
+                    <template #default="{ data: organization }">
+                      <div class="organization-position-page__organization-node">
+                        <span aria-hidden="true">
+                          <ArtSvgIcon :icon="getOrganizationIcon(organization.organizationType)" />
+                        </span>
+                        <span>
+                          <strong :title="organization.organizationName">
+                            {{ organization.organizationName }}
+                          </strong>
+                          <small :title="organization.organizationCode" translate="no">
+                            {{ organization.organizationCode }}
+                          </small>
+                        </span>
+                        <ArtSvgIcon
+                          v-if="organization.id === organizationState.selectedId"
+                          icon="ri:check-line"
+                          aria-hidden="true"
+                        />
+                      </div>
+                    </template>
+                  </ElTree>
+                </ElScrollbar>
+              </div>
+            </ArtSectionCard>
+          </template>
+
+          <div class="organization-position-page__directory">
+            <ArtSectionCard
+              class="organization-position-page__position-card"
+              title="岗位"
+              :subtitle="positionSubtitle"
+              :loading="directoryState.loading"
+              :error="directoryState.error"
+              :empty="!directoryState.loading && !directoryState.error && !filteredPositions.length"
+              empty-title="当前组织暂无岗位"
+              empty-description="请先在 HR / 岗位管理中为当前组织新增并启用岗位。"
+              :min-height="280"
+              @retry="loadDirectory"
+            >
+              <template #actions>
+                <ElInput
+                  v-model="directoryState.positionKeyword"
+                  class="organization-position-page__position-search"
+                  clearable
+                  placeholder="搜索岗位"
+                  aria-label="搜索岗位"
+                >
+                  <template #prefix><ArtSvgIcon icon="ri:search-line" /></template>
+                </ElInput>
+              </template>
+
+              <ElScrollbar class="organization-position-page__position-scrollbar">
+                <ul class="organization-position-page__position-list" aria-label="当前组织岗位列表">
+                  <li
+                    v-for="position in filteredPositions"
+                    :key="position.id || position.positionCode"
+                  >
+                    <button
+                      type="button"
+                      :class="{ 'is-selected': position.id === directoryState.selectedPositionId }"
+                      :aria-pressed="position.id === directoryState.selectedPositionId"
+                      @click="handlePositionSelect(position)"
+                    >
+                      <span class="organization-position-page__position-icon" aria-hidden="true">
+                        <ArtSvgIcon icon="ri:briefcase-4-line" />
                       </span>
-                      <span>
-                        <strong :title="organization.organizationName">
-                          {{ organization.organizationName }}
-                        </strong>
-                        <small :title="organization.organizationCode" translate="no">
-                          {{ organization.organizationCode }}
+                      <span class="organization-position-page__position-identity">
+                        <strong :title="position.positionName">{{ position.positionName }}</strong>
+                        <small :title="position.positionCode" translate="no">
+                          {{ position.positionCode }}
                         </small>
                       </span>
-                      <ArtSvgIcon
-                        v-if="organization.id === organizationState.selectedId"
-                        icon="ri:check-line"
-                        aria-hidden="true"
-                      />
-                    </div>
-                  </template>
-                </ElTree>
+                      <span class="organization-position-page__position-count">
+                        {{ position.employeeCount ?? 0 }} 人
+                      </span>
+                    </button>
+                  </li>
+                </ul>
               </ElScrollbar>
-            </div>
-          </ArtSectionCard>
-        </template>
+            </ArtSectionCard>
 
-        <div class="organization-position-page__directory">
-          <ArtSectionCard
-            class="organization-position-page__position-card"
-            title="岗位"
-            :subtitle="positionSubtitle"
-            :loading="directoryState.loading"
-            :error="directoryState.error"
-            :empty="!directoryState.loading && !directoryState.error && !filteredPositions.length"
-            empty-title="当前组织暂无岗位"
-            empty-description="请先在 HR / 岗位管理中为当前组织新增并启用岗位。"
-            :min-height="280"
-            @retry="loadDirectory"
-          >
-            <template #actions>
-              <ElInput
-                v-model="directoryState.positionKeyword"
-                class="organization-position-page__position-search"
-                clearable
-                placeholder="搜索岗位"
-                aria-label="搜索岗位"
-              >
-                <template #prefix><ArtSvgIcon icon="ri:search-line" /></template>
-              </ElInput>
-            </template>
-
-            <ElScrollbar class="organization-position-page__position-scrollbar">
-              <ul class="organization-position-page__position-list" aria-label="当前组织岗位列表">
-                <li
-                  v-for="position in filteredPositions"
-                  :key="position.id || position.positionCode"
+            <ArtSectionCard
+              class="organization-position-page__employee-card"
+              title="员工"
+              :subtitle="employeeSubtitle"
+              :loading="directoryState.loading"
+              :error="directoryState.error"
+              :empty="!directoryState.loading && !directoryState.error && !filteredEmployees.length"
+              :empty-title="
+                directoryState.selectedPositionId ? '该岗位暂无直接任职员工' : '请先选择岗位'
+              "
+              :empty-description="
+                directoryState.selectedPositionId
+                  ? '可前往员工花名册调整员工所属组织或工作岗位。'
+                  : '从中间的岗位列表选择一个岗位后查看人员。'
+              "
+              :min-height="280"
+              @retry="loadDirectory"
+            >
+              <template #actions>
+                <ElInput
+                  v-model="directoryState.employeeKeyword"
+                  class="organization-position-page__employee-search"
+                  clearable
+                  placeholder="姓名或工号"
+                  aria-label="搜索员工姓名或工号"
                 >
-                  <button
-                    type="button"
-                    :class="{ 'is-selected': position.id === directoryState.selectedPositionId }"
-                    :aria-pressed="position.id === directoryState.selectedPositionId"
-                    @click="handlePositionSelect(position)"
-                  >
-                    <span class="organization-position-page__position-icon" aria-hidden="true">
-                      <ArtSvgIcon icon="ri:briefcase-4-line" />
-                    </span>
-                    <span class="organization-position-page__position-identity">
-                      <strong :title="position.positionName">{{ position.positionName }}</strong>
-                      <small :title="position.positionCode" translate="no">
-                        {{ position.positionCode }}
+                  <template #prefix><ArtSvgIcon icon="ri:search-line" /></template>
+                </ElInput>
+              </template>
+
+              <ElScrollbar class="organization-position-page__employee-scrollbar">
+                <ul class="organization-position-page__employee-list">
+                  <li v-for="employee in filteredEmployees" :key="employee.id">
+                    <ElAvatar
+                      :size="40"
+                      :src="employee.avatarUrl || undefined"
+                      :alt="`${employee.employeeName}的头像`"
+                    >
+                      {{ employee.employeeName.slice(0, 1) }}
+                    </ElAvatar>
+                    <div class="organization-position-page__employee-identity">
+                      <strong :title="employee.employeeName">{{ employee.employeeName }}</strong>
+                      <small>
+                        <span :title="employee.employeeNo" translate="no">{{
+                          employee.employeeNo
+                        }}</span>
+                        <i aria-hidden="true"></i>
+                        <span :title="employee.jobTitle || undefined">{{
+                          employee.jobTitle || '未设置职务'
+                        }}</span>
                       </small>
-                    </span>
-                    <span class="organization-position-page__position-count">
-                      {{ position.employeeCount ?? 0 }} 人
-                    </span>
-                  </button>
-                </li>
-              </ul>
-            </ElScrollbar>
-          </ArtSectionCard>
-
-          <ArtSectionCard
-            class="organization-position-page__employee-card"
-            title="员工"
-            :subtitle="employeeSubtitle"
-            :loading="directoryState.loading"
-            :error="directoryState.error"
-            :empty="!directoryState.loading && !directoryState.error && !filteredEmployees.length"
-            :empty-title="
-              directoryState.selectedPositionId ? '该岗位暂无直接任职员工' : '请先选择岗位'
-            "
-            :empty-description="
-              directoryState.selectedPositionId
-                ? '可前往员工花名册调整员工所属组织或工作岗位。'
-                : '从中间的岗位列表选择一个岗位后查看人员。'
-            "
-            :min-height="280"
-            @retry="loadDirectory"
-          >
-            <template #actions>
-              <ElInput
-                v-model="directoryState.employeeKeyword"
-                class="organization-position-page__employee-search"
-                clearable
-                placeholder="姓名或工号"
-                aria-label="搜索员工姓名或工号"
-              >
-                <template #prefix><ArtSvgIcon icon="ri:search-line" /></template>
-              </ElInput>
-            </template>
-
-            <ElScrollbar class="organization-position-page__employee-scrollbar">
-              <ul class="organization-position-page__employee-list">
-                <li v-for="employee in filteredEmployees" :key="employee.id">
-                  <ElAvatar
-                    :size="40"
-                    :src="employee.avatarUrl || undefined"
-                    :alt="`${employee.employeeName}的头像`"
-                  >
-                    {{ employee.employeeName.slice(0, 1) }}
-                  </ElAvatar>
-                  <div class="organization-position-page__employee-identity">
-                    <strong :title="employee.employeeName">{{ employee.employeeName }}</strong>
-                    <small>
-                      <span :title="employee.employeeNo" translate="no">{{
-                        employee.employeeNo
-                      }}</span>
-                      <i aria-hidden="true"></i>
-                      <span :title="employee.jobTitle || undefined">{{
-                        employee.jobTitle || '未设置职务'
-                      }}</span>
-                    </small>
-                  </div>
-                  <ArtDictDisplay
-                    dict-code="hrEmploymentStatus"
-                    :value="employee.employmentStatus"
-                    display="auto"
-                  />
-                </li>
-              </ul>
-            </ElScrollbar>
-          </ArtSectionCard>
-        </div>
-      </ArtWorkspaceSplitter>
+                    </div>
+                    <ArtDictDisplay
+                      dict-code="hrEmploymentStatus"
+                      :value="employee.employmentStatus"
+                      display="auto"
+                    />
+                  </li>
+                </ul>
+              </ElScrollbar>
+            </ArtSectionCard>
+          </div>
+        </ArtWorkspaceSplitter>
+      </div>
     </div>
-  </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="ts">

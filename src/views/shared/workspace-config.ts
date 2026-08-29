@@ -3,6 +3,8 @@ export type HrWorkspaceKey = 'personnelChange' | 'headcount' | 'talent' | 'recru
 export interface HrWorkspaceColumn {
   key: keyof Api.Hr.WorkspaceRecord | string
   label: string
+  secondaryKey?: keyof Api.Hr.WorkspaceRecord | string
+  tertiaryKey?: keyof Api.Hr.WorkspaceRecord | string
   minWidth?: number
   width?: number
   dictCode?: string
@@ -127,8 +129,12 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
         approvalBusinessType: 'hr_personnel_change',
         canEffect: true,
         columns: [
-          { key: 'changeNo', label: '异动单号', minWidth: 150 },
-          { key: 'employee.employeeName', label: '员工', minWidth: 120 },
+          {
+            key: 'employee.employeeName',
+            secondaryKey: 'changeNo',
+            label: '员工 / 异动单号',
+            minWidth: 190
+          },
           { key: 'changeType', label: '异动类型', width: 110, dictCode: 'hrPersonnelChangeType' },
           { key: 'effectiveDate', label: '生效日期', width: 120 },
           { key: 'status', label: '状态', width: 110, dictCode: 'hrApprovalStatus' },
@@ -166,8 +172,12 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
         label: '岗位编制',
         entity: 'headcount',
         columns: [
-          { key: 'organization.organizationName', label: '组织', minWidth: 160 },
-          { key: 'position.positionName', label: '岗位', minWidth: 150 },
+          {
+            key: 'position.positionName',
+            secondaryKey: 'organization.organizationName',
+            label: '岗位 / 组织',
+            minWidth: 200
+          },
           { key: 'approvedCount', label: '核定人数', width: 110 },
           { key: 'occupiedCount', label: '在岗人数', width: 110 },
           { key: 'vacancyCount', label: '编制缺口', width: 110 },
@@ -208,8 +218,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
         statusDict: 'hrTrainingPlanStatus',
         statusKey: 'status',
         columns: [
-          { key: 'planCode', label: '计划编码', width: 140 },
-          { key: 'planName', label: '计划名称', minWidth: 180 },
+          { key: 'planName', secondaryKey: 'planCode', label: '计划 / 编码', minWidth: 200 },
           { key: 'trainingType', label: '培训类型', width: 120, dictCode: 'hrTrainingType' },
           { key: 'startDate', label: '开始日期', width: 120 },
           { key: 'budget', label: '预算', width: 110 },
@@ -237,8 +246,12 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
         statusDict: 'hrTrainingEnrollmentStatus',
         statusKey: 'status',
         columns: [
-          { key: 'plan.planName', label: '培训计划', minWidth: 160 },
-          { key: 'employee.employeeName', label: '员工', minWidth: 120 },
+          {
+            key: 'employee.employeeName',
+            secondaryKey: 'plan.planName',
+            label: '员工 / 培训计划',
+            minWidth: 200
+          },
           { key: 'status', label: '参与状态', width: 110, dictCode: 'hrTrainingEnrollmentStatus' },
           { key: 'score', label: '成绩', width: 90 },
           { key: 'certificateNo', label: '证书编号', minWidth: 140 }
@@ -268,8 +281,12 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
         description: '统一维护组织能力项与分类口径',
         entity: 'competency',
         columns: [
-          { key: 'competencyCode', label: '能力编码', width: 140 },
-          { key: 'competencyName', label: '能力名称', minWidth: 160 },
+          {
+            key: 'competencyName',
+            secondaryKey: 'competencyCode',
+            label: '能力 / 编码',
+            minWidth: 190
+          },
           { key: 'category', label: '能力类别', width: 120, dictCode: 'hrCompetencyCategory' },
           { key: 'enabled', label: '启用', width: 90, dictCode: 'commonBoolean' },
           { key: 'description', label: '说明', minWidth: 220 }
@@ -290,8 +307,12 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
         description: '配置岗位要求等级与能力权重',
         entity: 'positionCompetency',
         columns: [
-          { key: 'position.positionName', label: '岗位', minWidth: 150 },
-          { key: 'competency.competencyName', label: '能力项', minWidth: 160 },
+          {
+            key: 'position.positionName',
+            secondaryKey: 'competency.competencyName',
+            label: '岗位 / 能力项',
+            minWidth: 210
+          },
           { key: 'requiredLevel', label: '要求等级', width: 120, dictCode: 'hrCompetencyLevel' },
           { key: 'weight', label: '权重', width: 90, suffix: '%' }
         ],
@@ -317,8 +338,12 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
         description: '沉淀员工评估等级与事实依据',
         entity: 'employeeCompetency',
         columns: [
-          { key: 'employee.employeeName', label: '员工', minWidth: 120 },
-          { key: 'competency.competencyName', label: '能力项', minWidth: 160 },
+          {
+            key: 'employee.employeeName',
+            secondaryKey: 'competency.competencyName',
+            label: '员工 / 能力项',
+            minWidth: 200
+          },
           { key: 'currentLevel', label: '当前等级', width: 120, dictCode: 'hrCompetencyLevel' },
           { key: 'assessedDate', label: '评估日期', width: 120 },
           { key: 'evidence', label: '评估依据', minWidth: 200 }
@@ -359,9 +384,13 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
         approvalBusinessType: 'hr_recruitment_requisition',
         canEffect: true,
         columns: [
-          { key: 'requisitionNo', label: '需求编号', width: 150 },
-          { key: 'organization.organizationName', label: '组织', minWidth: 140 },
-          { key: 'position.positionName', label: '岗位', minWidth: 140 },
+          {
+            key: 'position.positionName',
+            secondaryKey: 'requisitionNo',
+            tertiaryKey: 'organization.organizationName',
+            label: '岗位 / 需求编号',
+            minWidth: 210
+          },
           { key: 'openingCount', label: '需求人数', width: 100 },
           { key: 'hiredCount', label: '已录用', width: 90 },
           { key: 'expectedOnboardDate', label: '期望到岗', width: 120 },
@@ -389,8 +418,12 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
         statusDict: 'hrCandidateStage',
         statusKey: 'stage',
         columns: [
-          { key: 'candidateName', label: '候选人', minWidth: 120 },
-          { key: 'requisition.requisitionNo', label: '招聘需求', minWidth: 150 },
+          {
+            key: 'candidateName',
+            secondaryKey: 'requisition.requisitionNo',
+            label: '候选人 / 招聘需求',
+            minWidth: 200
+          },
           { key: 'phone', label: '联系电话', width: 130 },
           { key: 'source', label: '来源', width: 110, dictCode: 'hrCandidateSource' },
           { key: 'stage', label: '阶段', width: 110, dictCode: 'hrCandidateStage' },

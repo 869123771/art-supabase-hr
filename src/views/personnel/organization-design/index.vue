@@ -1,136 +1,136 @@
 <template>
-  <div
-    v-auth="'Hr:OrganizationDesign:View'"
-    class="org-design-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="ORGANIZATION DESIGN & CHANGE GOVERNANCE"
-      title="组织变革方案"
-      description="在不扰动当前组织主数据的前提下，设计新增、更名、迁移与停用方案，固化员工、岗位、招聘、权限和政策范围影响，再经评审批准后移交实施。"
-      icon="ri:organization-chart"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-      ><template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template
-    ></BusinessWorkspaceHeader>
+  <ArtPermissionGuard permission="Hr:OrganizationDesign:View">
+    <div class="org-design-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="ORGANIZATION DESIGN & CHANGE GOVERNANCE"
+        title="组织变革方案"
+        description="在不扰动当前组织主数据的前提下，设计新增、更名、迁移与停用方案，固化员工、岗位、招聘、权限和政策范围影响，再经评审批准后移交实施。"
+        icon="ri:organization-chart"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+        ><template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template
+      ></BusinessWorkspaceHeader>
 
-    <section class="org-design-page__command" aria-labelledby="org-design-command-title">
-      <header>
-        <div
-          ><span class="org-design-page__command-icon"><ArtSvgIcon icon="ri:route-line" /></span
-          ><span>
-            <small>SAFE CHANGE PATH</small
-            ><strong id="org-design-command-title">先模拟影响，再批准移交</strong>
-            <em>情景方案与组织主数据执行分层，避免结构调整静默改变权限与历史统计口径</em>
-          </span></div
-        >
-        <ElTag :type="overview.highRiskCount ? 'danger' : 'success'" effect="light" round>
-          <ArtSvgIcon
-            :icon="overview.highRiskCount ? 'ri:alarm-warning-line' : 'ri:shield-check-line'"
-          />
-          {{
-            overview.highRiskCount ? `${overview.highRiskCount} 个高风险方案` : '当前无高风险待办'
-          }}
-        </ElTag>
-      </header>
-      <ol class="org-design-page__lifecycle" aria-label="组织变革治理链路">
-        <li v-for="(stage, index) in lifecycleStages" :key="stage.label" :class="stage.state">
-          <span class="org-design-page__stage-index">0{{ index + 1 }}</span
-          ><span class="org-design-page__stage-icon"><ArtSvgIcon :icon="stage.icon" /></span>
+      <section class="org-design-page__command" aria-labelledby="org-design-command-title">
+        <header>
           <div
-            ><strong>{{ stage.label }}</strong
-            ><small>{{ stage.description }}</small></div
-          ><b>{{ stage.value }}</b>
-        </li>
-      </ol>
-      <div class="org-design-page__guardrails">
-        <article class="is-success"
-          ><span><ArtSvgIcon icon="ri:camera-lens-line" /></span
-          ><div
-            ><small>影响快照</small
-            ><strong>{{ overview.impactedEmployeeCount }} 名员工纳入评估</strong
-            ><em>提交时固化，不随界面实时漂移</em></div
-          ></article
+            ><span class="org-design-page__command-icon"><ArtSvgIcon icon="ri:route-line" /></span
+            ><span>
+              <small>SAFE CHANGE PATH</small
+              ><strong id="org-design-command-title">先模拟影响，再批准移交</strong>
+              <em>情景方案与组织主数据执行分层，避免结构调整静默改变权限与历史统计口径</em>
+            </span></div
+          >
+          <ElTag :type="overview.highRiskCount ? 'danger' : 'success'" effect="light" round>
+            <ArtSvgIcon
+              :icon="overview.highRiskCount ? 'ri:alarm-warning-line' : 'ri:shield-check-line'"
+            />
+            {{
+              overview.highRiskCount ? `${overview.highRiskCount} 个高风险方案` : '当前无高风险待办'
+            }}
+          </ElTag>
+        </header>
+        <ol class="org-design-page__lifecycle" aria-label="组织变革治理链路">
+          <li v-for="(stage, index) in lifecycleStages" :key="stage.label" :class="stage.state">
+            <span class="org-design-page__stage-index">0{{ index + 1 }}</span
+            ><span class="org-design-page__stage-icon"><ArtSvgIcon :icon="stage.icon" /></span>
+            <div
+              ><strong>{{ stage.label }}</strong
+              ><small>{{ stage.description }}</small></div
+            ><b>{{ stage.value }}</b>
+          </li>
+        </ol>
+        <div class="org-design-page__guardrails">
+          <article class="is-success"
+            ><span><ArtSvgIcon icon="ri:camera-lens-line" /></span
+            ><div
+              ><small>影响快照</small
+              ><strong>{{ overview.impactedEmployeeCount }} 名员工纳入评估</strong
+              ><em>提交时固化，不随界面实时漂移</em></div
+            ></article
+          >
+          <article :class="overview.impactedSecurityUserCount ? 'is-danger' : 'is-success'"
+            ><span><ArtSvgIcon icon="ri:key-2-line" /></span
+            ><div
+              ><small>权限边界</small
+              ><strong>{{ overview.impactedSecurityUserCount }} 个账号受影响</strong
+              ><em>组织范围可能改变数据访问权</em></div
+            ></article
+          >
+          <article class="is-restricted"
+            ><span><ArtSvgIcon icon="ri:database-2-line" /></span
+            ><div
+              ><small>主数据隔离</small><strong>方案不直接执行</strong
+              ><em>批准后移交平台组织管理员</em></div
+            ></article
+          >
+          <article class="is-restricted"
+            ><span><ArtSvgIcon icon="ri:history-line" /></span
+            ><div
+              ><small>历史口径</small><strong>保留原组织引用</strong
+              ><em>不删除被业务记录引用的节点</em></div
+            ></article
+          >
+        </div>
+        <footer
+          ><ArtSvgIcon
+            icon="ri:information-line"
+          />组织变革方案只形成受控执行包，不会自动修改组织、员工、岗位、角色或用户；实施窗口仍需由组织主数据管理员执行并复核。</footer
         >
-        <article :class="overview.impactedSecurityUserCount ? 'is-danger' : 'is-success'"
-          ><span><ArtSvgIcon icon="ri:key-2-line" /></span
-          ><div
-            ><small>权限边界</small
-            ><strong>{{ overview.impactedSecurityUserCount }} 个账号受影响</strong
-            ><em>组织范围可能改变数据访问权</em></div
-          ></article
-        >
-        <article class="is-restricted"
-          ><span><ArtSvgIcon icon="ri:database-2-line" /></span
-          ><div
-            ><small>主数据隔离</small><strong>方案不直接执行</strong
-            ><em>批准后移交平台组织管理员</em></div
-          ></article
-        >
-        <article class="is-restricted"
-          ><span><ArtSvgIcon icon="ri:history-line" /></span
-          ><div
-            ><small>历史口径</small><strong>保留原组织引用</strong
-            ><em>不删除被业务记录引用的节点</em></div
-          ></article
-        >
-      </div>
-      <footer
-        ><ArtSvgIcon
-          icon="ri:information-line"
-        />组织变革方案只形成受控执行包，不会自动修改组织、员工、岗位、角色或用户；实施窗口仍需由组织主数据管理员执行并复核。</footer
-      >
-    </section>
+      </section>
 
-    <section class="org-design-page__workspace" aria-labelledby="org-design-workspace-title">
-      <header
-        ><div
-          ><small>DESIGN WORKSPACE</small
-          ><strong id="org-design-workspace-title">{{ activeTab.label }}</strong
-          ><span>{{ activeTab.description }}</span></div
-        ><span class="org-design-page__result"
-          ><ArtSvgIcon :icon="activeTab.icon" />{{ tableTotal }} 条当前结果</span
-        ></header
-      >
-      <HrEntityNavigation
-        v-model="activeEntity"
-        :items="navigationItems"
-        navigation-label="组织变革工作视图"
-        compact
-        @change="handleTabChange"
+      <section class="org-design-page__workspace" aria-labelledby="org-design-workspace-title">
+        <header
+          ><div
+            ><small>DESIGN WORKSPACE</small
+            ><strong id="org-design-workspace-title">{{ activeTab.label }}</strong
+            ><span>{{ activeTab.description }}</span></div
+          ><span class="org-design-page__result"
+            ><ArtSvgIcon :icon="activeTab.icon" />{{ tableTotal }} 条当前结果</span
+          ></header
+        >
+        <HrEntityNavigation
+          v-model="activeEntity"
+          :items="navigationItems"
+          navigation-label="组织变革工作视图"
+          compact
+          @change="handleTabChange"
+        />
+        <div v-if="activeEntity === 'change' && focusedScenario" class="org-design-page__focus">
+          <span><ArtSvgIcon icon="ri:focus-3-line" /></span
+          ><div
+            ><small>当前方案变更包</small><strong>{{ focusedScenario.scenarioName }}</strong
+            ><em
+              >{{ focusedScenario.scenarioCode }} · 计划
+              {{ focusedScenario.effectiveDate }} 生效</em
+            ></div
+          >
+          <ElButton text type="primary" @click="clearScenarioFocus">查看全部变更项</ElButton>
+        </div>
+      </section>
+
+      <ArtTableQuery
+        :key="`${activeEntity}-${focusedScenario?.id || 'all'}`"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
+        :table-props="{
+          rowKey: 'id',
+          tableLayout: 'fixed',
+          emptyText: activeTab.emptyTitle,
+          emptyDescription: activeTab.emptyDescription
+        }"
+        :on-success="handleTableSuccess"
+        focusable
       />
-      <div v-if="activeEntity === 'change' && focusedScenario" class="org-design-page__focus">
-        <span><ArtSvgIcon icon="ri:focus-3-line" /></span
-        ><div
-          ><small>当前方案变更包</small><strong>{{ focusedScenario.scenarioName }}</strong
-          ><em
-            >{{ focusedScenario.scenarioCode }} · 计划 {{ focusedScenario.effectiveDate }} 生效</em
-          ></div
-        >
-        <ElButton text type="primary" @click="clearScenarioFocus">查看全部变更项</ElButton>
-      </div>
-    </section>
-
-    <ArtTableQuery
-      :key="`${activeEntity}-${focusedScenario?.id || 'all'}`"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
-      :table-props="{
-        rowKey: 'id',
-        tableLayout: 'fixed',
-        emptyText: activeTab.emptyTitle,
-        emptyDescription: activeTab.emptyDescription
-      }"
-      :on-success="handleTableSuccess"
-      focusable
-    />
-    <OrganizationDesignDialog ref="dialogRef" @success="handleDialogSuccess" />
-  </div>
+      <OrganizationDesignDialog ref="dialogRef" @success="handleDialogSuccess" />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
@@ -143,6 +143,7 @@
     ArtTableQueryProps
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
+  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
@@ -321,11 +322,7 @@
     )
   }
   const identity = (title?: string | null, subtitle?: string | null, extra?: string | null) => (
-    <div class="org-design-page__identity">
-      <strong>{title || '--'}</strong>
-      <small>{subtitle || '--'}</small>
-      {extra ? <em>{extra}</em> : null}
-    </div>
+    <HrTableIdentityCell primary={title} secondary={subtitle} tertiary={extra} />
   )
   const impact = (value: number | undefined, label: string, risk = false) => (
     <span class={['org-design-page__impact', risk && (value ?? 0) > 0 ? 'is-risk' : '']}>
@@ -453,7 +450,7 @@
     {
       prop: 'action',
       label: '操作',
-      width: 126,
+      width: 112,
       fixed: 'right',
       formatter: (row) => scenarioActions(row as Api.Hr.OrganizationDesignScenario)
     }
@@ -509,7 +506,7 @@
     {
       prop: 'action',
       label: '操作',
-      width: 105,
+      width: 112,
       fixed: 'right',
       formatter: (row) => changeActions(row as Api.Hr.OrganizationDesignChange)
     }

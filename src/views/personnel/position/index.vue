@@ -1,91 +1,93 @@
 <template>
-  <div v-auth="'Hr:Position:View'" class="position-page business-workspace-page art-full-height">
-    <BusinessWorkspaceHeader
-      eyebrow="POSITION CATALOG"
-      title="岗位管理"
-      description="按组织维护具体编制岗位；每个岗位关联标准职务、职级与任职人数规则。"
-      icon="ri:briefcase-4-line"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions>
-        <BusinessTableWorkspaceActions :table="tableQueryRef" />
-      </template>
-    </BusinessWorkspaceHeader>
-
-    <div class="position-page__workspace">
-      <ArtWorkspaceSplitter :breakpoint="1200" narrow-mode="hide">
-        <template #primary>
-          <aside v-if="isDesktopOrganizationLayout" class="position-page__organization-panel">
-            <OrganizationScopeFilter
-              scope-type="position"
-              :data="organizationTree"
-              :loading="organizationFilterLoading"
-              :selected-key="selectedOrganizationKey"
-              :include-descendants="includeDescendantOrganizations"
-              :global-scope="isAllTenants"
-              @select="handleOrganizationSelect"
-              @refresh="loadOrganizationTree"
-              @update:include-descendants="handleIncludeDescendantsChange"
-            />
-          </aside>
+  <ArtPermissionGuard permission="Hr:Position:View">
+    <div class="position-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="POSITION CATALOG"
+        title="岗位管理"
+        description="按组织维护具体编制岗位；每个岗位关联标准职务、职级与任职人数规则。"
+        icon="ri:briefcase-4-line"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
+      >
+        <template #actions>
+          <BusinessTableWorkspaceActions :table="tableQueryRef" />
         </template>
+      </BusinessWorkspaceHeader>
 
-        <div class="position-page__table-workspace">
-          <section
-            v-if="!isDesktopOrganizationLayout"
-            class="position-page__mobile-scope art-card-xs"
-          >
-            <span aria-hidden="true"><ArtSvgIcon icon="ri:node-tree" /></span>
-            <div>
-              <small>当前组织范围</small>
-              <strong>{{ selectedOrganizationLabel }}</strong>
-            </div>
-            <ElButton type="primary" plain @click="openOrganizationDrawer">
-              <ArtSvgIcon icon="ri:filter-3-line" />组织筛选
-            </ElButton>
-          </section>
+      <div class="position-page__workspace">
+        <ArtWorkspaceSplitter :breakpoint="1200" narrow-mode="hide">
+          <template #primary>
+            <aside v-if="isDesktopOrganizationLayout" class="position-page__organization-panel">
+              <OrganizationScopeFilter
+                scope-type="position"
+                :data="organizationTree"
+                :loading="organizationFilterLoading"
+                :selected-key="selectedOrganizationKey"
+                :include-descendants="includeDescendantOrganizations"
+                :global-scope="isAllTenants"
+                @select="handleOrganizationSelect"
+                @refresh="loadOrganizationTree"
+                @update:include-descendants="handleIncludeDescendantsChange"
+              />
+            </aside>
+          </template>
 
-          <ArtTableQuery
-            ref="tableQueryRef"
-            v-model="tableState.searchQuery"
-            :search-items="searchItems"
-            :api-fn="fetchTableData"
-            :columns-factory="columnsFactory"
-            :header-actions="headerActions"
-            header-actions-placement="workspace"
-            :search-bar-props="{ span: 8, labelWidth: 72, showExpand: false }"
-            :table-props="{
-              rowKey: 'id',
-              tableLayout: 'fixed',
-              emptyText: '暂无岗位',
-              emptyDescription: tableEmptyDescription
-            }"
-            :on-success="handleTableSuccess"
-            focusable
-            focus-scope-selector=".position-page__workspace"
-          />
-        </div>
-      </ArtWorkspaceSplitter>
+          <div class="position-page__table-workspace">
+            <section
+              v-if="!isDesktopOrganizationLayout"
+              class="position-page__mobile-scope art-card-xs"
+            >
+              <span aria-hidden="true"><ArtSvgIcon icon="ri:node-tree" /></span>
+              <div>
+                <small>当前组织范围</small>
+                <strong>{{ selectedOrganizationLabel }}</strong>
+              </div>
+              <ElButton type="primary" plain @click="openOrganizationDrawer">
+                <ArtSvgIcon icon="ri:filter-3-line" />组织筛选
+              </ElButton>
+            </section>
+
+            <ArtTableQuery
+              ref="tableQueryRef"
+              v-model="tableState.searchQuery"
+              :search-items="searchItems"
+              :api-fn="fetchTableData"
+              :columns-factory="columnsFactory"
+              :header-actions="headerActions"
+              header-actions-placement="workspace"
+              :search-bar-props="{ span: 8, labelWidth: 72, showExpand: false }"
+              :table-props="{
+                rowKey: 'id',
+                tableLayout: 'fixed',
+                emptyText: '暂无岗位',
+                emptyDescription: tableEmptyDescription
+              }"
+              :on-success="handleTableSuccess"
+              focusable
+              focus-scope-selector=".position-page__workspace"
+            />
+          </div>
+        </ArtWorkspaceSplitter>
+      </div>
+
+      <ArtDrawer ref="organizationDrawerRef">
+        <OrganizationScopeFilter
+          scope-type="position"
+          class="position-page__drawer-filter"
+          :data="organizationTree"
+          :loading="organizationFilterLoading"
+          :selected-key="selectedOrganizationKey"
+          :include-descendants="includeDescendantOrganizations"
+          :global-scope="isAllTenants"
+          @select="handleOrganizationSelect"
+          @refresh="loadOrganizationTree"
+          @update:include-descendants="handleIncludeDescendantsChange"
+        />
+      </ArtDrawer>
+
+      <PositionDialog ref="dialogRef" @success="handleSaveSuccess" />
     </div>
-
-    <ArtDrawer ref="organizationDrawerRef">
-      <OrganizationScopeFilter
-        scope-type="position"
-        class="position-page__drawer-filter"
-        :data="organizationTree"
-        :loading="organizationFilterLoading"
-        :selected-key="selectedOrganizationKey"
-        :include-descendants="includeDescendantOrganizations"
-        :global-scope="isAllTenants"
-        @select="handleOrganizationSelect"
-        @refresh="loadOrganizationTree"
-        @update:include-descendants="handleIncludeDescendantsChange"
-      />
-    </ArtDrawer>
-
-    <PositionDialog ref="dialogRef" @success="handleSaveSuccess" />
-  </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
@@ -99,6 +101,7 @@
     ArtTableQueryProps
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtDrawer from '@/components/core/drawers/art-drawer/index.vue'
   import type { ArtDrawerExpose } from '@/components/core/drawers/art-drawer/types'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
@@ -281,7 +284,7 @@
     {
       prop: 'grade.gradeName',
       label: '职级',
-      width: 120,
+      width: 112,
       showOverflowTooltip: true,
       formatter: (row) => row.grade?.gradeName ?? '—'
     },
@@ -327,7 +330,7 @@
       width: 120,
       fixed: 'right',
       formatter: (row) => (
-        <div class="position-page__actions">
+        <HrTableActions>
           <ArtButtonTable
             type="edit"
             permission="Hr:Position:Edit"
@@ -340,7 +343,7 @@
             label={Number(row.employeeCount ?? 0) > 0 ? '岗位已有在岗人员，不能删除' : '删除'}
             onClick={() => handleDelete(row)}
           />
-        </div>
+        </HrTableActions>
       )
     }
   ]

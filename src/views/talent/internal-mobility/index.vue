@@ -1,150 +1,152 @@
 <template>
-  <div
-    v-auth="'Hr:InternalMobility:View'"
-    class="mobility-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="INTERNAL TALENT MARKETPLACE"
-      title="内部人才市场"
-      description="统一发布内部岗位、轮岗、项目与短期任务，让员工主动申请、HR 结构化评审，并将永久岗位录用安全移交至正式人事异动。"
-      icon="ri:compass-3-line"
-      :tags="workspaceTags"
-      :metrics="workspaceMetrics"
-    >
-      <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
-    </BusinessWorkspaceHeader>
-
-    <section class="mobility-page__command" aria-labelledby="mobility-command-title">
-      <header>
-        <div>
-          <span class="mobility-page__command-icon"><ArtSvgIcon icon="ri:route-line" /></span>
-          <span>
-            <small>CONTROLLED MOBILITY PATH</small>
-            <strong id="mobility-command-title">开放机会，公平评估，受控转岗</strong>
-            <em>把内部人才流动与外部招聘、继任梯队和正式任职数据分层治理</em>
-          </span>
-        </div>
-        <ElTag :type="overview.closingSoonCount ? 'warning' : 'success'" effect="light" round>
-          <ArtSvgIcon
-            :icon="overview.closingSoonCount ? 'ri:timer-line' : 'ri:shield-check-line'"
-          />
-          {{
-            overview.closingSoonCount
-              ? `${overview.closingSoonCount} 个机会 7 天内截止`
-              : '申请窗口运行正常'
-          }}
-        </ElTag>
-      </header>
-
-      <ol class="mobility-page__lifecycle" aria-label="内部人才流动链路">
-        <li v-for="(stage, index) in lifecycleStages" :key="stage.label" :class="stage.state">
-          <span class="mobility-page__stage-index">0{{ index + 1 }}</span>
-          <span class="mobility-page__stage-icon"><ArtSvgIcon :icon="stage.icon" /></span>
-          <div
-            ><strong>{{ stage.label }}</strong
-            ><small>{{ stage.description }}</small></div
-          >
-          <b>{{ stage.value }}</b>
-        </li>
-      </ol>
-
-      <div class="mobility-page__guardrails">
-        <article>
-          <span><ArtSvgIcon icon="ri:eye-2-line" /></span>
-          <div
-            ><small>机会可见</small><strong>员工自主发现</strong
-            ><em>草稿与取消记录不对员工展示</em></div
-          >
-        </article>
-        <article>
-          <span><ArtSvgIcon icon="ri:scale-line" /></span>
-          <div
-            ><small>公平评估</small><strong>分数与依据留痕</strong
-            ><em>候选、录用均受容量约束</em></div
-          >
-        </article>
-        <article>
-          <span><ArtSvgIcon icon="ri:lock-2-line" /></span>
-          <div
-            ><small>申请隐私</small><strong>员工只看本人记录</strong
-            ><em>评审信息仅授权 HR 可见</em></div
-          >
-        </article>
-        <article class="is-restricted">
-          <span><ArtSvgIcon icon="ri:git-pull-request-line" /></span>
-          <div
-            ><small>任职边界</small><strong>接受不等于生效</strong
-            ><em>永久机会转人事异动草稿</em></div
-          >
-        </article>
-      </div>
-      <footer>
-        <ArtSvgIcon icon="ri:information-line" />
-        轮岗、项目和短期任务保留为临时机会记录；只有永久岗位录用可生成正式人事异动，且仍需按异动流程审批与生效。
-      </footer>
-    </section>
-
-    <section class="mobility-page__workspace" aria-labelledby="mobility-workspace-title">
-      <header>
-        <div>
-          <small>TALENT MARKETPLACE WORKSPACE</small>
-          <strong id="mobility-workspace-title">{{ activeTab.label }}</strong>
-          <span>{{ activeTab.description }}</span>
-        </div>
-        <span class="mobility-page__result"
-          ><ArtSvgIcon :icon="activeTab.icon" />{{ tableTotal }} 条当前结果</span
-        >
-      </header>
-      <HrEntityNavigation
-        v-model="activeEntity"
-        :items="navigationItems"
-        navigation-label="内部人才市场工作视图"
-        compact
-        @change="handleTabChange"
-      />
-      <div v-if="activeEntity === 'application' && focusedOpportunity" class="mobility-page__focus">
-        <span><ArtSvgIcon icon="ri:focus-3-line" /></span>
-        <div>
-          <small>当前机会申请池</small>
-          <strong>{{ focusedOpportunity.opportunityTitle }}</strong>
-          <em
-            >{{ focusedOpportunity.opportunityCode }} ·
-            {{ focusedOpportunity.organizationName }}</em
-          >
-        </div>
-        <ElButton text type="primary" @click="clearOpportunityFocus">查看全部申请</ElButton>
-      </div>
-      <div
-        v-if="!overview.manageAccess && !overview.myEmployeeId"
-        class="mobility-page__profile-note"
+  <ArtPermissionGuard permission="Hr:InternalMobility:View">
+    <div class="mobility-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="INTERNAL TALENT MARKETPLACE"
+        title="内部人才市场"
+        description="统一发布内部岗位、轮岗、项目与短期任务，让员工主动申请、HR 结构化评审，并将永久岗位录用安全移交至正式人事异动。"
+        icon="ri:compass-3-line"
+        :tags="workspaceTags"
+        :metrics="workspaceMetrics"
       >
-        <ArtSvgIcon icon="ri:user-settings-line" />
-        当前账号尚未关联员工档案，可浏览已开放机会；关联后才能提交本人申请。
-      </div>
-    </section>
+        <template #actions><BusinessTableWorkspaceActions :table="tableQueryRef" /></template>
+      </BusinessWorkspaceHeader>
 
-    <ArtTableQuery
-      :key="`${activeEntity}-${focusedOpportunity?.id || 'all'}`"
-      ref="tableQueryRef"
-      v-model="tableState.searchQuery"
-      :search-items="searchItems"
-      :api-fn="fetchTableData"
-      :columns-factory="columnsFactory"
-      :header-actions="headerActions"
-      header-actions-placement="workspace"
-      :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
-      :table-props="{
-        rowKey: 'id',
-        tableLayout: 'fixed',
-        emptyText: activeTab.emptyTitle,
-        emptyDescription: activeTab.emptyDescription
-      }"
-      :on-success="handleTableSuccess"
-      focusable
-    />
+      <section class="mobility-page__command" aria-labelledby="mobility-command-title">
+        <header>
+          <div>
+            <span class="mobility-page__command-icon"><ArtSvgIcon icon="ri:route-line" /></span>
+            <span>
+              <small>CONTROLLED MOBILITY PATH</small>
+              <strong id="mobility-command-title">开放机会，公平评估，受控转岗</strong>
+              <em>把内部人才流动与外部招聘、继任梯队和正式任职数据分层治理</em>
+            </span>
+          </div>
+          <ElTag :type="overview.closingSoonCount ? 'warning' : 'success'" effect="light" round>
+            <ArtSvgIcon
+              :icon="overview.closingSoonCount ? 'ri:timer-line' : 'ri:shield-check-line'"
+            />
+            {{
+              overview.closingSoonCount
+                ? `${overview.closingSoonCount} 个机会 7 天内截止`
+                : '申请窗口运行正常'
+            }}
+          </ElTag>
+        </header>
 
-    <InternalMobilityDialog ref="dialogRef" @success="handleDialogSuccess" />
-  </div>
+        <ol class="mobility-page__lifecycle" aria-label="内部人才流动链路">
+          <li v-for="(stage, index) in lifecycleStages" :key="stage.label" :class="stage.state">
+            <span class="mobility-page__stage-index">0{{ index + 1 }}</span>
+            <span class="mobility-page__stage-icon"><ArtSvgIcon :icon="stage.icon" /></span>
+            <div
+              ><strong>{{ stage.label }}</strong
+              ><small>{{ stage.description }}</small></div
+            >
+            <b>{{ stage.value }}</b>
+          </li>
+        </ol>
+
+        <div class="mobility-page__guardrails">
+          <article>
+            <span><ArtSvgIcon icon="ri:eye-2-line" /></span>
+            <div
+              ><small>机会可见</small><strong>员工自主发现</strong
+              ><em>草稿与取消记录不对员工展示</em></div
+            >
+          </article>
+          <article>
+            <span><ArtSvgIcon icon="ri:scale-line" /></span>
+            <div
+              ><small>公平评估</small><strong>分数与依据留痕</strong
+              ><em>候选、录用均受容量约束</em></div
+            >
+          </article>
+          <article>
+            <span><ArtSvgIcon icon="ri:lock-2-line" /></span>
+            <div
+              ><small>申请隐私</small><strong>员工只看本人记录</strong
+              ><em>评审信息仅授权 HR 可见</em></div
+            >
+          </article>
+          <article class="is-restricted">
+            <span><ArtSvgIcon icon="ri:git-pull-request-line" /></span>
+            <div
+              ><small>任职边界</small><strong>接受不等于生效</strong
+              ><em>永久机会转人事异动草稿</em></div
+            >
+          </article>
+        </div>
+        <footer>
+          <ArtSvgIcon icon="ri:information-line" />
+          轮岗、项目和短期任务保留为临时机会记录；只有永久岗位录用可生成正式人事异动，且仍需按异动流程审批与生效。
+        </footer>
+      </section>
+
+      <section class="mobility-page__workspace" aria-labelledby="mobility-workspace-title">
+        <header>
+          <div>
+            <small>TALENT MARKETPLACE WORKSPACE</small>
+            <strong id="mobility-workspace-title">{{ activeTab.label }}</strong>
+            <span>{{ activeTab.description }}</span>
+          </div>
+          <span class="mobility-page__result"
+            ><ArtSvgIcon :icon="activeTab.icon" />{{ tableTotal }} 条当前结果</span
+          >
+        </header>
+        <HrEntityNavigation
+          v-model="activeEntity"
+          :items="navigationItems"
+          navigation-label="内部人才市场工作视图"
+          compact
+          @change="handleTabChange"
+        />
+        <div
+          v-if="activeEntity === 'application' && focusedOpportunity"
+          class="mobility-page__focus"
+        >
+          <span><ArtSvgIcon icon="ri:focus-3-line" /></span>
+          <div>
+            <small>当前机会申请池</small>
+            <strong>{{ focusedOpportunity.opportunityTitle }}</strong>
+            <em
+              >{{ focusedOpportunity.opportunityCode }} ·
+              {{ focusedOpportunity.organizationName }}</em
+            >
+          </div>
+          <ElButton text type="primary" @click="clearOpportunityFocus">查看全部申请</ElButton>
+        </div>
+        <div
+          v-if="!overview.manageAccess && !overview.myEmployeeId"
+          class="mobility-page__profile-note"
+        >
+          <ArtSvgIcon icon="ri:user-settings-line" />
+          当前账号尚未关联员工档案，可浏览已开放机会；关联后才能提交本人申请。
+        </div>
+      </section>
+
+      <ArtTableQuery
+        :key="`${activeEntity}-${focusedOpportunity?.id || 'all'}`"
+        ref="tableQueryRef"
+        v-model="tableState.searchQuery"
+        :search-items="searchItems"
+        :api-fn="fetchTableData"
+        :columns-factory="columnsFactory"
+        :header-actions="headerActions"
+        header-actions-placement="workspace"
+        :search-bar-props="{ span: 6, labelWidth: 72, showExpand: false }"
+        :table-props="{
+          rowKey: 'id',
+          tableLayout: 'fixed',
+          emptyText: activeTab.emptyTitle,
+          emptyDescription: activeTab.emptyDescription
+        }"
+        :on-success="handleTableSuccess"
+        focusable
+      />
+
+      <InternalMobilityDialog ref="dialogRef" @success="handleDialogSuccess" />
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
@@ -157,6 +159,7 @@
     ArtTableQueryProps
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
+  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
@@ -364,11 +367,7 @@
     )
   }
   const identity = (title?: string | null, subtitle?: string | null, extra?: string | null) => (
-    <div class="mobility-page__identity">
-      <strong>{title || '--'}</strong>
-      <small>{subtitle || '--'}</small>
-      {extra ? <em>{extra}</em> : null}
-    </div>
+    <HrTableIdentityCell primary={title} secondary={subtitle} tertiary={extra} />
   )
   const opportunityStatusOptions = [
     { label: '草稿', value: 'draft' },
@@ -531,7 +530,7 @@
     {
       prop: 'action',
       label: '操作',
-      width: 118,
+      width: 112,
       fixed: 'right',
       formatter: (row) => opportunityActions(row as Api.Hr.InternalMobilityOpportunity)
     }
@@ -608,7 +607,7 @@
     {
       prop: 'action',
       label: '操作',
-      width: 118,
+      width: 112,
       fixed: 'right',
       formatter: (row) => applicationActions(row as Api.Hr.InternalMobilityApplication)
     }

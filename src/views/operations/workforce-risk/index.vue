@@ -1,82 +1,84 @@
 <template>
-  <div
-    v-auth="'Hr:WorkforceRisk:View'"
-    class="workforce-risk-page business-workspace-page art-full-height"
-  >
-    <BusinessWorkspaceHeader
-      eyebrow="WORKFORCE RISK"
-      title="人力风险中心"
-      description="把合同、资质、试用期和岗位缺编风险汇聚到同一队列，优先处理已超期和临近到期事项。"
-      icon="ri:shield-user-line"
-      :tags="[
-        { label: '跨模块聚合', type: 'primary' },
-        { label: '60 天前瞻', type: 'warning' },
-        { label: '只读安全视图', type: 'success' }
-      ]"
-      :metrics="metrics"
-      refreshable
-      refresh-label="刷新风险数据"
-      :refresh-loading="loading"
-      @metric-click="handleMetricClick"
-      @refresh="loadOverview"
-    />
+  <ArtPermissionGuard permission="Hr:WorkforceRisk:View">
+    <div class="workforce-risk-page business-workspace-page art-full-height">
+      <BusinessWorkspaceHeader
+        eyebrow="WORKFORCE RISK"
+        title="人力风险中心"
+        description="把合同、资质、试用期和岗位缺编风险汇聚到同一队列，优先处理已超期和临近到期事项。"
+        icon="ri:shield-user-line"
+        :tags="[
+          { label: '跨模块聚合', type: 'primary' },
+          { label: '60 天前瞻', type: 'warning' },
+          { label: '只读安全视图', type: 'success' }
+        ]"
+        :metrics="metrics"
+        refreshable
+        refresh-label="刷新风险数据"
+        :refresh-loading="loading"
+        @metric-click="handleMetricClick"
+        @refresh="loadOverview"
+      />
 
-    <ArtSectionCard class="workforce-risk-page__workspace" preserve-content-structure>
-      <template #header>
-        <header class="workforce-risk-page__toolbar">
-          <div>
-            <ArtSectionTitle :show-line="false">风险处置队列</ArtSectionTitle>
-            <p>按风险紧急程度排序，数据更新时间：{{ generatedAt }}</p>
-          </div>
-          <ElRadioGroup v-model="activeKind" size="small">
-            <ElRadioButton value="all">全部</ElRadioButton>
-            <ElRadioButton value="contract">合同</ElRadioButton>
-            <ElRadioButton value="qualification">资质</ElRadioButton>
-            <ElRadioButton value="probation">试用期</ElRadioButton>
-            <ElRadioButton value="headcount">编制</ElRadioButton>
-          </ElRadioGroup>
-        </header>
-      </template>
-
-      <ElAlert v-if="errorMessage" type="error" show-icon :closable="false" :title="errorMessage">
-        <template #default>
-          <ElButton type="primary" link @click="loadOverview">重新加载</ElButton>
-        </template>
-      </ElAlert>
-
-      <ElSkeleton v-else-if="loading && !overview" :rows="6" animated />
-
-      <ElEmpty v-else-if="!filteredItems.length" description="当前筛选范围没有需要处置的人力风险" />
-
-      <ol v-else class="workforce-risk-page__list">
-        <li v-for="item in filteredItems" :key="item.id" class="workforce-risk-page__item">
-          <span class="workforce-risk-page__risk-icon" :class="`is-${item.level}`">
-            <ArtSvgIcon :icon="kindMeta[item.kind].icon" />
-          </span>
-          <div class="workforce-risk-page__item-main">
-            <div class="workforce-risk-page__item-title">
-              <strong>{{ item.title }}</strong>
-              <ElTag :type="levelMeta[item.level].type" effect="light" size="small" round>
-                {{ levelMeta[item.level].label }}
-              </ElTag>
-              <ElTag type="info" effect="plain" size="small" round>
-                {{ kindMeta[item.kind].label }}
-              </ElTag>
+      <ArtSectionCard class="workforce-risk-page__workspace" preserve-content-structure>
+        <template #header>
+          <header class="workforce-risk-page__toolbar">
+            <div>
+              <ArtSectionTitle :show-line="false">风险处置队列</ArtSectionTitle>
+              <p>按风险紧急程度排序，数据更新时间：{{ generatedAt }}</p>
             </div>
-            <p>{{ item.subject }}</p>
-            <small>{{ item.description }}</small>
-          </div>
-          <div class="workforce-risk-page__item-action">
-            <time v-if="item.dueDate">{{ item.dueDate }}</time>
-            <ElButton type="primary" plain size="small" @click="openRisk(item)">
-              打开处理页
-              <ArtSvgIcon icon="ri:arrow-right-line" />
-            </ElButton>
-          </div>
-        </li>
-      </ol>
-    </ArtSectionCard>
-  </div>
+            <ElRadioGroup v-model="activeKind" size="small">
+              <ElRadioButton value="all">全部</ElRadioButton>
+              <ElRadioButton value="contract">合同</ElRadioButton>
+              <ElRadioButton value="qualification">资质</ElRadioButton>
+              <ElRadioButton value="probation">试用期</ElRadioButton>
+              <ElRadioButton value="headcount">编制</ElRadioButton>
+            </ElRadioGroup>
+          </header>
+        </template>
+
+        <ElAlert v-if="errorMessage" type="error" show-icon :closable="false" :title="errorMessage">
+          <template #default>
+            <ElButton type="primary" link @click="loadOverview">重新加载</ElButton>
+          </template>
+        </ElAlert>
+
+        <ElSkeleton v-else-if="loading && !overview" :rows="6" animated />
+
+        <ElEmpty
+          v-else-if="!filteredItems.length"
+          description="当前筛选范围没有需要处置的人力风险"
+        />
+
+        <ol v-else class="workforce-risk-page__list">
+          <li v-for="item in filteredItems" :key="item.id" class="workforce-risk-page__item">
+            <span class="workforce-risk-page__risk-icon" :class="`is-${item.level}`">
+              <ArtSvgIcon :icon="kindMeta[item.kind].icon" />
+            </span>
+            <div class="workforce-risk-page__item-main">
+              <div class="workforce-risk-page__item-title">
+                <strong>{{ item.title }}</strong>
+                <ElTag :type="levelMeta[item.level].type" effect="light" size="small" round>
+                  {{ levelMeta[item.level].label }}
+                </ElTag>
+                <ElTag type="info" effect="plain" size="small" round>
+                  {{ kindMeta[item.kind].label }}
+                </ElTag>
+              </div>
+              <p>{{ item.subject }}</p>
+              <small>{{ item.description }}</small>
+            </div>
+            <div class="workforce-risk-page__item-action">
+              <time v-if="item.dueDate">{{ item.dueDate }}</time>
+              <ElButton type="primary" plain size="small" @click="openRisk(item)">
+                打开处理页
+                <ArtSvgIcon icon="ri:arrow-right-line" />
+              </ElButton>
+            </div>
+          </li>
+        </ol>
+      </ArtSectionCard>
+    </div>
+  </ArtPermissionGuard>
 </template>
 
 <script setup lang="ts">
