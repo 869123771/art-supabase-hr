@@ -36,7 +36,7 @@
       </section>
 
       <section class="recruitment-page__tabs" aria-label="招聘管理分类">
-        <ElTabs v-model="activeEntity" @tab-change="handleTabChange">
+        <ElTabs v-model="activeEntity" stretch @tab-change="handleTabChange">
           <ElTabPane v-for="tab in tabs" :key="tab.entity" :name="tab.entity">
             <template #label>
               <span class="recruitment-page__tab-label">

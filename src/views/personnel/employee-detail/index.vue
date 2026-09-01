@@ -73,7 +73,7 @@
         :title="limitedAccessSummary"
       />
 
-      <ElTabs v-model="activeTab" class="employee-detail-page__tabs art-card-xs">
+      <ElTabs v-model="activeTab" class="employee-detail-page__tabs art-card-xs" stretch>
         <ElTabPane label="基础信息" name="basic">
           <div class="employee-detail-page__sections">
             <section class="employee-detail-page__section">

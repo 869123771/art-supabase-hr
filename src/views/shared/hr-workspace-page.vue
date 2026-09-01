@@ -19,7 +19,7 @@
       class="hr-workspace-page__tabs"
       :class="{ 'has-detailed-tabs': hasDetailedTabs }"
     >
-      <ElTabs v-model="activeTabKey" @tab-change="handleTabChange">
+      <ElTabs v-model="activeTabKey" stretch @tab-change="handleTabChange">
         <ElTabPane v-for="tab in workspace.tabs" :key="tab.key" :name="tab.key">
           <template #label>
             <span v-if="tab.description" class="hr-workspace-page__tab-label">
