@@ -44,9 +44,10 @@
 
         <ElSkeleton v-else-if="loading && !overview" :rows="6" animated />
 
-        <ElEmpty
+        <ArtEmptyState
           v-else-if="!filteredItems.length"
-          description="当前筛选范围没有需要处置的人力风险"
+          title="当前筛选范围没有需要处置的人力风险"
+          :visual-size="96"
         />
 
         <ol v-else class="workforce-risk-page__list">
@@ -83,6 +84,7 @@
 
 <script setup lang="ts">
   import ArtSectionCard from '@/components/core/surfaces/art-section-card/index.vue'
+  import ArtEmptyState from '@/components/core/feedback/art-empty-state/index.vue'
   import { ElMessage } from 'element-plus'
   import { useRouter } from 'vue-router'
   import BusinessWorkspaceHeader, {

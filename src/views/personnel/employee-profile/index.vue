@@ -51,7 +51,7 @@
       :title="accessNotice"
     />
 
-    <ElTabs v-model="page.activeTab" class="hr-profile-page__tabs art-card-xs" stretch>
+    <ElTabs v-model="page.activeTab" class="hr-profile-page__tabs art-card-xs">
       <ElTabPane label="基础信息" name="basic">
         <ArtForm
           ref="basicFormRef"

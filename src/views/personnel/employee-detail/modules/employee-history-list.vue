@@ -24,12 +24,13 @@
         <ArtDescriptions :data="record" :items="items" :columns="columns" />
       </article>
     </div>
-    <ElEmpty v-else :description="`暂无${title}`" :image-size="72" />
+    <ArtEmptyState v-else :title="`暂无${title}`" size="compact" :visual-size="72" />
   </ArtSectionCard>
 </template>
 
 <script setup lang="ts">
   import ArtSectionCard from '@/components/core/surfaces/art-section-card/index.vue'
+  import ArtEmptyState from '@/components/core/feedback/art-empty-state/index.vue'
   import ArtDescriptions from '@/components/core/base/art-descriptions/index.vue'
   import type { ArtDescriptionItem } from '@/components/core/base/art-descriptions/types'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'

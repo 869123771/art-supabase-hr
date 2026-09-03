@@ -82,7 +82,13 @@
             </div>
           </div>
         </div>
-        <ElEmpty v-else :image-size="64" description="尚未选择薪酬项目；方案仍可仅包含基本工资" />
+        <ArtEmptyState
+          v-else
+          title="尚未选择薪酬项目"
+          description="方案仍可仅包含基本工资。"
+          size="compact"
+          :visual-size="64"
+        />
       </ArtSectionCard>
 
       <ArtSectionCard
@@ -136,10 +142,11 @@
             </div>
           </div>
         </div>
-        <ElEmpty
+        <ArtEmptyState
           v-else
-          :image-size="64"
-          :description="form.model.planId ? '该方案仅包含基本工资' : '请先选择薪酬方案'"
+          :title="form.model.planId ? '该方案仅包含基本工资' : '请先选择薪酬方案'"
+          size="compact"
+          :visual-size="64"
         />
       </ArtSectionCard>
     </div>
@@ -160,6 +167,7 @@
   import ArtDictDisplay from '@/components/core/base/art-dict-display/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import ArtSectionCard from '@/components/core/surfaces/art-section-card/index.vue'
+  import ArtEmptyState from '@/components/core/feedback/art-empty-state/index.vue'
   import { fetchGetEnableTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
   import {
