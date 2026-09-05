@@ -1,0 +1,1 @@
+import{R as e,X as t,Y as n,i as r,t as i}from"./_baseEach-Cv-5rD-j.js";function a(t,n){var r=-1,a=e(t)?Array(t.length):[];return i(t,function(e,t,i){a[++r]=n(e,t,i)}),a}function o(e,i){return(n(e)?t:a)(e,r(i,3))}export{a as n,o as t};

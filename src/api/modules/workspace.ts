@@ -1,3 +1,4 @@
+import { buildOrIlikeFilter } from '@/utils/supabase/search'
 import { omit } from 'lodash-es'
 import { useSupabase } from '@/hooks'
 import { withRequestOptions } from '@/api/providers/supabase/query'
@@ -225,7 +226,7 @@ export async function fetchHrWorkspaceRecords(
 
   const keyword = params.keyword?.trim()
   if (keyword && config.searchColumns.length) {
-    query = query.or(config.searchColumns.map((column) => `${column}.ilike.%${keyword}%`).join(','))
+    query = query.or(buildOrIlikeFilter(config.searchColumns, keyword))
   }
   if (params.status && config.statusColumn) query = query.eq(config.statusColumn, params.status)
   if (params.employeeId && config.employeeColumn)

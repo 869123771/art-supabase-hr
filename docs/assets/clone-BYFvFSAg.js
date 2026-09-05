@@ -1,1 +1,0 @@
-import{t as e}from"./_baseClone-DolcOIoV.js";var t=4;function n(n){return e(n,t)}export{n as t};

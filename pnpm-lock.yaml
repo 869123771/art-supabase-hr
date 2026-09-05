@@ -19,8 +19,8 @@ importers:
         specifier: ^14.3.0
         version: 14.4.0(vue@3.5.40(typescript@6.0.3))
       art-supabase-pro:
-        specifier: https://gitee.com/wangyanghub/art-supabase-pro/repository/archive/2e26f8b6f6a21ae0af4ebe899b0da42a9ad6ccc3.tar.gz
-        version: https://gitee.com/wangyanghub/art-supabase-pro/repository/archive/2e26f8b6f6a21ae0af4ebe899b0da42a9ad6ccc3.tar.gz(@nuxt/kit@4.5.2(magic-string@1.2.2)(rolldown@1.2.5)(unplugin@2.3.11))(@types/sortablejs@1.15.9)(@vue/compiler-sfc@3.5.40)(antlr4ng-cli@1.0.7)(core-js@3.50.0)(esbuild@0.28.2)(rolldown@1.2.5)(three@0.184.0)(typescript@6.0.3)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+        specifier: https://gitee.com/wangyanghub/art-supabase-pro/repository/archive/dfcf47d51e582ea826c2283fddb356c9a03571ae.tar.gz
+        version: https://gitee.com/wangyanghub/art-supabase-pro/repository/archive/dfcf47d51e582ea826c2283fddb356c9a03571ae.tar.gz(@nuxt/kit@4.5.2(magic-string@1.2.2)(rolldown@1.2.5)(unplugin@2.3.11))(@types/sortablejs@1.15.9)(@vue/compiler-sfc@3.5.40)(antlr4ng-cli@1.0.7)(core-js@3.50.0)(esbuild@0.28.2)(rolldown@1.2.5)(three@0.184.0)(typescript@6.0.3)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
       dayjs:
         specifier: ^1.11.21
         version: 1.11.23
@@ -1815,8 +1815,8 @@ packages:
   array-flatten@3.0.0:
     resolution: {integrity: sha512-zPMVc3ZYlGLNk4mpK1NzP2wg0ml9t7fUgDsayR5Y5rSzxQilzR9FGu/EH2jQOcKSAeAfWeylyW8juy3OkWRvNA==}
 
-  art-supabase-pro@https://gitee.com/wangyanghub/art-supabase-pro/repository/archive/2e26f8b6f6a21ae0af4ebe899b0da42a9ad6ccc3.tar.gz:
-    resolution: {integrity: sha512-TPTxR/gzB4O/McNbsEwOv2qctv6YBAp3CzPA7iAolP0wNBVj50EK6zApZWQ5+u5l9ckabLn4yMu/MlH3rpCGRw==, tarball: https://gitee.com/wangyanghub/art-supabase-pro/repository/archive/2e26f8b6f6a21ae0af4ebe899b0da42a9ad6ccc3.tar.gz}
+  art-supabase-pro@https://gitee.com/wangyanghub/art-supabase-pro/repository/archive/dfcf47d51e582ea826c2283fddb356c9a03571ae.tar.gz:
+    resolution: {integrity: sha512-AoV+4Mi1NMzoXQdV8wx7+2v0L65433JGUugk48A9KNzzG0i3Lq9A1lzUHz0UnbaXa2TwJd6GTMDJbwlTkZ75PA==, tarball: https://gitee.com/wangyanghub/art-supabase-pro/repository/archive/dfcf47d51e582ea826c2283fddb356c9a03571ae.tar.gz}
     version: 1.0.0
     engines: {node: '>=22.0.0', pnpm: '>=11.9.0'}
 
@@ -6039,7 +6039,7 @@ snapshots:
 
   array-flatten@3.0.0: {}
 
-  art-supabase-pro@https://gitee.com/wangyanghub/art-supabase-pro/repository/archive/2e26f8b6f6a21ae0af4ebe899b0da42a9ad6ccc3.tar.gz(@nuxt/kit@4.5.2(magic-string@1.2.2)(rolldown@1.2.5)(unplugin@2.3.11))(@types/sortablejs@1.15.9)(@vue/compiler-sfc@3.5.40)(antlr4ng-cli@1.0.7)(core-js@3.50.0)(esbuild@0.28.2)(rolldown@1.2.5)(three@0.184.0)(typescript@6.0.3)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0)):
+  art-supabase-pro@https://gitee.com/wangyanghub/art-supabase-pro/repository/archive/dfcf47d51e582ea826c2283fddb356c9a03571ae.tar.gz(@nuxt/kit@4.5.2(magic-string@1.2.2)(rolldown@1.2.5)(unplugin@2.3.11))(@types/sortablejs@1.15.9)(@vue/compiler-sfc@3.5.40)(antlr4ng-cli@1.0.7)(core-js@3.50.0)(esbuild@0.28.2)(rolldown@1.2.5)(three@0.184.0)(typescript@6.0.3)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0)):
     dependencies:
       '@element-plus/icons-vue': 2.3.2(vue@3.5.40(typescript@6.0.3))
       '@file-viewer/preset-all': 2.1.28(three@0.184.0)
