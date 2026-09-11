@@ -160,6 +160,53 @@
   })
   const formModel = reactive<FormModel>(createInitialModel())
 
+  const buildRecord = (): RecordItem => {
+    const common = { id: formModel.id, tenantId: formModel.tenantId }
+    if (entity.value === 'cycle') {
+      return {
+        ...common,
+        cycleCode: formModel.cycleCode,
+        cycleName: formModel.cycleName,
+        reviewYear: formModel.reviewYear,
+        effectiveDate: formModel.effectiveDate,
+        recommendationDueDate: formModel.recommendationDueDate,
+        calibrationDueDate: formModel.calibrationDueDate,
+        scopeOrganizationId: formModel.scopeOrganizationId,
+        currencyCode: formModel.currencyCode,
+        defaultBudgetPercent: formModel.defaultBudgetPercent,
+        guidelineMinPercent: formModel.guidelineMinPercent,
+        guidelineMaxPercent: formModel.guidelineMaxPercent,
+        status: formModel.cycleStatus ?? 'draft',
+        description: formModel.description
+      }
+    }
+    if (entity.value === 'budget') {
+      return {
+        ...common,
+        cycleId: formModel.cycleId ?? '',
+        organizationId: formModel.organizationId,
+        budgetAmount: formModel.budgetAmount ?? 0,
+        note: formModel.note,
+        source: 'manual'
+      }
+    }
+    return {
+      ...common,
+      cycleId: formModel.cycleId ?? '',
+      employeeId: formModel.employeeId ?? '',
+      organizationId: formModel.organizationId,
+      currentCompensationId: formModel.currentCompensationId ?? '',
+      currentGradeId: formModel.currentGradeId,
+      currentBaseAmount: formModel.currentBaseAmount ?? 0,
+      proposedBaseAmount: formModel.proposedBaseAmount ?? 0,
+      status: formModel.status ?? 'pending',
+      recommendationReason: formModel.recommendationReason,
+      calibrationNote: formModel.calibrationNote,
+      exclude: formModel.exclude,
+      exclusionReason: formModel.exclusionReason
+    }
+  }
+
   const context = computed(() => {
     if (entity.value === 'cycle') {
       return {
@@ -453,8 +500,7 @@
           return false
         }
       }
-      const record = { ...formModel } as unknown as RecordItem
-      await saveCompensationReviewRecord(entity.value, record)
+      await saveCompensationReviewRecord(entity.value, buildRecord())
       emit('success', entity.value, dialogType.value)
       return true
     } catch {

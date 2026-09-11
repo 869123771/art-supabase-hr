@@ -496,7 +496,6 @@
 </template>
 
 <script setup lang="ts">
-  import { omit } from 'lodash-es'
   import { useMediaQuery } from '@vueuse/core'
   import type { FormRules } from 'element-plus'
   import { ElMessage } from 'element-plus'
@@ -509,6 +508,16 @@
   import EmployeeContractsTab from './modules/employee-contracts-tab.vue'
   import HistorySection from './modules/history-section.vue'
   import HistoryCard from './modules/history-card.vue'
+  import {
+    createEducation,
+    createEmployeeProfile,
+    createReward,
+    createTraining,
+    createWorkExperience,
+    normalizeEmployee as normalizeEmployeePayload,
+    type Employee,
+    type EmployeeProfileForm
+  } from './modules/employee-profile-model'
   import { fetchEmployeeProfile, fetchPositionOptions, saveEmployeeProfile } from '@hr/api'
   import { fetchGetEnableOrganizationTree, fetchGetEnableTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
@@ -522,9 +531,7 @@
 
   defineOptions({ name: 'HrEmployeeProfile' })
 
-  type Employee = Api.Hr.Employee
   type EmployeeProfile = Api.Hr.EmployeeProfile
-  type EmployeeProfileForm = EmployeeProfile
   type HistoryTabName = 'contracts' | 'educations' | 'workExperiences' | 'trainings' | 'rewards'
   type TabName = 'basic' | 'historyOverview' | HistoryTabName
 
@@ -575,91 +582,8 @@
     error: null
   })
 
-  const createEmployee = (): Employee => ({
-    tenantId: isPlatformSuper.value ? undefined : getUserInfo.value.tenantId,
-    organizationId: null,
-    positionId: null,
-    employeeNo: '',
-    employeeName: '',
-    avatarUrl: null,
-    jobTitle: '',
-    employmentStatus: 'active',
-    employmentType: 'full_time',
-    gender: null,
-    birthDate: null,
-    phone: '',
-    email: '',
-    idCardNo: '',
-    ethnicity: null,
-    educationLevel: null,
-    schoolName: '',
-    majorName: '',
-    maritalStatus: null,
-    politicalStatus: null,
-    nativePlace: '',
-    homeAddress: '',
-    hireDate: null,
-    probationEndDate: null,
-    leaveDate: null,
-    contractStartDate: null,
-    contractEndDate: null,
-    emergencyContactName: '',
-    emergencyContactRelation: null,
-    emergencyContactPhone: '',
-    remark: ''
-  })
-  const createEducation = (): Api.Hr.EmployeeEducation => ({
-    schoolName: '',
-    majorName: '',
-    educationLevel: 'bachelor',
-    degree: null,
-    startDate: null,
-    endDate: null,
-    fullTime: true,
-    certificateNo: '',
-    remark: ''
-  })
-  const createWorkExperience = (): Api.Hr.EmployeeWorkExperience => ({
-    companyName: '',
-    departmentName: '',
-    jobTitle: '',
-    startDate: '',
-    endDate: null,
-    responsibilities: '',
-    leavingReason: '',
-    referenceName: '',
-    referencePhone: ''
-  })
-  const createTraining = (): Api.Hr.EmployeeTraining => ({
-    trainingName: '',
-    trainingType: 'internal',
-    providerName: '',
-    startDate: '',
-    endDate: null,
-    trainingResult: null,
-    certificateName: '',
-    certificateNo: '',
-    cost: null,
-    remark: ''
-  })
-  const createReward = (): Api.Hr.EmployeeReward => ({
-    recordType: 'reward',
-    recordLevel: null,
-    title: '',
-    recordDate: '',
-    issuingOrganization: '',
-    amount: null,
-    description: ''
-  })
-  const createProfile = (): EmployeeProfileForm => ({
-    ...createEmployee(),
-    contracts: [],
-    educations: [],
-    workExperiences: [],
-    trainings: [],
-    rewards: []
-  })
-  const form = reactive<EmployeeProfileForm>(createProfile())
+  const initialTenantId = () => (isPlatformSuper.value ? undefined : getUserInfo.value.tenantId)
+  const form = reactive<EmployeeProfileForm>(createEmployeeProfile(initialTenantId()))
   const fieldAccessFallback = computed<Api.Common.FieldAccessLevel>(() =>
     isEdit.value ? 'hidden' : 'edit'
   )
@@ -1132,7 +1056,7 @@
   }
 
   const replaceProfile = (profile: EmployeeProfile): void => {
-    Object.assign(form, createProfile(), structuredClone(profile))
+    Object.assign(form, createEmployeeProfile(initialTenantId()), structuredClone(profile))
   }
 
   const initializePage = async (): Promise<void> => {
@@ -1369,52 +1293,12 @@
   )
 
   const normalizeEmployee = (): Employee => {
-    const employee = omit(structuredClone(toRaw(form)), [
-      'contracts',
-      'educations',
-      'workExperiences',
-      'trainings',
-      'rewards',
-      'tenant',
-      'organization',
-      'account',
-      'fieldAccess',
-      'isRecordOwner',
-      'historyCounts',
-      'historiesMasked',
-      'createBy',
-      'createTime',
-      'updateBy',
-      'updateTime'
-    ]) as Employee
-    const employeeRecord = employee as Employee & Record<string, unknown>
-    if (!canEditContactDetails.value) {
-      ;[
-        'phone',
-        'email',
-        'homeAddress',
-        'emergencyContactName',
-        'emergencyContactRelation',
-        'emergencyContactPhone'
-      ].forEach((key) => delete employeeRecord[key])
-    }
-    if (!canEditIdentityDetails.value) {
-      ;[
-        'gender',
-        'birthDate',
-        'idCardNo',
-        'ethnicity',
-        'educationLevel',
-        'schoolName',
-        'majorName',
-        'maritalStatus',
-        'politicalStatus',
-        'nativePlace'
-      ].forEach((key) => delete employeeRecord[key])
-    }
-    if (!canEditCareerRecords.value) delete employeeRecord.remark
-    if (!isPlatformSuper.value) employee.tenantId = getUserInfo.value.tenantId
-    return employee
+    return normalizeEmployeePayload(toRaw(form), {
+      contactDetailsEditable: canEditContactDetails.value,
+      identityDetailsEditable: canEditIdentityDetails.value,
+      careerRecordsEditable: canEditCareerRecords.value,
+      tenantId: initialTenantId()
+    })
   }
 
   const handleSave = async (): Promise<void> => {
