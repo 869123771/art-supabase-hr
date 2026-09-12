@@ -43,6 +43,15 @@
     </section>
 
     <ElAlert
+      v-if="userLinkNotice"
+      class="hr-profile-page__access-notice"
+      type="success"
+      :closable="false"
+      show-icon
+      :title="userLinkNotice"
+    />
+
+    <ElAlert
       v-if="accessNotice"
       class="hr-profile-page__access-notice"
       type="info"
@@ -520,6 +529,7 @@
   } from './modules/employee-profile-model'
   import { fetchEmployeeProfile, fetchPositionOptions, saveEmployeeProfile } from '@hr/api'
   import { fetchGetEnableOrganizationTree, fetchGetEnableTenantList } from '@/api/system-manage'
+  import { linkUserToEmployee } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
   import { useDocumentNumberRule } from '@/hooks/core/useDocumentNumberRule'
   import {
@@ -565,6 +575,16 @@
   const isTablet = useMediaQuery('(min-width: 720px)')
   const formSpan = computed(() => (isDesktop.value ? 8 : isTablet.value ? 12 : 24))
   const isEdit = computed(() => typeof route.params.id === 'string' && Boolean(route.params.id))
+  const queryValue = (key: string): string => {
+    const value = route.query[key]
+    return typeof value === 'string' ? value.trim() : ''
+  }
+  const sourceUserId = computed(() => queryValue('sourceUserId'))
+  const userLinkNotice = computed(() =>
+    !isEdit.value && sourceUserId.value
+      ? `正在为账号 ${queryValue('email') || sourceUserId.value} 创建员工档案；保存后系统会自动完成账号关联。`
+      : ''
+  )
   const pageSubtitle = computed(() =>
     isEdit.value
       ? '分模块维护基础身份、劳动合同、教育、工作、培训及奖惩记录'
@@ -1059,6 +1079,20 @@
     Object.assign(form, createEmployeeProfile(initialTenantId()), structuredClone(profile))
   }
 
+  const applyUserLinkPrefill = (): void => {
+    if (isEdit.value || !sourceUserId.value) return
+
+    const requestedTenantId = queryValue('tenantId')
+    const currentTenantId = getUserInfo.value.tenantId || ''
+    if (requestedTenantId && (isPlatformSuper.value || requestedTenantId === currentTenantId)) {
+      form.tenantId = requestedTenantId
+    }
+    const requestedOrganizationId = queryValue('organizationId')
+    if (requestedOrganizationId) form.organizationId = requestedOrganizationId
+    const requestedEmail = queryValue('email')
+    if (requestedEmail) form.email = requestedEmail
+  }
+
   const initializePage = async (): Promise<void> => {
     page.loading = true
     page.error = null
@@ -1079,6 +1113,8 @@
         const profile = await fetchEmployeeProfile(String(route.params.id))
         if (!profile) throw new Error('员工档案不存在，或当前账号无权查看')
         replaceProfile(profile)
+      } else {
+        applyUserLinkPrefill()
       }
       await Promise.all([loadOrganizationOptions(), loadPositionOptions()])
     } catch (error) {
@@ -1333,7 +1369,24 @@
         payload.trainings = structuredClone(toRaw(form.trainings))
         payload.rewards = structuredClone(toRaw(form.rewards))
       }
-      await saveEmployeeProfile(payload)
+      const employeeId = await saveEmployeeProfile(payload)
+      if (sourceUserId.value) {
+        try {
+          if (!form.tenantId) throw new Error('员工档案缺少租户信息')
+          await linkUserToEmployee({
+            userId: sourceUserId.value,
+            employeeId,
+            tenantId: form.tenantId
+          })
+          ElMessage.success('员工档案已保存，并已关联登录账号')
+          returnToSource(employeeId, 'success')
+        } catch (linkError) {
+          const reason = linkError instanceof Error ? linkError.message : '账号关联失败'
+          ElMessage.warning(`员工档案已保存，但账号关联未完成：${reason}`)
+          returnToSource(employeeId, 'failed')
+        }
+        return
+      }
       ElMessage.success('员工完整档案已保存')
       goBack()
     } catch (error) {
@@ -1343,7 +1396,26 @@
     }
   }
 
+  const returnToSource = (employeeId?: string, linkStatus?: 'success' | 'failed'): void => {
+    if (queryValue('returnPath') !== '/system/user' || !sourceUserId.value) {
+      void router.push('/hr/personnel/employee-roster')
+      return
+    }
+    void router.push({
+      path: '/system/user',
+      query: {
+        recordId: sourceUserId.value,
+        employeeId,
+        linkStatus
+      }
+    })
+  }
+
   const goBack = (): void => {
+    if (sourceUserId.value) {
+      returnToSource()
+      return
+    }
     void router.push('/hr/personnel/employee-roster')
   }
 
