@@ -1,3 +1,4 @@
+import { normalizeNullableText } from '@/utils/form/normalize'
 import { omit } from 'lodash-es'
 import { useSupabase } from '@/hooks'
 import { withRequestOptions } from '@/api/providers/supabase/query'
@@ -21,7 +22,7 @@ export async function fetchPersonnelChangeEmployees(
         supabase.rpc('hr_list_personnel_change_employees_secure', {
           p_from: from,
           p_to: Math.max(params.to ?? from + 19, from),
-          p_keyword: params.keyword?.trim() || null
+          p_keyword: normalizeNullableText(params.keyword)
         }),
         options
       ),

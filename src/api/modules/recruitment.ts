@@ -1,3 +1,4 @@
+import { normalizeNullableText } from '@/utils/form/normalize'
 import { omit } from 'lodash-es'
 import { useSupabase } from '@/hooks'
 import { withRequestOptions } from '@/api/providers/supabase/query'
@@ -29,7 +30,7 @@ export async function fetchRecruitmentRecords<TRecord extends Api.Hr.Recruitment
           p_kind: entity,
           p_from: from,
           p_to: Math.max(params.to ?? from + 19, from),
-          p_keyword: params.keyword?.trim() || null,
+          p_keyword: normalizeNullableText(params.keyword),
           p_status: params.status || null,
           p_tenant_id: params.tenantId || null
         }),
@@ -122,7 +123,7 @@ export async function transitionCandidateStage(
       supabase.rpc('hr_transition_candidate_stage_secure', {
         p_candidate_id: candidateId,
         p_to_stage: toStage,
-        p_reason: reason?.trim() || null
+        p_reason: normalizeNullableText(reason)
       }),
     { showMessage: true, breakReturn: true, message: '候选人阶段已更新' }
   )
@@ -185,7 +186,7 @@ export async function transitionRecruitmentOffer(
       supabase.rpc('hr_transition_recruitment_offer_secure', {
         p_offer_id: offerId,
         p_action: action,
-        p_comment: comment?.trim() || null
+        p_comment: normalizeNullableText(comment)
       }),
     { showMessage: true, breakReturn: true, message: messages[action] }
   )
@@ -202,7 +203,7 @@ export async function transitionRecruitmentHandoff(
       supabase.rpc('hr_transition_recruitment_handoff_secure', {
         p_handoff_id: handoffId,
         p_action: action,
-        p_comment: comment?.trim() || null
+        p_comment: normalizeNullableText(comment)
       }),
     { showMessage: true, breakReturn: true, message: messages[action] }
   )
@@ -214,7 +215,7 @@ export async function completeRecruitmentTask(taskId: string, skip = false, note
       supabase.rpc('hr_complete_recruitment_task_secure', {
         p_task_id: taskId,
         p_skip: skip,
-        p_note: note?.trim() || null
+        p_note: normalizeNullableText(note)
       }),
     { showMessage: true, breakReturn: true, message: skip ? '入职任务已跳过' : '入职任务已完成' }
   )

@@ -40,6 +40,7 @@
 </template>
 
 <script setup lang="ts">
+  import { normalizeNullableText } from '@/utils/form/normalize'
   import dayjs from 'dayjs'
   import { ElMessage, type FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
@@ -291,7 +292,7 @@
         ...formModel,
         title: formModel.title.trim(),
         successMeasure: formModel.successMeasure.trim(),
-        progressNote: formModel.progressNote?.trim() || null
+        progressNote: normalizeNullableText(formModel.progressNote)
       })
       emit('success', dialogType.value)
       return true

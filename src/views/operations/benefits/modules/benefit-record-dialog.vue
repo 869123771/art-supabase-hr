@@ -40,6 +40,7 @@
 </template>
 
 <script setup lang="ts">
+  import { normalizeNullableText } from '@/utils/form/normalize'
   import dayjs from 'dayjs'
   import { uniqBy } from 'lodash-es'
   import { ElMessage, type FormRules } from 'element-plus'
@@ -467,14 +468,14 @@
         planCode: formModel.planCode.trim(),
         planName: formModel.planName.trim(),
         planType: formModel.planType,
-        providerName: formModel.providerName?.trim() || null,
+        providerName: normalizeNullableText(formModel.providerName),
         enrollmentMethod: formModel.enrollmentMethod,
         coverageScope: formModel.coverageScope,
         currencyCode: formModel.currencyCode.trim().toUpperCase(),
         effectiveFrom: formModel.effectiveFrom,
         effectiveTo: formModel.effectiveTo || null,
         status: 'draft',
-        description: formModel.description?.trim() || null
+        description: normalizeNullableText(formModel.description)
       }
     }
     if (entity.value === 'enrollment') {
@@ -493,7 +494,7 @@
         employerContribution: formModel.employerContribution,
         currencyCode: formModel.currencyCode || 'CNY',
         payrollSyncStatus: 'not_ready',
-        remark: formModel.remark?.trim() || null
+        remark: normalizeNullableText(formModel.remark)
       }
     }
     return {
@@ -508,7 +509,7 @@
         .split(/\r?\n/)
         .map((value) => value.trim())
         .filter(Boolean),
-      remark: formModel.remark?.trim() || null
+      remark: normalizeNullableText(formModel.remark)
     }
   }
 

@@ -1,3 +1,4 @@
+import { normalizeNullableText } from '@/utils/form/normalize'
 import { omit } from 'lodash-es'
 import { useSupabase } from '@/hooks'
 import { withRequestOptions } from '@/api/providers/supabase/query'
@@ -33,7 +34,7 @@ export async function fetchCompensationRecords<TRecord extends CompensationRecor
           p_kind: entity,
           p_from: from,
           p_to: Math.max(params.to ?? from + 19, from),
-          p_keyword: params.keyword?.trim() || null,
+          p_keyword: normalizeNullableText(params.keyword),
           p_status: params.status || null,
           p_tenant_id: params.tenantId || null
         }),

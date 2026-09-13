@@ -36,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+  import { normalizeNullableText } from '@/utils/form/normalize'
   import dayjs from 'dayjs'
   import { ElMessage, type FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
@@ -561,18 +562,18 @@
         tenantId: formModel.tenantId,
         vendorCode: formModel.vendorCode.trim(),
         vendorName: formModel.vendorName.trim(),
-        registrationNo: formModel.registrationNo?.trim() || null,
-        contactName: formModel.contactName?.trim() || null,
-        contactPhone: formModel.contactPhone?.trim() || null,
-        contactEmail: formModel.contactEmail?.trim() || null,
-        serviceScope: formModel.serviceScope?.trim() || null,
-        contractNo: formModel.contractNo?.trim() || null,
+        registrationNo: normalizeNullableText(formModel.registrationNo),
+        contactName: normalizeNullableText(formModel.contactName),
+        contactPhone: normalizeNullableText(formModel.contactPhone),
+        contactEmail: normalizeNullableText(formModel.contactEmail),
+        serviceScope: normalizeNullableText(formModel.serviceScope),
+        contractNo: normalizeNullableText(formModel.contractNo),
         contractStartDate: formModel.contractStartDate || null,
         contractEndDate: formModel.contractEndDate || null,
         complianceStatus: formModel.complianceStatus,
         riskLevel: formModel.riskLevel,
         status: formModel.vendorStatus,
-        note: formModel.note?.trim() || null
+        note: normalizeNullableText(formModel.note)
       }
     if (entity.value === 'worker')
       return {
@@ -582,12 +583,12 @@
         workerName: formModel.workerName.trim(),
         workerType: formModel.workerType,
         vendorId: formModel.vendorId || null,
-        vendorWorkerNo: formModel.vendorWorkerNo?.trim() || null,
-        phone: formModel.phone?.trim() || null,
-        email: formModel.email?.trim() || null,
+        vendorWorkerNo: normalizeNullableText(formModel.vendorWorkerNo),
+        phone: normalizeNullableText(formModel.phone),
+        email: normalizeNullableText(formModel.email),
         identityCheckStatus: formModel.identityCheckStatus,
         status: formModel.workerStatus,
-        note: formModel.note?.trim() || null
+        note: normalizeNullableText(formModel.note)
       }
     if (entity.value === 'engagement')
       return {
@@ -600,7 +601,7 @@
         positionId: formModel.positionId || null,
         sponsorEmployeeId: formModel.sponsorEmployeeId!,
         serviceTitle: formModel.serviceTitle.trim(),
-        workLocation: formModel.workLocation?.trim() || null,
+        workLocation: normalizeNullableText(formModel.workLocation),
         startDate: formModel.startDate,
         endDate: formModel.endDate,
         accessExpiryDate: formModel.accessExpiryDate,
@@ -610,7 +611,7 @@
         currencyCode: formModel.currencyCode.trim().toUpperCase(),
         complianceStatus: formModel.engagementComplianceStatus,
         status: formModel.engagementStatus,
-        activationNote: formModel.activationNote?.trim() || null,
+        activationNote: normalizeNullableText(formModel.activationNote),
         version: formModel.version
       }
     return {
@@ -622,8 +623,8 @@
       required: formModel.required,
       status: formModel.controlStatus,
       dueDate: formModel.dueDate || null,
-      evidenceReference: formModel.evidenceReference?.trim() || null,
-      note: formModel.note?.trim() || null
+      evidenceReference: normalizeNullableText(formModel.evidenceReference),
+      note: normalizeNullableText(formModel.note)
     }
   }
 

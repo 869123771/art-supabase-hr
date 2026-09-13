@@ -60,6 +60,7 @@
 </template>
 
 <script setup lang="ts">
+  import { normalizeNullableText } from '@/utils/form/normalize'
   import dayjs from 'dayjs'
   import { ElMessage, type FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
@@ -477,7 +478,7 @@
           positionId: formModel.positionId || null,
           hiringManagerEmployeeId: formModel.hiringManagerEmployeeId!,
           capacity: formModel.capacity,
-          workLocation: formModel.workLocation.trim() || null,
+          workLocation: normalizeNullableText(formModel.workLocation),
           workMode: formModel.workMode,
           expectedStartDate: formModel.expectedStartDate,
           expectedEndDate:
@@ -487,7 +488,7 @@
           minTenureMonths: formModel.minTenureMonths,
           roleSummary: formModel.roleSummary.trim(),
           requiredSkills: formModel.requiredSkills.trim(),
-          eligibilityNotes: formModel.eligibilityNotes.trim() || null,
+          eligibilityNotes: normalizeNullableText(formModel.eligibilityNotes),
           status: 'draft',
           version: formModel.version
         })
@@ -498,7 +499,7 @@
           opportunityId: formModel.opportunityId!,
           employeeId: formModel.employeeId,
           motivation: formModel.motivation.trim(),
-          relevantExperience: formModel.relevantExperience.trim() || null,
+          relevantExperience: normalizeNullableText(formModel.relevantExperience),
           preferredStartDate: formModel.preferredStartDate || null,
           managerAwareness: formModel.managerAwareness,
           status: 'draft'

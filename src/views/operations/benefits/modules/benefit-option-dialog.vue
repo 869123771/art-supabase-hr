@@ -25,6 +25,7 @@
 </template>
 
 <script setup lang="ts">
+  import { normalizeNullableText } from '@/utils/form/normalize'
   import { type FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
@@ -166,7 +167,7 @@
     employeeRate: formModel.contributionType === 'salary_rate' ? formModel.employeeRate || 0 : null,
     employerRate: formModel.contributionType === 'salary_rate' ? formModel.employerRate || 0 : null,
     payComponentId: formModel.payComponentId || null,
-    description: formModel.description?.trim() || null
+    description: normalizeNullableText(formModel.description)
   })
 
   const submit = async (): Promise<boolean> => {

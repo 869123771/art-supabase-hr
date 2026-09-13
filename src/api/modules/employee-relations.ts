@@ -1,3 +1,4 @@
+import { normalizeNullableText } from '@/utils/form/normalize'
 import { omit } from 'lodash-es'
 import { useSupabase } from '@/hooks'
 import { withRequestOptions } from '@/api/providers/supabase/query'
@@ -34,7 +35,7 @@ export async function fetchEmployeeRelationsRecords<TRecord extends Api.Hr.Emplo
           p_kind: entity,
           p_from: from,
           p_to: Math.max(params.to ?? from + 19, from),
-          p_keyword: params.keyword?.trim() || null,
+          p_keyword: normalizeNullableText(params.keyword),
           p_status: params.status || null,
           p_case_type: params.caseType || null,
           p_severity: params.severity || null,
@@ -141,7 +142,7 @@ export async function transitionEmployeeRelationAction(
       supabase.rpc('hr_transition_employee_relation_action_secure', {
         p_id: id,
         p_action: action,
-        p_comment: comment?.trim() || null
+        p_comment: normalizeNullableText(comment)
       }),
     { showMessage: true, breakReturn: true, message: messages[action] }
   )

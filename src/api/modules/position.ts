@@ -1,3 +1,4 @@
+import { normalizeNullableText } from '@/utils/form/normalize'
 import { useSupabase } from '@/hooks'
 import { withRequestOptions } from '@/api/providers/supabase/query'
 import type { ApiRequestOptions } from '@/types/api/request'
@@ -45,7 +46,7 @@ export async function fetchPositionList(params: PositionSearchParams, options?: 
         supabase.rpc('hr_list_positions_secure', {
           p_from: from,
           p_to: Math.max(params.to ?? from + 19, from),
-          p_keyword: String(params.keyword ?? '').trim() || null,
+          p_keyword: normalizeNullableText(String(params.keyword ?? '')),
           p_enabled: params.enabled ?? null,
           p_tenant_id: params.tenantId || null,
           p_organization_ids: params.organizationIds?.length ? params.organizationIds : null

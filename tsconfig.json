@@ -13,26 +13,26 @@
     "baseUrl": ".",
     "paths": {
       "@hr/*": ["src/*"],
-      "@/*": ["node_modules/art-supabase-pro/src/*", "../../src/*", "../art-supabase-pro/src/*"],
+      "@/*": ["../../src/*", "../art-supabase-pro/src/*", "node_modules/art-supabase-pro/src/*"],
       "@views/*": [
-        "node_modules/art-supabase-pro/src/views/*",
         "../../src/views/*",
-        "../art-supabase-pro/src/views/*"
+        "../art-supabase-pro/src/views/*",
+        "node_modules/art-supabase-pro/src/views/*"
       ],
       "@styles/*": [
-        "node_modules/art-supabase-pro/src/assets/styles/*",
         "../../src/assets/styles/*",
-        "../art-supabase-pro/src/assets/styles/*"
+        "../art-supabase-pro/src/assets/styles/*",
+        "node_modules/art-supabase-pro/src/assets/styles/*"
       ],
       "@utils/*": [
-        "node_modules/art-supabase-pro/src/utils/*",
         "../../src/utils/*",
-        "../art-supabase-pro/src/utils/*"
+        "../art-supabase-pro/src/utils/*",
+        "node_modules/art-supabase-pro/src/utils/*"
       ],
       "@stores/*": [
-        "node_modules/art-supabase-pro/src/store/*",
         "../../src/store/*",
-        "../art-supabase-pro/src/store/*"
+        "../art-supabase-pro/src/store/*",
+        "node_modules/art-supabase-pro/src/store/*"
       ]
     }
   },

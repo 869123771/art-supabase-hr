@@ -1,3 +1,4 @@
+import { normalizeNullableText } from '@/utils/form/normalize'
 import { omit } from 'lodash-es'
 import { useSupabase } from '@/hooks'
 import { withRequestOptions } from '@/api/providers/supabase/query'
@@ -36,7 +37,7 @@ export async function fetchContingentWorkforceRecords<
           p_kind: entity,
           p_from: from,
           p_to: Math.max(params.to ?? from + 19, from),
-          p_keyword: params.keyword?.trim() || null,
+          p_keyword: normalizeNullableText(params.keyword),
           p_status: params.status || null,
           p_engagement_id: params.engagementId || null,
           p_tenant_id: params.tenantId || null
@@ -133,7 +134,7 @@ export async function transitionContingentWorkforceRecord(
         p_kind: kind,
         p_id: id,
         p_action: action,
-        p_comment: comment?.trim() || null,
+        p_comment: normalizeNullableText(comment),
         p_effective_date: effectiveDate || null
       }),
     { showMessage: true, breakReturn: true, message: '外部用工状态已更新' }

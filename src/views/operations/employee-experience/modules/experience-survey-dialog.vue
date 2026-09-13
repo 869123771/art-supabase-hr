@@ -29,6 +29,7 @@
 </template>
 
 <script setup lang="ts">
+  import { normalizeNullableText } from '@/utils/form/normalize'
   import dayjs from 'dayjs'
   import { ElMessage, type FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
@@ -243,7 +244,7 @@
         surveyName: formModel.surveyName.trim(),
         audienceOrganizationId:
           formModel.audienceType === 'organization' ? formModel.audienceOrganizationId : null,
-        description: formModel.description?.trim() || null
+        description: normalizeNullableText(formModel.description)
       })
       emit('success', dialogType.value)
       return true

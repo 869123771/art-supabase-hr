@@ -34,6 +34,7 @@
 </template>
 
 <script setup lang="ts">
+  import { normalizeNullableText } from '@/utils/form/normalize'
   import dayjs from 'dayjs'
   import { ElMessage, type FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
@@ -288,7 +289,7 @@
     contentSummary: formModel.contentSummary.trim(),
     status: 'draft',
     supersedesPolicyId: formModel.supersedesPolicyId || null,
-    decisionNote: formModel.decisionNote?.trim() || null
+    decisionNote: normalizeNullableText(formModel.decisionNote)
   })
 
   const submit = async (): Promise<boolean> => {

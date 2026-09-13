@@ -60,6 +60,7 @@
 </template>
 
 <script setup lang="ts">
+  import { normalizeNullableText } from '@/utils/form/normalize'
   import dayjs from 'dayjs'
   import { ElMessage, type FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
@@ -391,8 +392,8 @@
           .split(/\r?\n/)
           .map((value) => value.trim())
           .filter(Boolean),
-        externalReference: formModel.externalReference?.trim() || null,
-        remark: formModel.remark?.trim() || null
+        externalReference: normalizeNullableText(formModel.externalReference),
+        remark: normalizeNullableText(formModel.remark)
       }
     }
     return {
@@ -404,7 +405,7 @@
       ownerEmployeeId: formModel.ownerEmployeeId!,
       dueDate: formModel.dueDate,
       status: 'planned',
-      remark: formModel.remark?.trim() || null
+      remark: normalizeNullableText(formModel.remark)
     }
   }
 

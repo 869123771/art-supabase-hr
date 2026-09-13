@@ -1,3 +1,4 @@
+import { normalizeNullableText } from '@/utils/form/normalize'
 import { useSupabase } from '@/hooks'
 import TreeUtils from '@/utils/tree'
 
@@ -56,7 +57,7 @@ export async function fetchEmployeeList(params: EmployeeSearchParams) {
         p_organization_unassigned: Boolean(params.organizationUnassigned),
         p_employment_status: params.employmentStatus || null,
         p_employment_type: params.employmentType || null,
-        p_keyword: params.keyword?.trim() || null,
+        p_keyword: normalizeNullableText(params.keyword),
         p_hire_start: params.hireDateRange?.[0] || null,
         p_hire_end: params.hireDateRange?.[1] || null,
         p_record_id: params.recordId || null
@@ -82,7 +83,7 @@ export async function fetchEmployeeSelectorList(
         p_from: Math.max(from, 0),
         p_to: Math.max(to, from),
         p_tenant_id: tenantId || null,
-        p_keyword: keyword?.trim() || null
+        p_keyword: normalizeNullableText(keyword)
       }),
     { showErrorMessage: true }
   )

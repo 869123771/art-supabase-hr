@@ -1,3 +1,4 @@
+import { normalizeNullableText } from '@/utils/form/normalize'
 import { omit } from 'lodash-es'
 import { useSupabase } from '@/hooks'
 import { withRequestOptions } from '@/api/providers/supabase/query'
@@ -29,7 +30,7 @@ export async function fetchTimeAttendanceRecords<TRecord extends Api.Hr.TimeAtte
           p_kind: entity,
           p_from: from,
           p_to: Math.max(params.to ?? from + 19, from),
-          p_keyword: params.keyword?.trim() || null,
+          p_keyword: normalizeNullableText(params.keyword),
           p_status: params.status || null,
           p_period_month: params.periodMonth || null,
           p_tenant_id: params.tenantId || null
@@ -140,7 +141,7 @@ export async function transitionTimeAttendanceCorrection(
       supabase.rpc('hr_transition_attendance_correction_secure', {
         p_id: id,
         p_action: action,
-        p_comment: comment?.trim() || null
+        p_comment: normalizeNullableText(comment)
       }),
     { showMessage: true, breakReturn: true, message: messages[action] }
   )
@@ -161,7 +162,7 @@ export async function transitionTimeAttendanceDailyRecord(
       supabase.rpc('hr_transition_attendance_record_secure', {
         p_id: id,
         p_action: action,
-        p_comment: comment?.trim() || null
+        p_comment: normalizeNullableText(comment)
       }),
     { showMessage: true, breakReturn: true, message: messages[action] }
   )
@@ -182,7 +183,7 @@ export async function transitionTimeAttendancePeriod(
       supabase.rpc('hr_transition_attendance_period_secure', {
         p_id: id,
         p_action: action,
-        p_comment: comment?.trim() || null
+        p_comment: normalizeNullableText(comment)
       }),
     { showMessage: true, breakReturn: true, message: messages[action] }
   )
