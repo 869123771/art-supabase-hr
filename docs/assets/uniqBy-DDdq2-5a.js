@@ -1,0 +1,1 @@
+import{o as e}from"./style-qP8O6WDB.js";import{u as t}from"./art-form-DGbNGNTq.js";function n(n,r){return n&&n.length?t(n,e(r,2)):[]}export{n as t};
