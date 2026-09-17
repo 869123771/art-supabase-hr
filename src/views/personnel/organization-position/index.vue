@@ -37,6 +37,12 @@
               @retry="loadOrganizations"
             >
               <template #actions>
+                <ArtTreeExpandToggle
+                  :tree="organizationTreeRef"
+                  :data="organizationState.tree"
+                  label="组织树"
+                  default-expanded
+                />
                 <ArtIconButton
                   icon="ri:refresh-line"
                   label="刷新组织"
@@ -221,6 +227,7 @@
   import type { ElTree, TreeNodeData } from 'element-plus'
   import ArtDictDisplay from '@/components/core/base/art-dict-display/index.vue'
   import ArtIconButton from '@/components/core/widget/art-icon-button/index.vue'
+  import ArtTreeExpandToggle from '@/components/core/widget/art-tree-expand-toggle/index.vue'
   import ArtWorkspaceSplitter from '@/components/core/layouts/art-workspace-splitter/index.vue'
   import ArtSectionCard from '@/components/core/surfaces/art-section-card/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
