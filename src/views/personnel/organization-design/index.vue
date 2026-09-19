@@ -143,7 +143,7 @@
     ArtTableQueryProps
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
-  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
@@ -322,7 +322,7 @@
     )
   }
   const identity = (title?: string | null, subtitle?: string | null, extra?: string | null) => (
-    <HrTableIdentityCell primary={title} secondary={subtitle} tertiary={extra} />
+    <BusinessTableIdentityCell primary={title} secondary={subtitle} tertiary={extra} />
   )
   const impact = (value: number | undefined, label: string, risk = false) => (
     <span class={['org-design-page__impact', risk && (value ?? 0) > 0 ? 'is-risk' : '']}>

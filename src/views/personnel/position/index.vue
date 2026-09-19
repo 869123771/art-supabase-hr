@@ -456,11 +456,6 @@
 
 <style scoped lang="scss">
   .position-page {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 0;
-
     &__workspace {
       flex: 1;
       width: 100%;

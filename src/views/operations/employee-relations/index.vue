@@ -123,7 +123,7 @@
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
-  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
   import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
@@ -364,7 +364,7 @@
   const dictLabel = (code: string, value?: string | null): string =>
     getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
   const identity = (title?: string | null, subtitle?: string | null) => (
-    <HrTableIdentityCell primary={title} secondary={subtitle} />
+    <BusinessTableIdentityCell primary={title} secondary={subtitle} />
   )
   const severityTone = (severity?: string | null): TagProps['type'] =>
     severity === 'critical'
@@ -946,11 +946,6 @@
 
 <style scoped lang="scss">
   .employee-relations-page {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 0;
-
     &__control {
       position: relative;
       padding: 18px;

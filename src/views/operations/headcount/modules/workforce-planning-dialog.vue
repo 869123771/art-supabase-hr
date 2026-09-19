@@ -1,13 +1,11 @@
 <template>
   <ArtDialog ref="dialogRef" size="lg">
     <div class="workforce-planning-dialog">
-      <div class="workforce-planning-dialog__context" role="note">
-        <ArtSvgIcon :icon="contextNote.icon" />
-        <div>
-          <strong>{{ contextNote.title }}</strong>
-          <span>{{ contextNote.description }}</span>
-        </div>
-      </div>
+      <ArtEntitySummary
+        :icon="contextNote.icon"
+        :title="contextNote.title"
+        :description="contextNote.description"
+      />
 
       <ArtForm
         ref="formRef"
@@ -42,7 +40,6 @@
     type FormItem,
     type FormItemOption
   } from '@/components/core/forms/art-form/index.vue'
-  import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import ArtEmployeeSelect from '@/components/business/art-employee-select/index.vue'
   import type { EmployeeIntegrationItem } from '@/api/integration/employees'
   import { fetchGetEnableTenantList } from '@/api/system-manage'
@@ -495,38 +492,5 @@
     flex-direction: column;
     gap: 18px;
     min-width: 0;
-
-    &__context {
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-      padding: 14px 16px;
-      color: var(--art-text-gray-700);
-      background: color-mix(in srgb, var(--el-color-primary) 7%, var(--art-main-bg-color));
-      border: 1px solid color-mix(in srgb, var(--el-color-primary) 18%, var(--art-card-border));
-      border-radius: calc(var(--el-border-radius-base) + 4px);
-
-      > :deep(.art-svg-icon) {
-        flex: 0 0 auto;
-        margin-top: 2px;
-        font-size: 20px;
-        color: var(--el-color-primary);
-      }
-
-      div {
-        display: grid;
-        gap: 3px;
-        min-width: 0;
-      }
-
-      strong {
-        color: var(--art-text-gray-900);
-      }
-
-      span {
-        font-size: 13px;
-        line-height: 1.6;
-      }
-    }
   }
 </style>

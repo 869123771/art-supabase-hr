@@ -516,11 +516,6 @@
 
 <style scoped lang="scss">
   .skill-matrix-page {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 0;
-
     &__analysis,
     &__employees {
       min-width: 0;

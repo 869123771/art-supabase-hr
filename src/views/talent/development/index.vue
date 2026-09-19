@@ -94,7 +94,7 @@
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
-  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
   import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
@@ -309,7 +309,7 @@
           maximumFractionDigits: 2
         }).format(value)
   const identity = (title?: string | null, subtitle?: string | null) => (
-    <HrTableIdentityCell primary={title} secondary={subtitle} />
+    <BusinessTableIdentityCell primary={title} secondary={subtitle} />
   )
   const statusTag = (dictionary: string, status?: string | null) => (
     <ElTag type={statusType(status)} effect="light" round>
@@ -1092,11 +1092,6 @@
 
 <style scoped lang="scss">
   .learning-page {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 0;
-
     &__control-deck {
       display: grid;
       gap: 14px;

@@ -159,7 +159,7 @@
     ArtTableQueryProps
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
-  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
@@ -367,7 +367,7 @@
     )
   }
   const identity = (title?: string | null, subtitle?: string | null, extra?: string | null) => (
-    <HrTableIdentityCell primary={title} secondary={subtitle} tertiary={extra} />
+    <BusinessTableIdentityCell primary={title} secondary={subtitle} tertiary={extra} />
   )
   const opportunityStatusOptions = [
     { label: '草稿', value: 'draft' },

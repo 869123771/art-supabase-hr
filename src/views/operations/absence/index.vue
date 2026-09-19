@@ -351,7 +351,8 @@
     width: 112,
     fixed: 'right',
     formatter: (row) => {
-      if (activeEntity.value === 'ledger') return <span class="absence-page__locked">不可变</span>
+      if (activeEntity.value === 'ledger')
+        return <span class="text-xs text-[var(--art-text-gray-400)]">不可变</span>
       if (activeEntity.value === 'balance')
         return (
           <ArtButtonTable
@@ -767,11 +768,6 @@
 
 <style scoped lang="scss">
   .absence-page {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 0;
-
     &__control-deck {
       display: grid;
       gap: 12px;
@@ -922,11 +918,6 @@
       flex-wrap: wrap;
       gap: 2px;
       align-items: center;
-    }
-
-    &__locked {
-      font-size: 12px;
-      color: var(--art-text-gray-400);
     }
   }
 

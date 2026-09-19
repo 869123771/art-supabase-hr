@@ -1,17 +1,18 @@
 <template>
   <ArtDialog ref="dialogRef" size="lg">
     <div class="experience-survey-dialog">
-      <div class="experience-survey-dialog__context" role="note">
-        <span aria-hidden="true"><ArtSvgIcon icon="ri:survey-line" /></span>
-        <div>
-          <small>TRUSTED SURVEY DESIGN</small>
-          <strong>调查边界先于题目发布</strong>
-          <p>先定义受众、周期与匿名阈值；发布后系统固化参与名单，调查设置不再允许修改。</p>
-        </div>
-        <span class="experience-survey-dialog__boundary">
-          <ArtSvgIcon icon="ri:shield-check-line" />最低 5 人成组
-        </span>
-      </div>
+      <ArtEntitySummary
+        icon="ri:survey-line"
+        eyebrow="TRUSTED SURVEY DESIGN"
+        title="调查边界先于题目发布"
+        description="先定义受众、周期与匿名阈值；发布后系统固化参与名单，调查设置不再允许修改。"
+      >
+        <template #aside>
+          <span class="experience-survey-dialog__boundary">
+            <ArtSvgIcon icon="ri:shield-check-line" />最低 5 人成组
+          </span>
+        </template>
+      </ArtEntitySummary>
 
       <ArtForm
         ref="formRef"
@@ -294,52 +295,6 @@
     display: grid;
     gap: 18px;
 
-    &__context {
-      display: grid;
-      grid-template-columns: 44px minmax(0, 1fr) auto;
-      gap: 13px;
-      align-items: center;
-      padding: 15px 16px;
-      background: color-mix(in srgb, var(--theme-color) 5%, var(--art-main-bg-color));
-      border: 1px solid color-mix(in srgb, var(--theme-color) 15%, var(--art-card-border));
-      border-radius: calc(var(--el-border-radius-base) + 4px);
-
-      > span:first-child {
-        display: grid;
-        place-items: center;
-        width: 44px;
-        height: 44px;
-        color: var(--theme-color);
-        background: color-mix(in srgb, var(--theme-color) 11%, transparent);
-        border-radius: var(--el-border-radius-base);
-      }
-
-      div {
-        display: grid;
-        min-width: 0;
-      }
-
-      small {
-        font-size: 9px;
-        font-weight: 750;
-        color: var(--theme-color);
-        letter-spacing: 0.1em;
-      }
-
-      strong {
-        margin-top: 2px;
-        font-size: 15px;
-        color: var(--art-text-gray-900);
-      }
-
-      p {
-        margin: 3px 0 0;
-        font-size: 12px;
-        line-height: 1.55;
-        color: var(--art-text-gray-600);
-      }
-    }
-
     &__boundary {
       display: inline-flex;
       gap: 5px;
@@ -350,22 +305,6 @@
       color: var(--el-color-success-dark-2);
       background: color-mix(in srgb, var(--el-color-success) 10%, transparent);
       border-radius: 999px;
-    }
-  }
-
-  @media only screen and (width <= 767px) {
-    .experience-survey-dialog__context {
-      grid-template-columns: 40px minmax(0, 1fr);
-
-      > span:first-child {
-        width: 40px;
-        height: 40px;
-      }
-    }
-
-    .experience-survey-dialog__boundary {
-      grid-column: 1 / -1;
-      justify-self: start;
     }
   }
 </style>

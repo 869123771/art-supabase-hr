@@ -1,13 +1,12 @@
 <template>
   <ArtDialog ref="dialogRef" size="lg">
     <div class="attendance-dialog">
-      <div class="attendance-dialog__context" role="note">
-        <ArtSvgIcon :icon="context.icon" />
-        <div
-          ><strong>{{ context.title }}</strong
-          ><span>{{ context.description }}</span></div
-        >
-      </div>
+      <ArtEntitySummary
+        :icon="context.icon"
+        :title="context.title"
+        :description="context.description"
+        spaced
+      />
 
       <ArtForm
         ref="formRef"
@@ -42,7 +41,6 @@
     type FormItem,
     type FormItemOption
   } from '@/components/core/forms/art-form/index.vue'
-  import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import ArtEmployeeSelect from '@/components/business/art-employee-select/index.vue'
   import type { EmployeeIntegrationItem } from '@/api/integration/employees'
   import { fetchGetEnableTenantList } from '@/api/system-manage'
@@ -643,45 +641,3 @@
 
   defineExpose({ handleOpen })
 </script>
-
-<style scoped lang="scss">
-  .attendance-dialog {
-    &__context {
-      display: grid;
-      grid-template-columns: 42px minmax(0, 1fr);
-      gap: 12px;
-      align-items: center;
-      padding: 13px 15px;
-      margin-bottom: 18px;
-      color: var(--art-gray-700);
-      background: color-mix(in srgb, var(--theme-color) 6%, var(--art-gray-100));
-      border: 1px solid color-mix(in srgb, var(--theme-color) 18%, var(--art-border-color));
-      border-radius: var(--el-border-radius-base);
-
-      > svg {
-        box-sizing: content-box;
-        width: 22px;
-        height: 22px;
-        padding: 9px;
-        color: var(--theme-color);
-        background: color-mix(in srgb, var(--theme-color) 11%, var(--default-box-color));
-        border-radius: var(--el-border-radius-base);
-      }
-
-      strong,
-      span {
-        display: block;
-      }
-
-      strong {
-        margin-bottom: 3px;
-        color: var(--art-gray-900);
-      }
-
-      span {
-        font-size: 12px;
-        line-height: 1.6;
-      }
-    }
-  }
-</style>

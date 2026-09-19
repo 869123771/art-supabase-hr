@@ -723,11 +723,6 @@
 
 <style scoped lang="scss">
   .compensation-page {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 0;
-
     &__control-deck {
       display: grid;
       gap: 12px;

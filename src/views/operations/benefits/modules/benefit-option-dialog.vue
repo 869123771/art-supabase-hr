@@ -1,14 +1,12 @@
 <template>
   <ArtDialog ref="dialogRef" size="md">
     <div class="benefit-option-dialog">
-      <div class="benefit-option-dialog__context" role="note">
-        <span><ArtSvgIcon icon="ri:stack-line" /></span>
-        <div>
-          <small>COVERAGE OPTION</small>
-          <strong>{{ plan?.planName || '福利覆盖方案' }}</strong>
-          <p>方案固化覆盖层级与缴费规则；员工参保时复制金额快照，后续调价不会改写历史记录。</p>
-        </div>
-      </div>
+      <ArtEntitySummary
+        icon="ri:stack-line"
+        eyebrow="COVERAGE OPTION"
+        :title="plan?.planName || '福利覆盖方案'"
+        description="方案固化覆盖层级与缴费规则；员工参保时复制金额快照，后续调价不会改写历史记录。"
+      />
       <ArtForm
         ref="formRef"
         v-model="form.model"
@@ -30,7 +28,6 @@
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
   import ArtForm, { type FormItem } from '@/components/core/forms/art-form/index.vue'
-  import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import { useUserStore } from '@/store/modules/user'
   import { fetchCompensationOptions, saveBenefitRecord } from '@hr/api'
   import type { DialogType } from '@/types'
@@ -216,50 +213,5 @@
     display: grid;
     gap: 18px;
     min-width: 0;
-
-    &__context {
-      display: grid;
-      grid-template-columns: 42px minmax(0, 1fr);
-      gap: 13px;
-      align-items: center;
-      padding: 14px 16px;
-      background: color-mix(in srgb, var(--theme-color) 6%, var(--art-main-bg-color));
-      border: 1px solid color-mix(in srgb, var(--theme-color) 16%, var(--art-card-border));
-      border-radius: calc(var(--el-border-radius-base) + 4px);
-
-      > span {
-        display: grid;
-        place-items: center;
-        width: 42px;
-        height: 42px;
-        color: var(--theme-color);
-        background: color-mix(in srgb, var(--theme-color) 11%, transparent);
-        border-radius: var(--el-border-radius-base);
-      }
-
-      div {
-        display: grid;
-        min-width: 0;
-      }
-
-      small {
-        font-size: 10px;
-        font-weight: 700;
-        color: var(--theme-color);
-        letter-spacing: 0.08em;
-      }
-
-      strong {
-        margin-top: 2px;
-        color: var(--art-text-gray-900);
-      }
-
-      p {
-        margin: 4px 0 0;
-        font-size: 12px;
-        line-height: 1.55;
-        color: var(--art-text-gray-600);
-      }
-    }
   }
 </style>

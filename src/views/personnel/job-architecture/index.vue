@@ -362,11 +362,6 @@
 
 <style scoped lang="scss">
   .job-architecture-page {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 0;
-
     &__domain-navigation {
       display: grid;
       gap: 12px;

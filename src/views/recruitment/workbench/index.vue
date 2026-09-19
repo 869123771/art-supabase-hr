@@ -89,7 +89,7 @@
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
-  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
   import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtDictDisplay from '@/components/core/base/art-dict-display/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
@@ -312,7 +312,7 @@
     <ArtDictDisplay dictCode={code} value={String(value ?? '')} display="auto" />
   )
   const identity = (primary?: string | null, secondary?: string | null) => (
-    <HrTableIdentityCell primary={primary} secondary={secondary} />
+    <BusinessTableIdentityCell primary={primary} secondary={secondary} />
   )
   const actionWrap = (children: unknown) => <HrTableActions>{children}</HrTableActions>
   interface RecruitmentMoreAction extends ButtonMoreItem {
@@ -1138,11 +1138,6 @@
 
 <style scoped lang="scss">
   .recruitment-page {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 0;
-
     &__pipeline {
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));

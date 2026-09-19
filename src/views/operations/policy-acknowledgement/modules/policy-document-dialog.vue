@@ -1,15 +1,18 @@
 <template>
   <ArtDialog ref="dialogRef" size="lg">
     <div class="policy-dialog">
-      <section class="policy-dialog__context" role="note">
-        <span aria-hidden="true"><ArtSvgIcon icon="ri:file-shield-2-line" /></span>
-        <div>
-          <small>CONTROLLED POLICY VERSION</small>
-          <strong>政策版本与适用人群</strong>
-          <p>发布时固化适用员工清单；已发布版本不可覆盖修改，后续调整必须新建版本。</p>
-        </div>
-        <span class="policy-dialog__boundary"> <ArtSvgIcon icon="ri:lock-line" />发布后只读 </span>
-      </section>
+      <ArtEntitySummary
+        icon="ri:file-shield-2-line"
+        eyebrow="CONTROLLED POLICY VERSION"
+        title="政策版本与适用人群"
+        description="发布时固化适用员工清单；已发布版本不可覆盖修改，后续调整必须新建版本。"
+      >
+        <template #aside>
+          <span class="policy-dialog__boundary">
+            <ArtSvgIcon icon="ri:lock-line" />发布后只读
+          </span>
+        </template>
+      </ArtEntitySummary>
 
       <section class="policy-dialog__notice">
         <ArtSvgIcon icon="ri:information-line" />
@@ -359,53 +362,6 @@
     gap: 16px;
     min-width: 0;
 
-    &__context {
-      display: grid;
-      grid-template-columns: 44px minmax(0, 1fr) auto;
-      gap: 14px;
-      align-items: center;
-      padding: 15px 16px;
-      background: color-mix(in srgb, var(--theme-color) 6%, var(--art-main-bg-color));
-      border: 1px solid color-mix(in srgb, var(--theme-color) 17%, var(--art-card-border));
-      border-radius: 12px;
-
-      > span:first-child {
-        display: grid;
-        place-items: center;
-        width: 44px;
-        height: 44px;
-        font-size: 20px;
-        color: var(--theme-color);
-        background: color-mix(in srgb, var(--theme-color) 11%, transparent);
-        border-radius: 11px;
-      }
-
-      div {
-        display: grid;
-        min-width: 0;
-      }
-
-      small {
-        font-size: 10px;
-        font-weight: 700;
-        color: var(--theme-color);
-        letter-spacing: 0.13em;
-      }
-
-      strong {
-        margin-top: 2px;
-        font-size: 16px;
-        color: var(--art-text-gray-900);
-      }
-
-      p {
-        margin: 3px 0 0;
-        font-size: 12px;
-        line-height: 1.55;
-        color: var(--art-text-gray-600);
-      }
-    }
-
     &__boundary {
       display: inline-flex;
       gap: 6px;
@@ -437,17 +393,6 @@
         margin-top: 2px;
         color: var(--theme-color);
       }
-    }
-  }
-
-  @media only screen and (width <= 767px) {
-    .policy-dialog__context {
-      grid-template-columns: 44px minmax(0, 1fr);
-    }
-
-    .policy-dialog__boundary {
-      grid-column: 1 / -1;
-      justify-self: start;
     }
   }
 </style>

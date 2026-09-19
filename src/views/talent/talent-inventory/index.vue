@@ -393,11 +393,6 @@
 
 <style scoped lang="scss">
   .talent-inventory-page {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 0;
-
     &__workspace {
       min-width: 0;
     }

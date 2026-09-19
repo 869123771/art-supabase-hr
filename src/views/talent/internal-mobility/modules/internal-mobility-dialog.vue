@@ -1,29 +1,22 @@
 <template>
   <ArtDialog ref="dialogRef" size="lg">
     <div class="mobility-dialog">
-      <section class="mobility-dialog__context" role="note">
-        <span aria-hidden="true">
-          <ArtSvgIcon
-            :icon="entity === 'opportunity' ? 'ri:compass-3-line' : 'ri:user-follow-line'"
-          />
-        </span>
-        <div>
-          <small>{{
-            entity === 'opportunity' ? 'INTERNAL OPPORTUNITY' : 'EMPLOYEE APPLICATION'
-          }}</small>
-          <strong>{{ entity === 'opportunity' ? '内部机会与准入条件' : '内部流动申请' }}</strong>
-          <p>
-            {{
-              entity === 'opportunity'
-                ? '定义岗位、轮岗、项目或短期任务；发布前可编辑，发布后进入受控申请流程。'
-                : '申请将保留员工当前任职快照；录用接受后仍需通过人事异动完成正式任职变更。'
-            }}
-          </p>
-        </div>
-        <span class="mobility-dialog__boundary">
-          <ArtSvgIcon icon="ri:shield-check-line" />不直接变更任职
-        </span>
-      </section>
+      <ArtEntitySummary
+        :icon="entity === 'opportunity' ? 'ri:compass-3-line' : 'ri:user-follow-line'"
+        :eyebrow="entity === 'opportunity' ? 'INTERNAL OPPORTUNITY' : 'EMPLOYEE APPLICATION'"
+        :title="entity === 'opportunity' ? '内部机会与准入条件' : '内部流动申请'"
+        :description="
+          entity === 'opportunity'
+            ? '定义岗位、轮岗、项目或短期任务；发布前可编辑，发布后进入受控申请流程。'
+            : '申请将保留员工当前任职快照；录用接受后仍需通过人事异动完成正式任职变更。'
+        "
+      >
+        <template #aside>
+          <span class="mobility-dialog__boundary">
+            <ArtSvgIcon icon="ri:shield-check-line" />不直接变更任职
+          </span>
+        </template>
+      </ArtEntitySummary>
 
       <section
         v-if="entity === 'application' && selectedOpportunity"
@@ -580,7 +573,6 @@
     gap: 16px;
     min-width: 0;
 
-    &__context,
     &__target {
       display: grid;
       grid-template-columns: 44px minmax(0, 1fr) auto;
@@ -626,11 +618,6 @@
       }
     }
 
-    &__context {
-      background: color-mix(in srgb, var(--theme-color) 6%, var(--art-main-bg-color));
-      border: 1px solid color-mix(in srgb, var(--theme-color) 17%, var(--art-card-border));
-    }
-
     &__boundary {
       display: inline-flex;
       gap: 6px;
@@ -660,12 +647,10 @@
 
   @media only screen and (width <= 767px) {
     .mobility-dialog {
-      &__context,
       &__target {
         grid-template-columns: 44px minmax(0, 1fr);
       }
 
-      &__boundary,
       &__target > span:last-child {
         grid-column: 1 / -1;
         justify-self: start;

@@ -811,11 +811,6 @@
 
 <style scoped lang="scss">
   .succession-page {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 0;
-
     &__command-center {
       position: relative;
       padding: 16px 18px 13px;

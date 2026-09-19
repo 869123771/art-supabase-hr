@@ -161,7 +161,7 @@ const enrichWorkspaceReferences = async (
         p_organization_ids: [...organizationIds],
         p_headcount_scopes: [...headcountScopes.values()]
       }),
-    { ignoreCheck: true, showErrorMessage: true }
+    { showErrorMessage: true }
   )
   if (!result.data) return records
 
@@ -234,7 +234,6 @@ export async function fetchHrWorkspaceRecords(
   if (params.tenantId) query = query.eq('tenant_id', params.tenantId)
 
   const result = await responseHandle<WorkspaceRecord[]>(() => withRequestOptions(query, options), {
-    ignoreCheck: true,
     showErrorMessage: true
   })
   const data = result.error ? [] : await enrichWorkspaceReferences(result.data ?? [])

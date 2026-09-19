@@ -116,7 +116,7 @@
   import { deleteEmployee, fetchEmployeeList, fetchEmployeeOrganizationTree } from '@hr/api'
   import HrEmployeeIdentityCell from '@hr/views/shared/hr-employee-identity-cell.vue'
   import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
-  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
 
   defineOptions({ name: 'HrEmployeeRoster' })
   type Employee = Api.Hr.Employee
@@ -293,7 +293,7 @@
       label: '所属租户',
       minWidth: 180,
       formatter: (row: Employee) =>
-        h(HrTableIdentityCell, {
+        h(BusinessTableIdentityCell, {
           primary: row.tenant?.tenantName,
           secondary: row.tenant?.tenantCode
         })
@@ -499,11 +499,6 @@
 
 <style scoped lang="scss">
   .hr-roster-page {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 0;
-
     &__workspace {
       flex: 1;
       width: 100%;

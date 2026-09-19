@@ -1,25 +1,22 @@
 <template>
   <ArtDialog ref="dialogRef" size="lg">
     <div class="org-design-dialog">
-      <section class="org-design-dialog__context" role="note">
-        <span aria-hidden="true"
-          ><ArtSvgIcon :icon="entity === 'scenario' ? 'ri:git-branch-line' : 'ri:node-tree'"
-        /></span>
-        <div>
-          <small>{{
-            entity === 'scenario' ? 'CHANGE SCENARIO' : 'PROPOSED ORGANIZATION DELTA'
-          }}</small>
-          <strong>{{ entity === 'scenario' ? '组织变革情景方案' : '组织结构变更项' }}</strong>
-          <p>{{
-            entity === 'scenario'
-              ? '定义变革目标、生效窗口和责任人，方案评审前不会影响当前组织。'
-              : '仅记录拟议变化；提交评审时才固化关联员工、岗位、招聘、权限和政策范围影响。'
-          }}</p>
-        </div>
-        <span class="org-design-dialog__boundary"
-          ><ArtSvgIcon icon="ri:shield-check-line" />不直接改主数据</span
-        >
-      </section>
+      <ArtEntitySummary
+        :icon="entity === 'scenario' ? 'ri:git-branch-line' : 'ri:node-tree'"
+        :eyebrow="entity === 'scenario' ? 'CHANGE SCENARIO' : 'PROPOSED ORGANIZATION DELTA'"
+        :title="entity === 'scenario' ? '组织变革情景方案' : '组织结构变更项'"
+        :description="
+          entity === 'scenario'
+            ? '定义变革目标、生效窗口和责任人，方案评审前不会影响当前组织。'
+            : '仅记录拟议变化；提交评审时才固化关联员工、岗位、招聘、权限和政策范围影响。'
+        "
+      >
+        <template #aside>
+          <span class="org-design-dialog__boundary">
+            <ArtSvgIcon icon="ri:shield-check-line" />不直接改主数据
+          </span>
+        </template>
+      </ArtEntitySummary>
       <ArtForm
         ref="formRef"
         v-model="form.model"
@@ -429,53 +426,6 @@
     min-width: 0;
   }
 
-  .org-design-dialog__context {
-    display: grid;
-    grid-template-columns: 44px minmax(0, 1fr) auto;
-    gap: 14px;
-    align-items: center;
-    padding: 15px 16px;
-    background: color-mix(in srgb, var(--theme-color) 6%, var(--art-main-bg-color));
-    border: 1px solid color-mix(in srgb, var(--theme-color) 17%, var(--art-card-border));
-    border-radius: 12px;
-  }
-
-  .org-design-dialog__context > span:first-child {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    font-size: 20px;
-    color: var(--theme-color);
-    background: color-mix(in srgb, var(--theme-color) 11%, transparent);
-    border-radius: 11px;
-  }
-
-  .org-design-dialog__context div {
-    display: grid;
-    min-width: 0;
-  }
-
-  .org-design-dialog__context small {
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--theme-color);
-    letter-spacing: 0.13em;
-  }
-
-  .org-design-dialog__context strong {
-    margin-top: 2px;
-    font-size: 16px;
-    color: var(--art-text-gray-900);
-  }
-
-  .org-design-dialog__context p {
-    margin: 3px 0 0;
-    font-size: 12px;
-    line-height: 1.55;
-    color: var(--art-text-gray-600);
-  }
-
   .org-design-dialog__boundary {
     display: inline-flex;
     gap: 6px;
@@ -488,16 +438,5 @@
     white-space: nowrap;
     background: var(--el-color-success-light-9);
     border-radius: 999px;
-  }
-
-  @media only screen and (width <= 767px) {
-    .org-design-dialog__context {
-      grid-template-columns: 44px minmax(0, 1fr);
-    }
-
-    .org-design-dialog__boundary {
-      grid-column: 1 / -1;
-      justify-self: start;
-    }
   }
 </style>

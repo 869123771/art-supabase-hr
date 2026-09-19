@@ -123,7 +123,7 @@
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
-  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
   import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
@@ -376,7 +376,7 @@
   const dateText = (value?: string | null): string =>
     value ? dayjs(value).format('YYYY-MM-DD') : '--'
   const identity = (title?: string | null, subtitle?: string | null) => (
-    <HrTableIdentityCell primary={title} secondary={subtitle} />
+    <BusinessTableIdentityCell primary={title} secondary={subtitle} />
   )
   const dueTone = (status?: Api.Hr.BenefitDueStatus): TagProps['type'] =>
     status === 'expired'
@@ -543,7 +543,7 @@
       formatter: (row) => {
         const item = row as Api.Hr.BenefitLifeEvent
         return (
-          <div class="benefits-page__window">
+          <div class="flex items-center gap-2">
             <strong>{dateText(item.enrollmentWindowEnd)}</strong>
             <ElTag type={dueTone(item.dueStatus)} size="small" effect="light" round>
               {dueLabel(item.dueStatus)}
@@ -1116,12 +1116,6 @@
       font-size: 11px;
       color: var(--art-text-gray-600);
       white-space: nowrap;
-    }
-
-    &__window {
-      display: flex;
-      gap: 8px;
-      align-items: center;
     }
 
     &__operations {

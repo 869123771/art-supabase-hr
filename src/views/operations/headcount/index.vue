@@ -121,7 +121,7 @@
     ArtTableQueryProps
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
-  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
   import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtDictDisplay from '@/components/core/base/art-dict-display/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
@@ -331,7 +331,7 @@
   })
 
   const identity = (title?: string | null, subtitle?: string | null) => (
-    <HrTableIdentityCell primary={title} secondary={subtitle} />
+    <BusinessTableIdentityCell primary={title} secondary={subtitle} />
   )
   const capacityCell = (baseline: number, hires: number, exits: number, target: number) => (
     <div class="workforce-page__capacity-cell">
@@ -800,11 +800,6 @@
 
 <style scoped lang="scss">
   .workforce-page {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 0;
-
     &__capacity-deck {
       display: grid;
       grid-template-columns: minmax(300px, 0.72fr) minmax(0, 2fr);

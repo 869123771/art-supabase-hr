@@ -1,17 +1,18 @@
 <template>
   <ArtDialog ref="dialogRef" size="lg">
     <div class="employee-relation-record-dialog">
-      <div class="employee-relation-record-dialog__context" role="note">
-        <span aria-hidden="true"><ArtSvgIcon :icon="contextMeta.icon" /></span>
-        <div>
-          <small>{{ contextMeta.eyebrow }}</small>
-          <strong>{{ contextMeta.title }}</strong>
-          <p>{{ contextMeta.description }}</p>
-        </div>
-        <span class="employee-relation-record-dialog__boundary">
-          <ArtSvgIcon icon="ri:shield-keyhole-line" />{{ contextMeta.boundary }}
-        </span>
-      </div>
+      <ArtEntitySummary
+        :icon="contextMeta.icon"
+        :eyebrow="contextMeta.eyebrow"
+        :title="contextMeta.title"
+        :description="contextMeta.description"
+      >
+        <template #aside>
+          <span class="employee-relation-record-dialog__boundary">
+            <ArtSvgIcon icon="ri:shield-keyhole-line" />{{ contextMeta.boundary }}
+          </span>
+        </template>
+      </ArtEntitySummary>
 
       <ArtForm
         ref="formRef"
@@ -498,51 +499,6 @@
     gap: 18px;
     min-width: 0;
 
-    &__context {
-      display: grid;
-      grid-template-columns: 42px minmax(0, 1fr) auto;
-      gap: 13px;
-      align-items: center;
-      padding: 14px 16px;
-      background: color-mix(in srgb, var(--theme-color) 6%, var(--art-main-bg-color));
-      border: 1px solid color-mix(in srgb, var(--theme-color) 16%, var(--art-card-border));
-      border-radius: calc(var(--el-border-radius-base) + 4px);
-
-      > span:first-child {
-        display: grid;
-        place-items: center;
-        width: 42px;
-        height: 42px;
-        color: var(--theme-color);
-        background: color-mix(in srgb, var(--theme-color) 11%, transparent);
-        border-radius: var(--el-border-radius-base);
-      }
-
-      div {
-        display: grid;
-        min-width: 0;
-      }
-
-      small {
-        font-size: 10px;
-        font-weight: 700;
-        color: var(--theme-color);
-        letter-spacing: 0.08em;
-      }
-
-      strong {
-        margin-top: 2px;
-        color: var(--art-text-gray-900);
-      }
-
-      p {
-        margin: 4px 0 0;
-        font-size: 12px;
-        line-height: 1.55;
-        color: var(--art-text-gray-600);
-      }
-    }
-
     &__boundary {
       display: inline-flex;
       gap: 6px;
@@ -555,17 +511,6 @@
       white-space: nowrap;
       background: var(--el-color-warning-light-9);
       border-radius: 999px;
-    }
-  }
-
-  @media only screen and (width <= 767px) {
-    .employee-relation-record-dialog__context {
-      grid-template-columns: 42px minmax(0, 1fr);
-
-      .employee-relation-record-dialog__boundary {
-        grid-column: 2;
-        justify-self: start;
-      }
     }
   }
 </style>

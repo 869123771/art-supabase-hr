@@ -1,0 +1,1 @@
+import{G as e}from"./icon-D4GwCxob.js";var t=t=>e?window.requestAnimationFrame(t):setTimeout(t,16),n=t=>e?window.cancelAnimationFrame(t):clearTimeout(t);function r(e,t,n=.03){return e-t>n}export{n,t as r,r as t};

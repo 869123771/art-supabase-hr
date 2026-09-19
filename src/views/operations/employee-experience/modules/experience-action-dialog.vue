@@ -1,17 +1,18 @@
 <template>
   <ArtDialog ref="dialogRef" size="lg">
     <div class="experience-action-dialog">
-      <div class="experience-action-dialog__context" role="note">
-        <span aria-hidden="true"><ArtSvgIcon icon="ri:route-line" /></span>
-        <div>
-          <small>AGGREGATE INSIGHT TO ACTION</small>
-          <strong>把主题洞察转成可验收的组织行动</strong>
-          <p>行动只关联达到匿名阈值的聚合主题，不建立与个人答案的任何引用。</p>
-        </div>
-        <span class="experience-action-dialog__boundary">
-          <ArtSvgIcon icon="ri:user-follow-line" />负责人 + 期限 + 成功标准
-        </span>
-      </div>
+      <ArtEntitySummary
+        icon="ri:route-line"
+        eyebrow="AGGREGATE INSIGHT TO ACTION"
+        title="把主题洞察转成可验收的组织行动"
+        description="行动只关联达到匿名阈值的聚合主题，不建立与个人答案的任何引用。"
+      >
+        <template #aside>
+          <span class="experience-action-dialog__boundary">
+            <ArtSvgIcon icon="ri:user-follow-line" />负责人 + 期限 + 成功标准
+          </span>
+        </template>
+      </ArtEntitySummary>
 
       <ArtForm
         ref="formRef"
@@ -369,52 +370,6 @@
     display: grid;
     gap: 18px;
 
-    &__context {
-      display: grid;
-      grid-template-columns: 44px minmax(0, 1fr) auto;
-      gap: 13px;
-      align-items: center;
-      padding: 15px 16px;
-      background: color-mix(in srgb, var(--el-color-success) 5%, var(--art-main-bg-color));
-      border: 1px solid color-mix(in srgb, var(--el-color-success) 16%, var(--art-card-border));
-      border-radius: calc(var(--el-border-radius-base) + 4px);
-
-      > span:first-child {
-        display: grid;
-        place-items: center;
-        width: 44px;
-        height: 44px;
-        color: var(--el-color-success-dark-2);
-        background: color-mix(in srgb, var(--el-color-success) 12%, transparent);
-        border-radius: var(--el-border-radius-base);
-      }
-
-      div {
-        display: grid;
-        min-width: 0;
-      }
-
-      small {
-        font-size: 9px;
-        font-weight: 750;
-        color: var(--el-color-success-dark-2);
-        letter-spacing: 0.1em;
-      }
-
-      strong {
-        margin-top: 2px;
-        font-size: 15px;
-        color: var(--art-text-gray-900);
-      }
-
-      p {
-        margin: 3px 0 0;
-        font-size: 12px;
-        line-height: 1.55;
-        color: var(--art-text-gray-600);
-      }
-    }
-
     &__boundary {
       display: inline-flex;
       gap: 5px;
@@ -425,22 +380,6 @@
       color: var(--el-color-success-dark-2);
       background: color-mix(in srgb, var(--el-color-success) 10%, transparent);
       border-radius: 999px;
-    }
-  }
-
-  @media only screen and (width <= 767px) {
-    .experience-action-dialog__context {
-      grid-template-columns: 40px minmax(0, 1fr);
-
-      > span:first-child {
-        width: 40px;
-        height: 40px;
-      }
-    }
-
-    .experience-action-dialog__boundary {
-      grid-column: 1 / -1;
-      justify-self: start;
     }
   }
 </style>

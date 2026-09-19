@@ -1,17 +1,18 @@
 <template>
   <ArtDialog ref="dialogRef" size="lg">
     <div class="review-dialog">
-      <section class="review-dialog__context" role="note">
-        <span aria-hidden="true"><ArtSvgIcon :icon="context.icon" /></span>
-        <div>
-          <small>{{ context.eyebrow }}</small>
-          <strong>{{ context.title }}</strong>
-          <p>{{ context.description }}</p>
-        </div>
-        <span class="review-dialog__boundary">
-          <ArtSvgIcon icon="ri:shield-check-line" />{{ context.boundary }}
-        </span>
-      </section>
+      <ArtEntitySummary
+        :icon="context.icon"
+        :eyebrow="context.eyebrow"
+        :title="context.title"
+        :description="context.description"
+      >
+        <template #aside>
+          <span class="review-dialog__boundary">
+            <ArtSvgIcon icon="ri:shield-check-line" />{{ context.boundary }}
+          </span>
+        </template>
+      </ArtEntitySummary>
 
       <section v-if="entity === 'item'" class="review-dialog__employee" aria-label="员工调薪快照">
         <div>
@@ -556,57 +557,6 @@
     gap: 18px;
     min-width: 0;
 
-    &__context {
-      display: grid;
-      grid-template-columns: 44px minmax(0, 1fr) auto;
-      gap: 13px;
-      align-items: center;
-      padding: 15px 16px;
-      background:
-        radial-gradient(
-          circle at 98% 0%,
-          color-mix(in srgb, var(--theme-color) 9%, transparent),
-          transparent 34%
-        ),
-        color-mix(in srgb, var(--theme-color) 4%, var(--art-main-bg-color));
-      border: 1px solid color-mix(in srgb, var(--theme-color) 16%, var(--art-card-border));
-      border-radius: calc(var(--el-border-radius-base) + 5px);
-
-      > span:first-child {
-        display: grid;
-        place-items: center;
-        width: 44px;
-        height: 44px;
-        color: var(--theme-color);
-        background: color-mix(in srgb, var(--theme-color) 11%, transparent);
-        border-radius: 13px;
-      }
-
-      div {
-        display: grid;
-        min-width: 0;
-      }
-
-      small {
-        font-size: 10px;
-        font-weight: 700;
-        color: var(--theme-color);
-        letter-spacing: 0.08em;
-      }
-
-      strong {
-        margin-top: 2px;
-        color: var(--art-text-gray-900);
-      }
-
-      p {
-        margin: 4px 0 0;
-        font-size: 12px;
-        line-height: 1.55;
-        color: var(--art-text-gray-600);
-      }
-    }
-
     &__boundary {
       display: inline-flex;
       gap: 6px;
@@ -681,15 +631,6 @@
 
   @media only screen and (width <= 767px) {
     .review-dialog {
-      &__context {
-        grid-template-columns: 40px minmax(0, 1fr);
-      }
-
-      &__boundary {
-        grid-column: 1 / -1;
-        justify-self: start;
-      }
-
       &__employee {
         grid-template-columns: 1fr;
       }

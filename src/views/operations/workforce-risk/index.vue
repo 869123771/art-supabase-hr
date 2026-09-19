@@ -200,11 +200,6 @@
 
 <style scoped lang="scss">
   .workforce-risk-page {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 0;
-
     &__workspace {
       display: flex;
       flex-direction: column;

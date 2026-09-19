@@ -97,7 +97,7 @@
   import WorkspaceRecordDialog from './workspace-record-dialog.vue'
   import PersonnelChangeDialog from '../personnel/personnel-change/modules/personnel-change-dialog.vue'
   import HrTableActions from './hr-table-actions.vue'
-  import HrTableIdentityCell from './hr-table-identity-cell.vue'
+  import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
   import {
     hrWorkspaceDefinitions,
     type HrWorkspaceDefinition,
@@ -291,7 +291,7 @@
         const value = get(row, String(column.key))
         if (column.secondaryKey || column.tertiaryKey)
           return (
-            <HrTableIdentityCell
+            <BusinessTableIdentityCell
               primary={value == null ? undefined : String(value)}
               secondary={String(get(row, String(column.secondaryKey)) ?? '')}
               tertiary={String(get(row, String(column.tertiaryKey)) ?? '')}
@@ -408,11 +408,6 @@
 
 <style scoped lang="scss">
   .hr-workspace-page {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 0;
-
     &__tabs {
       min-width: 0;
       padding-inline: 8px;

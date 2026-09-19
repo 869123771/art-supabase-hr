@@ -94,7 +94,7 @@
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
-  import HrTableIdentityCell from '@hr/views/shared/hr-table-identity-cell.vue'
+  import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
   import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
@@ -262,7 +262,7 @@
   const formatDateTime = (value?: string | null): string =>
     value ? (formatWithDayjs(value) ?? '--') : '--'
   const identity = (primary?: string | null, secondary?: string | null) => (
-    <HrTableIdentityCell primary={primary} secondary={secondary} />
+    <BusinessTableIdentityCell primary={primary} secondary={secondary} />
   )
   const statusTone = (status: Api.Hr.ServiceRequestStatus) =>
     ['resolved', 'closed'].includes(status)
