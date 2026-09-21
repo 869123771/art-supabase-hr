@@ -10,10 +10,20 @@
         </div>
       </div>
 
-      <ElForm label-position="top">
-        <ElFormItem label="工单处理人" required>
+      <ArtForm
+        ref="formRef"
+        v-model="form"
+        :items="[]"
+        :rules="rules"
+        custom-layout
+        scroll-to-error
+        :show-reset="false"
+        :show-submit="false"
+        root-class="p-0! md:p-0!"
+      >
+        <ElFormItem label="工单处理人" prop="assigneeEmployeeId" required>
           <ArtEmployeeSelect
-            v-model="assigneeEmployeeId"
+            v-model="form.assigneeEmployeeId"
             v-model:selected-data="selection"
             :tenant-id="record?.tenantId"
             title="选择员工服务处理人"
@@ -21,9 +31,9 @@
             placeholder="请选择处理人"
           />
         </ElFormItem>
-        <ElFormItem label="分派说明">
+        <ElFormItem label="分派说明" prop="comment">
           <ElInput
-            v-model="comment"
+            v-model="form.comment"
             type="textarea"
             :rows="3"
             maxlength="300"
@@ -31,14 +41,16 @@
             placeholder="可选：补充分派依据或处理要求"
           />
         </ElFormItem>
-      </ElForm>
+      </ArtForm>
     </div>
   </ArtDialog>
 </template>
 
 <script setup lang="ts">
-  import { ElMessage } from 'element-plus'
+  import { nextTick, reactive, ref, shallowRef } from 'vue'
+  import type { FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
+  import ArtForm from '@/components/core/forms/art-form/index.vue'
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import ArtEmployeeSelect from '@/components/business/art-employee-select/index.vue'
@@ -47,10 +59,13 @@
 
   const emit = defineEmits<{ success: [] }>()
   const dialogRef = ref<ArtDialogExpose>()
+  const formRef = ref<InstanceType<typeof ArtForm>>()
   const record = shallowRef<Api.Hr.ServiceRequest>()
-  const assigneeEmployeeId = ref<string>()
+  const form = reactive({ assigneeEmployeeId: undefined as string | undefined, comment: '' })
+  const rules: FormRules = {
+    assigneeEmployeeId: [{ required: true, message: '请选择工单处理人', trigger: 'change' }]
+  }
   const selection = ref<EmployeeIntegrationItem[]>([])
-  const comment = ref('')
 
   const selectedAssignee = (request: Api.Hr.ServiceRequest): EmployeeIntegrationItem[] =>
     request.assignee
@@ -66,25 +81,25 @@
       : []
 
   const submit = async (): Promise<boolean> => {
-    if (!record.value?.id || !assigneeEmployeeId.value) {
-      ElMessage.warning('请选择工单处理人')
+    if (!record.value?.id) return false
+    try {
+      await formRef.value?.validate()
+    } catch {
       return false
     }
-    await transitionServiceRequest(
-      record.value.id,
-      'assign',
-      assigneeEmployeeId.value,
-      comment.value
-    )
+    const assigneeEmployeeId = form.assigneeEmployeeId
+    if (!assigneeEmployeeId) return false
+    await transitionServiceRequest(record.value.id, 'assign', assigneeEmployeeId, form.comment)
     emit('success')
     return true
   }
 
   const handleOpen = async (request: Api.Hr.ServiceRequest): Promise<void> => {
     record.value = request
-    assigneeEmployeeId.value = request.assignedEmployeeId || undefined
+    form.assigneeEmployeeId = request.assignedEmployeeId || undefined
     selection.value = selectedAssignee(request)
-    comment.value = ''
+    form.comment = ''
+    void nextTick(() => formRef.value?.clearValidate())
     await dialogRef.value?.handleOpen(undefined, {
       title: '分派员工服务工单',
       subtitle: '明确唯一处理人，避免队列内无人负责',

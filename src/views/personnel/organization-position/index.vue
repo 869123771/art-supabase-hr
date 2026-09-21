@@ -16,7 +16,7 @@
           primary-size="280px"
           primary-min="250px"
           primary-max="380px"
-          :breakpoint="920"
+          :breakpoint="1180"
           stacked-primary-size="360px"
         >
           <template #primary>
@@ -235,7 +235,7 @@
     type BusinessWorkspaceMetric,
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
-  import { fetchGetOrganizationTree } from '@/api/system-manage'
+  import { fetchGetOrganizationOptionsTree } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
   import TreeUtils from '@/utils/tree'
   import { getFriendlySupabaseErrorMessage } from '@/utils/supabase/error'
@@ -410,7 +410,7 @@
     organizationState.loading = true
     organizationState.error = null
     try {
-      const response = await fetchGetOrganizationTree({
+      const response = await fetchGetOrganizationOptionsTree({
         status: '1'
       })
       organizationState.tree = response.data ?? []
@@ -691,12 +691,6 @@
     }
 
     @media (width <= 1180px) {
-      &__directory {
-        grid-template-columns: 320px minmax(320px, 1fr);
-      }
-    }
-
-    @media (width <= 920px) {
       &__directory {
         display: flex;
         flex-direction: column;
