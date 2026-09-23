@@ -226,8 +226,14 @@
           :data="pagedRecords"
           :columns="tableColumns"
           :loading="loading"
-          :pagination="false"
+          :pagination="
+            filteredRecords.length > pageSize
+              ? { current: currentPage, size: pageSize, total: filteredRecords.length }
+              : false
+          "
+          :pagination-options="{ layout: 'total, prev, pager, next' }"
           :show-table-header="false"
+          @pagination:current-change="currentPage = $event"
           row-key="id"
           table-layout="fixed"
           empty-height="220px"
@@ -306,16 +312,6 @@
             </span>
           </template>
         </ArtTable>
-
-        <ElPagination
-          v-if="filteredRecords.length > pageSize"
-          v-model:current-page="currentPage"
-          class="skill-matrix-page__pagination"
-          background
-          layout="total, prev, pager, next"
-          :page-size="pageSize"
-          :total="filteredRecords.length"
-        />
       </ArtSectionCard>
     </div>
   </ArtPermissionGuard>

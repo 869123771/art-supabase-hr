@@ -21,7 +21,14 @@
         :readonly="isReadonly"
         @remove="contracts.splice(index, 1)"
       >
-        <ElForm label-position="top" class="hr-profile-page__record-form" :disabled="isReadonly">
+        <ArtForm
+          custom-layout
+          :show-reset="false"
+          :show-submit="false"
+          label-position="top"
+          form-class="hr-profile-page__record-form"
+          :disabled="isReadonly"
+        >
           <ElFormItem
             label="合同编号"
             :required="Boolean(item.id) || contractNumberManualRequired"
@@ -99,11 +106,14 @@
               show-word-limit
             />
           </ElFormItem>
-        </ElForm>
-        <ElForm
+        </ArtForm>
+        <ArtForm
+          custom-layout
+          :show-reset="false"
+          :show-submit="false"
           v-if="canViewCompensationDetails"
           label-position="top"
-          class="hr-profile-page__compensation-form"
+          form-class="hr-profile-page__compensation-form"
           :disabled="!canEditCompensationDetails"
         >
           <ElFormItem label="月薪">
@@ -117,13 +127,14 @@
             />
             <ElInput v-else :model-value="formatSensitiveNumber(item.monthlySalary)" disabled />
           </ElFormItem>
-        </ElForm>
+        </ArtForm>
       </HistoryCard>
     </HistorySection>
   </ElTabPane>
 </template>
 
 <script setup lang="ts">
+  import ArtForm from '@/components/core/forms/art-form/index.vue'
   import HistoryCard from './history-card.vue'
   import HistorySection from './history-section.vue'
   import { formatSensitiveNumber } from '@/utils/field-permission'

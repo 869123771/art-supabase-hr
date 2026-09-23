@@ -113,9 +113,12 @@
             :readonly="!canEditCareerRecords"
             @remove="form.educations.splice(index, 1)"
           >
-            <ElForm
+            <ArtForm
+              custom-layout
+              :show-reset="false"
+              :show-submit="false"
               label-position="top"
-              class="hr-profile-page__record-form"
+              form-class="hr-profile-page__record-form"
               :disabled="!canEditCareerRecords"
             >
               <ElFormItem
@@ -174,7 +177,7 @@
                   maxlength="300"
                   show-word-limit
               /></ElFormItem>
-            </ElForm>
+            </ArtForm>
           </HistoryCard>
         </HistorySection>
       </ElTabPane>
@@ -203,9 +206,12 @@
             :readonly="!canEditCareerRecords"
             @remove="form.workExperiences.splice(index, 1)"
           >
-            <ElForm
+            <ArtForm
+              custom-layout
+              :show-reset="false"
+              :show-submit="false"
               label-position="top"
-              class="hr-profile-page__record-form"
+              form-class="hr-profile-page__record-form"
               :disabled="!canEditCareerRecords"
             >
               <ElFormItem
@@ -266,7 +272,7 @@
                   maxlength="500"
                   show-word-limit
               /></ElFormItem>
-            </ElForm>
+            </ArtForm>
           </HistoryCard>
         </HistorySection>
       </ElTabPane>
@@ -293,9 +299,12 @@
             :readonly="!canEditCareerRecords"
             @remove="form.trainings.splice(index, 1)"
           >
-            <ElForm
+            <ArtForm
+              custom-layout
+              :show-reset="false"
+              :show-submit="false"
               label-position="top"
-              class="hr-profile-page__record-form"
+              form-class="hr-profile-page__record-form"
               :disabled="!canEditCareerRecords"
             >
               <ElFormItem
@@ -355,11 +364,14 @@
                   maxlength="300"
                   show-word-limit
               /></ElFormItem>
-            </ElForm>
-            <ElForm
+            </ArtForm>
+            <ArtForm
+              custom-layout
+              :show-reset="false"
+              :show-submit="false"
               v-if="canViewCompensationDetails"
               label-position="top"
-              class="hr-profile-page__compensation-form"
+              form-class="hr-profile-page__compensation-form"
               :disabled="!canEditCompensationDetails"
             >
               <ElFormItem label="培训费用">
@@ -373,7 +385,7 @@
                 />
                 <ElInput v-else :model-value="formatSensitiveNumber(item.cost)" disabled />
               </ElFormItem>
-            </ElForm>
+            </ArtForm>
           </HistoryCard>
         </HistorySection>
       </ElTabPane>
@@ -400,9 +412,12 @@
             :readonly="!canEditCareerRecords"
             @remove="form.rewards.splice(index, 1)"
           >
-            <ElForm
+            <ArtForm
+              custom-layout
+              :show-reset="false"
+              :show-submit="false"
               label-position="top"
-              class="hr-profile-page__record-form"
+              form-class="hr-profile-page__record-form"
               :disabled="!canEditCareerRecords"
             >
               <ElFormItem
@@ -450,11 +465,14 @@
                   maxlength="500"
                   show-word-limit
               /></ElFormItem>
-            </ElForm>
-            <ElForm
+            </ArtForm>
+            <ArtForm
+              custom-layout
+              :show-reset="false"
+              :show-submit="false"
               v-if="canViewCompensationDetails"
               label-position="top"
-              class="hr-profile-page__compensation-form"
+              form-class="hr-profile-page__compensation-form"
               :disabled="!canEditCompensationDetails"
             >
               <ElFormItem label="金额">
@@ -468,7 +486,7 @@
                 />
                 <ElInput v-else :model-value="formatSensitiveNumber(item.amount)" disabled />
               </ElFormItem>
-            </ElForm>
+            </ArtForm>
           </HistoryCard>
         </HistorySection>
       </ElTabPane>
