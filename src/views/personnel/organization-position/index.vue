@@ -107,8 +107,8 @@
               :loading="directoryState.loading"
               :error="directoryState.error"
               :empty="!directoryState.loading && !directoryState.error && !filteredPositions.length"
-              empty-title="当前组织暂无岗位"
-              empty-description="请先在 HR / 岗位管理中为当前组织新增并启用岗位。"
+              empty-title="当前组织及下级暂无岗位"
+              empty-description="可在 HR / 岗位管理中为当前组织或下级组织新增并启用岗位。"
               :min-height="280"
               @retry="loadDirectory"
             >
@@ -125,7 +125,10 @@
               </template>
 
               <ElScrollbar class="organization-position-page__position-scrollbar">
-                <ul class="organization-position-page__position-list" aria-label="当前组织岗位列表">
+                <ul
+                  class="organization-position-page__position-list"
+                  aria-label="当前组织及下级岗位列表"
+                >
                   <li
                     v-for="position in filteredPositions"
                     :key="position.id || position.positionCode"
@@ -141,8 +144,10 @@
                       </span>
                       <span class="organization-position-page__position-identity">
                         <strong :title="position.positionName">{{ position.positionName }}</strong>
-                        <small :title="position.positionCode" translate="no">
-                          {{ position.positionCode }}
+                        <small
+                          :title="`${position.positionCode} · ${positionOrganizationName(position)}`"
+                        >
+                          {{ position.positionCode }} · {{ positionOrganizationName(position) }}
                         </small>
                       </span>
                       <span class="organization-position-page__position-count">
@@ -298,6 +303,19 @@
   const selectedOrganization = computed(() =>
     flatOrganizations.value.find((organization) => organization.id === organizationState.selectedId)
   )
+  const organizationNames = computed(
+    () =>
+      new Map(
+        flatOrganizations.value.map((organization) => [
+          organization.id,
+          organization.organizationName
+        ])
+      )
+  )
+  const positionOrganizationName = (position: Position): string =>
+    organizationNames.value.get(position.organizationId || '') ||
+    selectedOrganization.value?.organizationName ||
+    '当前组织'
   const filteredPositions = computed(() => {
     const keyword = directoryState.positionKeyword.trim().toLocaleLowerCase('zh-CN')
     if (!keyword) return directoryState.positions
@@ -325,7 +343,7 @@
   })
   const positionSubtitle = computed(
     () =>
-      `${selectedOrganization.value?.organizationName || '当前组织'} · ${directoryState.positions.length} 个岗位`
+      `${selectedOrganization.value?.organizationName || '当前组织'}及下级 · ${directoryState.positions.length} 个岗位`
   )
   const employeeSubtitle = computed(() => {
     const suffix = directoryState.truncated ? '（结果已截取）' : ''
