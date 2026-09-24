@@ -401,6 +401,7 @@
       label: '福利计划 / 编码',
       minWidth: 230,
       fixed: 'left',
+      link: { permission: 'Hr:Benefits:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.BenefitPlan
         return identity(item.planName, item.planCode)
@@ -457,6 +458,7 @@
       label: '员工 / 工号',
       minWidth: 190,
       fixed: 'left',
+      link: { permission: 'Hr:Benefits:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.BenefitEnrollment
         return identity(
@@ -516,6 +518,7 @@
       label: '员工 / 工号',
       minWidth: 200,
       fixed: 'left',
+      link: { permission: 'Hr:Benefits:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.BenefitLifeEvent
         return identity(

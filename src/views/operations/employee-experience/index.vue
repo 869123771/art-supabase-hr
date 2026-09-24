@@ -460,6 +460,11 @@
       label: '调查 / 编码',
       minWidth: 240,
       fixed: 'left',
+      link: {
+        permission: 'Hr:Experience:View',
+        disabled: (row) => (row as Api.Hr.EmployeeExperienceMySurvey).availability === 'available',
+        onClick: openDetail
+      },
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeExperienceMySurvey
         return identity(item.surveyName, item.surveyCode)
@@ -508,6 +513,7 @@
       label: '调查 / 编码',
       minWidth: 230,
       fixed: 'left',
+      link: { permission: 'Hr:Experience:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeExperienceSurvey
         return identity(item.surveyName, item.surveyCode)
@@ -572,6 +578,7 @@
       label: '调查 / 主题',
       minWidth: 250,
       fixed: 'left',
+      link: { permission: 'Hr:Experience:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeExperienceInsight
         return identity(
@@ -653,6 +660,7 @@
       label: '改善行动 / 调查',
       minWidth: 260,
       fixed: 'left',
+      link: { permission: 'Hr:Experience:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeExperienceAction
         return identity(item.title, item.surveyName || item.surveyCode)

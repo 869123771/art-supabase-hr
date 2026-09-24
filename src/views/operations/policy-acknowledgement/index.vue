@@ -406,6 +406,7 @@
       label: '政策 / 版本',
       minWidth: 230,
       fixed: 'left',
+      link: { onClick: (row) => focusReceipts(row as Api.Hr.HrPolicyDocument) },
       formatter: (row) => {
         const item = row as Api.Hr.HrPolicyDocument
         return identity(item.policyTitle, `${item.policyCode} · v${item.versionNo}`, item.category)

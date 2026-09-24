@@ -573,6 +573,10 @@
       label: '调薪周期 / 编码',
       minWidth: 230,
       fixed: 'left',
+      link: {
+        permission: 'Hr:CompensationReview:View',
+        onClick: (row) => selectCycle(row as Api.Hr.CompensationReviewCycle)
+      },
       formatter: (row) => {
         const item = row as Api.Hr.CompensationReviewCycle
         return identity(item.cycleName, item.cycleCode, `${item.reviewYear} 年`)

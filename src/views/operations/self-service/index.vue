@@ -348,6 +348,12 @@
       label: '工单 / 申请员工',
       minWidth: 220,
       fixed: 'left',
+      link: {
+        permission: 'Hr:SelfService:View',
+        onClick: (row) => {
+          if (row.id) void requestDrawerRef.value?.handleOpen(row.id)
+        }
+      },
       formatter: (row) => {
         const item = row as Api.Hr.ServiceRequest
         return identity(

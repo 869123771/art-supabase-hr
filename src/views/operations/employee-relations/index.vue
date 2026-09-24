@@ -397,6 +397,7 @@
       label: '案件 / 受控标题',
       minWidth: 245,
       fixed: 'left',
+      link: { permission: 'Hr:EmployeeRelations:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeRelationCase
         return identity(item.title, item.caseNo)
@@ -478,6 +479,7 @@
       label: '处置行动',
       minWidth: 230,
       fixed: 'left',
+      link: { permission: 'Hr:EmployeeRelations:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeRelationAction
         return identity(item.title, dictLabel('hrEmployeeRelationActionType', item.actionType))

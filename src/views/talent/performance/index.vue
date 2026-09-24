@@ -655,6 +655,10 @@
       label: '校准会议',
       minWidth: 230,
       fixed: 'left',
+      link: {
+        permission: 'Hr:Performance:View',
+        onClick: (row) => openCalibrationItems(row as Api.Hr.PerformanceCalibrationSession)
+      },
       formatter: (row) => {
         const item = row as Api.Hr.PerformanceCalibrationSession
         return identity(item.sessionName, item.sessionNo)

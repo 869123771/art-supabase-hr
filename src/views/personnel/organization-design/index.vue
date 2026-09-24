@@ -398,6 +398,7 @@
       label: '方案 / 编码',
       minWidth: 225,
       fixed: 'left',
+      link: { onClick: (row) => focusChanges(row as Api.Hr.OrganizationDesignScenario) },
       formatter: (row) => {
         const item = row as Api.Hr.OrganizationDesignScenario
         return identity(item.scenarioName, item.scenarioCode, item.objective)

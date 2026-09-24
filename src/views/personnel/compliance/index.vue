@@ -402,6 +402,7 @@
       label: '员工 / 任职信息',
       minWidth: 220,
       fixed: 'left',
+      link: { permission: 'Hr:Compliance:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.ComplianceRisk
         return identity(
@@ -455,6 +456,7 @@
       label: '合同 / 员工',
       minWidth: 235,
       fixed: 'left',
+      link: { permission: 'Hr:Compliance:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.ComplianceContract
         return identity(
@@ -522,6 +524,7 @@
       label: '资质 / 员工',
       minWidth: 235,
       fixed: 'left',
+      link: { permission: 'Hr:Compliance:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.ComplianceQualification
         return identity(

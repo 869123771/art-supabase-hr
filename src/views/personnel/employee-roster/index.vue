@@ -275,6 +275,7 @@
       label: '员工身份',
       minWidth: 210,
       fixed: 'left',
+      link: { permission: 'Hr:Employee:View', onClick: openEmployeeDetail },
       formatter: (row) =>
         h(HrEmployeeIdentityCell, {
           employeeName: row.employeeName,

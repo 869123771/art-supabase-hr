@@ -368,6 +368,10 @@
       label: '员工 / 事项',
       minWidth: 225,
       fixed: 'left',
+      link: {
+        permission: 'Hr:Lifecycle:View',
+        onClick: (row) => openCaseTasks(row as Api.Hr.LifecycleCase)
+      },
       formatter: (row) => {
         const item = row as Api.Hr.LifecycleCase
         return identity(item.employee?.name, `${item.employee?.code ?? '--'} · ${item.caseNo}`)

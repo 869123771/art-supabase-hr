@@ -449,6 +449,11 @@
       label: '内部机会',
       minWidth: 245,
       fixed: 'left',
+      link: {
+        permission: 'Hr:InternalMobility:Application:Manage',
+        disabled: (row) => !(row as Api.Hr.InternalMobilityOpportunity).applicationCount,
+        onClick: (row) => focusApplications(row as Api.Hr.InternalMobilityOpportunity)
+      },
       formatter: (row) => {
         const item = row as Api.Hr.InternalMobilityOpportunity
         return identity(item.opportunityTitle, item.opportunityCode, item.roleSummary)

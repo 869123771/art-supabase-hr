@@ -482,6 +482,9 @@
       label: '外部人员 / 任务',
       minWidth: 220,
       fixed: 'left',
+      link: {
+        onClick: (row) => focusControls(row as Api.Hr.ExternalEngagement)
+      },
       formatter: (row) => {
         const item = row as Api.Hr.ExternalEngagement
         return identity(
