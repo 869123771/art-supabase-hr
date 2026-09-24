@@ -1,6 +1,10 @@
 <template>
   <ArtDialog ref="dialogRef" size="md">
     <div class="compliance-action-dialog">
+      <ElAlert v-if="loadError" type="error" :closable="false" show-icon>
+        <template #title>{{ loadError }}</template>
+        <ElButton link type="primary" @click="loadDeferredRecord">重新加载</ElButton>
+      </ElAlert>
       <div class="compliance-action-dialog__subject">
         <span aria-hidden="true"><ArtSvgIcon :icon="actionMeta.icon" /></span>
         <div>
@@ -89,6 +93,9 @@
   const entity = ref<Entity>('contract')
   const action = ref<Api.Hr.ComplianceAction>('comment')
   const record = shallowRef<RecordItem>()
+  const loadError = ref('')
+  const deferredLoader = shallowRef<(() => Promise<RecordItem | undefined>) | undefined>()
+  const requestedAction = ref<Api.Hr.ComplianceAction | 'resolve'>('comment')
   const ownerSelection = ref<EmployeeIntegrationItem[]>([])
 
   const createInitialModel = (): FormModel => ({
@@ -309,7 +316,7 @@
   }
 
   const submit = async (): Promise<boolean> => {
-    if (!record.value?.id) return false
+    if (loadError.value || !record.value?.id) return false
     try {
       await formRef.value?.validate()
       validateBusiness()
@@ -337,11 +344,11 @@
     }
   }
 
-  const handleOpen = async (
+  const initializeAction = (
     targetEntity: Entity,
     targetAction: Api.Hr.ComplianceAction,
     targetRecord: RecordItem
-  ): Promise<void> => {
+  ): void => {
     entity.value = targetEntity
     action.value = targetAction
     record.value = targetRecord
@@ -370,15 +377,61 @@
       })
       ownerSelection.value = toSelection(contract.renewalOwner, contract.tenantId)
     }
+  }
 
-    await nextTick()
-    formRef.value?.clearValidate()
+  const loadDeferredRecord = async (): Promise<void> => {
+    if (!deferredLoader.value) return
+    loadError.value = ''
+    dialogRef.value?.setLoading(true)
+    try {
+      const targetRecord = await deferredLoader.value()
+      if (!targetRecord) throw new Error('合规档案不存在或已无权访问')
+      const targetAction =
+        requestedAction.value === 'resolve'
+          ? entity.value === 'contract'
+            ? (targetRecord as Api.Hr.ComplianceContract).contractStatus === 'renewing'
+              ? 'renew'
+              : 'start_renewal'
+            : (targetRecord as Api.Hr.ComplianceQualification).verificationStatus === 'verified'
+              ? 'comment'
+              : 'verify'
+          : requestedAction.value
+      initializeAction(entity.value, targetAction, targetRecord)
+      dialogRef.value?.setOptions({
+        title: actionMeta.value.title,
+        subtitle: `${targetRecord.employee?.employeeName || '员工'} · ${targetRecord.employee?.employeeNo || '未维护工号'}`,
+        confirmText: actionMeta.value.confirmText
+      })
+      if (targetAction === 'renew') {
+        await numberRule.loadRule()
+        if (numberRule.automatic.value && !formModel.contractNo) formModel.contractNo = 'AUTO'
+      }
+      await nextTick()
+      formRef.value?.clearValidate()
+    } catch (error) {
+      loadError.value = error instanceof Error ? error.message : '合规档案加载失败'
+    } finally {
+      dialogRef.value?.setLoading(false)
+    }
+  }
+
+  const handleOpen = async (
+    targetEntity: Entity,
+    targetAction: Api.Hr.ComplianceAction,
+    targetRecord: RecordItem
+  ): Promise<void> => {
+    initializeAction(targetEntity, targetAction, targetRecord)
+    loadError.value = ''
+    deferredLoader.value = undefined
+
     await dialogRef.value?.handleOpen(undefined, {
       title: actionMeta.value.title,
       subtitle: `${targetRecord.employee?.employeeName || '员工'} · ${targetRecord.employee?.employeeNo || '未维护工号'}`,
       confirmText: actionMeta.value.confirmText,
       contentMaxHeight: 'calc(100vh - 184px)',
       onOpen: async (_data, api) => {
+        await nextTick()
+        formRef.value?.clearValidate()
         if (targetAction !== 'renew') return
         api.setLoading(true)
         try {
@@ -392,7 +445,32 @@
     })
   }
 
-  defineExpose({ handleOpen })
+  const handleOpenDeferred = async (
+    targetEntity: Entity,
+    targetAction: Api.Hr.ComplianceAction | 'resolve',
+    loadRecord: () => Promise<RecordItem | undefined>
+  ): Promise<void> => {
+    entity.value = targetEntity
+    action.value = 'comment'
+    record.value = undefined
+    Object.assign(formModel, createInitialModel())
+    ownerSelection.value = []
+    loadError.value = ''
+    requestedAction.value = targetAction
+    deferredLoader.value = loadRecord
+    await dialogRef.value?.handleOpen(undefined, {
+      title: '处理合规预警',
+      subtitle: '正在加载合规档案…',
+      confirmText: '确认',
+      contentMaxHeight: 'calc(100vh - 184px)',
+      loading: true,
+      loadingText: '正在加载合规档案…',
+      onOpen: loadDeferredRecord,
+      onConfirm: submit
+    })
+  }
+
+  defineExpose({ handleOpen, handleOpenDeferred })
 </script>
 
 <style scoped lang="scss">

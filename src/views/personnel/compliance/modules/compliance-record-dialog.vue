@@ -112,6 +112,7 @@
     entity: Entity
     type: DialogType
     editData?: RecordItem
+    loadEditData?: () => Promise<RecordItem | undefined>
   }
 
   interface ArtFormExpose {
@@ -424,29 +425,28 @@
     }
   }
 
+  const applyEditData = (editData: RecordItem, targetEntity: Entity): void => {
+    if (targetEntity === 'contract') {
+      const record = editData as Api.Hr.ComplianceContract
+      Object.assign(formModel, {
+        ...record,
+        monthlySalary: typeof record.monthlySalary === 'number' ? record.monthlySalary : undefined
+      })
+      employeeSelection.value = toSelection(record.employee, record.tenantId)
+      ownerSelection.value = toSelection(record.renewalOwner, record.tenantId)
+    } else {
+      const record = editData as Api.Hr.ComplianceQualification
+      Object.assign(formModel, record)
+      employeeSelection.value = toSelection(record.employee, record.tenantId)
+      ownerSelection.value = toSelection(record.responsibleEmployee, record.tenantId)
+    }
+  }
+
   const handleOpen = async (payload: OpenPayload): Promise<void> => {
     entity.value = payload.entity
     editing.value = payload.type === 'edit'
     resetModel()
-    if (payload.editData) {
-      if (payload.entity === 'contract') {
-        const record = payload.editData as Api.Hr.ComplianceContract
-        Object.assign(formModel, {
-          ...record,
-          monthlySalary: typeof record.monthlySalary === 'number' ? record.monthlySalary : undefined
-        })
-        employeeSelection.value = toSelection(record.employee, record.tenantId)
-        ownerSelection.value = toSelection(record.renewalOwner, record.tenantId)
-      } else {
-        const record = payload.editData as Api.Hr.ComplianceQualification
-        Object.assign(formModel, record)
-        employeeSelection.value = toSelection(record.employee, record.tenantId)
-        ownerSelection.value = toSelection(record.responsibleEmployee, record.tenantId)
-      }
-    }
-
-    await nextTick()
-    formRef.value?.clearValidate()
+    if (payload.editData) applyEditData(payload.editData, payload.entity)
     await dialogRef.value?.handleOpen(undefined, {
       title: `${editing.value ? '编辑' : '新增'}${payload.entity === 'contract' ? '劳动合同' : '员工资质'}`,
       subtitle:
@@ -459,9 +459,21 @@
           ? '创建合同'
           : '创建资质',
       contentMaxHeight: 'calc(100vh - 184px)',
+      loading: Boolean(payload.loadEditData),
+      loadingText: '正在加载合规档案…',
       onOpen: async (_data, api) => {
         api.setLoading(true)
         try {
+          if (payload.loadEditData) {
+            const record = await payload.loadEditData()
+            if (!record) {
+              await api.handleClose()
+              return
+            }
+            applyEditData(record, payload.entity)
+          }
+          await nextTick()
+          formRef.value?.clearValidate()
           await Promise.all([
             ...(isPlatformSuper.value && !tenantOptions.value.length
               ? [

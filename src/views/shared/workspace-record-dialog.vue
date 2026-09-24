@@ -286,13 +286,21 @@
     const ruleKeys = data.tab.fields.flatMap((field) =>
       field.documentNumberRuleKey ? [field.documentNumberRuleKey] : []
     )
-    await Promise.all(ruleKeys.map((ruleKey) => documentNumberRules[ruleKey]?.loadRule()))
     await dialogRef.value?.handleOpen(data, {
       title: `${data.record?.id ? '编辑' : '新增'}${data.tab.label}`,
       subtitle: `在${data.workspace.title}中维护${data.tab.label}，提交后将按权限和业务状态处理。`,
       size: 'lg',
       contentMaxHeight: '72vh',
       confirmText: data.record?.id ? '保存更改' : '创建记录',
+      loading: ruleKeys.length > 0,
+      loadingText: '正在加载单据编号规则…',
+      onOpen: async (_openData, api) => {
+        try {
+          await Promise.all(ruleKeys.map((ruleKey) => documentNumberRules[ruleKey]?.loadRule()))
+        } finally {
+          api.setLoading(false)
+        }
+      },
       onConfirm: handleSubmit,
       onReset: () => {
         Object.keys(form.model).forEach(

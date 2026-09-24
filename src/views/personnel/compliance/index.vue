@@ -157,6 +157,7 @@
       entity: RecordEntity
       type: DialogType
       editData?: EditableRecord
+      loadEditData?: () => Promise<EditableRecord | undefined>
     }) => Promise<void>
   }
   interface ActionDialogExpose {
@@ -164,6 +165,11 @@
       entity: RecordEntity,
       action: Api.Hr.ComplianceAction,
       record: EditableRecord
+    ) => Promise<void>
+    handleOpenDeferred: (
+      entity: RecordEntity,
+      action: Api.Hr.ComplianceAction | 'resolve',
+      loadRecord: () => Promise<EditableRecord | undefined>
     ) => Promise<void>
   }
   interface DetailDrawerExpose {
@@ -778,16 +784,34 @@
       : 'verify'
   }
   const handleRowAction = async (item: ButtonMoreItem, row: RecordItem): Promise<void> => {
-    const context = await loadEditableRecord(row)
-    if (!context) return
     if (item.key === 'edit') {
+      const context = getRecordContext(row)
+      if (!context) return
       await recordDialogRef.value?.handleOpen({
         entity: context.entity,
         type: 'edit',
-        editData: context.record
+        editData: 'recordId' in row ? undefined : (row as EditableRecord),
+        loadEditData:
+          'recordId' in row
+            ? async () =>
+                (await fetchComplianceDetail(context.entity, context.id)).data ?? undefined
+            : undefined
       })
       return
     }
+    if ('recordId' in row && item.key !== 'delete') {
+      const recordContext = getRecordContext(row)
+      if (!recordContext) return
+      await actionDialogRef.value?.handleOpenDeferred(
+        recordContext.entity,
+        item.key as Api.Hr.ComplianceAction | 'resolve',
+        async () =>
+          (await fetchComplianceDetail(recordContext.entity, recordContext.id)).data ?? undefined
+      )
+      return
+    }
+    const context = await loadEditableRecord(row)
+    if (!context) return
     if (item.key === 'delete') {
       await handleDelete(context.entity, context.record)
       return
