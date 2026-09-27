@@ -105,7 +105,7 @@
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import { pageInfoHandler } from '@/utils/table/tableUtils'
-  import { formatWithDayjs } from '@/utils/time'
+  import { formatDateTimeValue as formatDateTime } from '@/utils/ui/format'
   import type { ColumnOption, DialogType } from '@/types'
   import { fetchGetEnableTenantList } from '@/api/system-manage'
   import {
@@ -259,8 +259,6 @@
 
   const dictLabel = (code: string, value?: string | null): string =>
     getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
-  const formatDateTime = (value?: string | null): string =>
-    value ? (formatWithDayjs(value) ?? '--') : '--'
   const identity = (primary?: string | null, secondary?: string | null) => (
     <BusinessTableIdentityCell primary={primary} secondary={secondary} />
   )

@@ -523,6 +523,7 @@
 </template>
 
 <script setup lang="ts">
+  import { getFriendlySupabaseErrorMessage } from '@/utils/supabase'
   import { useMediaQuery } from '@vueuse/core'
   import type { FormRules } from 'element-plus'
   import { ElMessage } from 'element-plus'
@@ -1408,7 +1409,7 @@
       ElMessage.success('员工完整档案已保存')
       goBack()
     } catch (error) {
-      ElMessage.error(error instanceof Error ? error.message : '员工档案保存失败，请稍后重试')
+      ElMessage.error(getFriendlySupabaseErrorMessage(error, '员工档案保存失败，请稍后重试'))
     } finally {
       page.saving = false
     }

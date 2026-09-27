@@ -270,6 +270,7 @@
 </template>
 
 <script setup lang="ts">
+  import { getFriendlySupabaseErrorMessage } from '@/utils/supabase'
   import dayjs from 'dayjs'
   import { ElMessage } from 'element-plus'
   import BusinessWorkspaceHeader, {
@@ -539,7 +540,7 @@
         errorMessage.value = responseError?.message || '人力分析数据加载失败'
       }
     } catch (error) {
-      errorMessage.value = error instanceof Error ? error.message : '人力分析数据加载失败'
+      errorMessage.value = getFriendlySupabaseErrorMessage(error, '人力分析数据加载失败')
       ElMessage.error(errorMessage.value)
     } finally {
       loading.value = false

@@ -176,7 +176,7 @@
   import ArtDrawer from '@/components/core/drawers/art-drawer/index.vue'
   import type { ArtDrawerExpose } from '@/components/core/drawers/art-drawer/types'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
-  import { formatWithDayjs } from '@/utils/time'
+  import { createDateTimeFormatter, formatDateTimeValue as formatDateTime } from '@/utils/ui/format'
   import { useUserStore } from '@/store/modules/user'
   import { fetchEmployeeRelationCaseDetail } from '@hr/api'
 
@@ -193,10 +193,7 @@
 
   const dictLabel = (code: string, value?: string | null): string =>
     getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
-  const formatDate = (value?: string | null): string =>
-    value ? (formatWithDayjs(value, 'YYYY-MM-DD') ?? '--') : '--'
-  const formatDateTime = (value?: string | null): string =>
-    value ? (formatWithDayjs(value) ?? '--') : '--'
+  const formatDate = createDateTimeFormatter({ format: 'YYYY-MM-DD' })
   const subjectIdentity = computed(
     () =>
       `${record.value?.subjectEmployee?.employeeName || '未关联员工'} · ${record.value?.subjectEmployee?.employeeNo || '未维护工号'} · ${record.value?.subjectEmployee?.positionName || record.value?.subjectEmployee?.jobTitle || '未维护岗位'}`

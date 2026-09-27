@@ -109,7 +109,7 @@
   import ArtDrawer from '@/components/core/drawers/art-drawer/index.vue'
   import type { ArtDrawerExpose } from '@/components/core/drawers/art-drawer/types'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
-  import { formatWithDayjs } from '@/utils/time'
+  import { formatDateTimeValue as formatDateTime } from '@/utils/ui/format'
   import { useUserStore } from '@/store/modules/user'
   import { fetchServiceRequestDetail } from '@hr/api'
 
@@ -120,8 +120,6 @@
 
   const dictLabel = (code: string, value?: string | null): string =>
     getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
-  const formatDateTime = (value?: string | null): string =>
-    value ? (formatWithDayjs(value) ?? '--') : '--'
   const statusType = (status: Api.Hr.ServiceRequestStatus): TagProps['type'] =>
     ['resolved', 'closed'].includes(status)
       ? 'success'

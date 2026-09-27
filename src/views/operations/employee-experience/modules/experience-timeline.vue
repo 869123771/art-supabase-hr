@@ -26,14 +26,12 @@
 <script setup lang="ts">
   import { ElTimeline, ElTimelineItem, type TimelineItemProps } from 'element-plus'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
-  import { formatWithDayjs } from '@/utils/time'
+  import { formatDateTimeValue as formatDateTime } from '@/utils/ui/format'
   import { useUserStore } from '@/store/modules/user'
 
   defineProps<{ events: Api.Hr.EmployeeExperienceEvent[] }>()
   const userStore = useUserStore()
   const { getDictMap } = storeToRefs(userStore)
-  const formatDateTime = (value?: string | null): string =>
-    value ? (formatWithDayjs(value) ?? '--') : '--'
   const statusLabel = (value: string): string => {
     for (const code of ['hrExperienceSurveyStatus', 'hrExperienceActionStatus']) {
       const label = getDictMap.value[code]?.find((item) => item.value === value)?.label

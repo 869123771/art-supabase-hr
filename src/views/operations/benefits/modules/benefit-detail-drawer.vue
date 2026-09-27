@@ -174,7 +174,7 @@
   import type { ArtDrawerExpose } from '@/components/core/drawers/art-drawer/types'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
-  import { formatWithDayjs } from '@/utils/time'
+  import { createDateTimeFormatter, formatDateTimeValue as formatDateTime } from '@/utils/ui/format'
   import { useUserStore } from '@/store/modules/user'
   import { fetchBenefitDetail } from '@hr/api'
 
@@ -204,10 +204,7 @@
   const auditEvents = computed(() => record.value?.events ?? [])
   const dictLabel = (code: string, value?: string | null): string =>
     getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
-  const formatDate = (value?: string | null): string =>
-    value ? (formatWithDayjs(value, 'YYYY-MM-DD') ?? '--') : '--'
-  const formatDateTime = (value?: string | null): string =>
-    value ? (formatWithDayjs(value) ?? '--') : '--'
+  const formatDate = createDateTimeFormatter({ format: 'YYYY-MM-DD' })
   const money = (value?: number | null, currency = 'CNY'): string =>
     value == null
       ? '权限受限'

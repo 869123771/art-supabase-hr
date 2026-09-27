@@ -40,6 +40,7 @@
 </template>
 
 <script setup lang="ts">
+  import { getFriendlySupabaseErrorMessage } from '@/utils/supabase'
   import dayjs from 'dayjs'
   import { ElMessage, type FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
@@ -409,7 +410,7 @@
       await nextTick()
       formRef.value?.clearValidate()
     } catch (error) {
-      loadError.value = error instanceof Error ? error.message : '合规档案加载失败'
+      loadError.value = getFriendlySupabaseErrorMessage(error, '合规档案加载失败')
     } finally {
       dialogRef.value?.setLoading(false)
     }
