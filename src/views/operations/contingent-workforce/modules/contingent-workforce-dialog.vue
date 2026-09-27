@@ -47,6 +47,7 @@
   import { fetchGetEnableTenantList } from '@/api/system-manage'
   import { useAuth } from '@/hooks/core/useAuth'
   import { useUserStore } from '@/store/modules/user'
+  import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import { fetchContingentWorkforceOptions, saveContingentWorkforceRecord } from '@hr/api'
   import type { DialogType } from '@/types'
 
@@ -120,6 +121,11 @@
 
   const emit = defineEmits<{ success: [entity: Entity, type: DialogType] }>()
   const userStore = useUserStore()
+  const riskLevelOptions = useDictionaryOptions('hrContingentVendorRiskLevel')
+  const workerTypeOptions = useDictionaryOptions('hrContingentWorkerType')
+  const billingUnitOptions = useDictionaryOptions('hrContingentBillingUnit')
+  const controlTypeOptions = useDictionaryOptions('hrContingentControlType')
+  const controlStatusOptions = useDictionaryOptions('hrContingentControlStatus')
   const { getUserInfo, isPlatformSuper } = storeToRefs(userStore)
   const { hasAuth } = useAuth()
   const dialogRef = ref<ArtDialogExpose>()
@@ -220,11 +226,7 @@
       label: '风险等级',
       key: 'riskLevel',
       type: 'select',
-      options: [
-        { label: '低风险', value: 'low' },
-        { label: '中风险', value: 'medium' },
-        { label: '高风险', value: 'high' }
-      ]
+      options: riskLevelOptions
     },
     { label: '合同与服务', key: 'vendorContract', type: 'divider', span: 24 },
     { label: '合同/框架编号', key: 'contractNo', type: 'input', props: { maxlength: 80 } },
@@ -253,13 +255,7 @@
       label: '用工类型',
       key: 'workerType',
       type: 'select',
-      options: [
-        { label: '业务外包', value: 'outsourced' },
-        { label: '劳务派遣', value: 'dispatch' },
-        { label: '独立承揽', value: 'contractor' },
-        { label: '专业顾问', value: 'consultant' },
-        { label: '临时用工', value: 'temporary' }
-      ]
+      options: workerTypeOptions
     },
     {
       label: '所属供应商',
@@ -349,12 +345,7 @@
       key: 'billingUnit',
       type: 'select',
       hidden: () => !hasAuth('Hr:ContingentWorkforce:Cost:Edit'),
-      options: [
-        { label: '小时', value: 'hour' },
-        { label: '天', value: 'day' },
-        { label: '月', value: 'month' },
-        { label: '固定总价', value: 'fixed' }
-      ],
+      options: billingUnitOptions,
       props: { clearable: true }
     },
     {
@@ -388,17 +379,7 @@
       label: '控制类型',
       key: 'controlType',
       type: 'select',
-      options: [
-        { label: '身份核验', value: 'identity' },
-        { label: '合同/订单', value: 'contract' },
-        { label: '保密协议', value: 'nda' },
-        { label: '保险证明', value: 'insurance' },
-        { label: '安全培训', value: 'safety_training' },
-        { label: '门禁权限', value: 'access_badge' },
-        { label: '系统账号', value: 'system_account' },
-        { label: '设备资产', value: 'equipment' },
-        { label: '其他', value: 'other' }
-      ]
+      options: controlTypeOptions
     },
     { label: '控制项名称', key: 'controlName', type: 'input', props: { maxlength: 120 } },
     { label: '要求与结果', key: 'controlResult', type: 'divider', span: 24 },
@@ -407,12 +388,7 @@
       label: '执行状态',
       key: 'controlStatus',
       type: 'select',
-      options: [
-        { label: '待完成', value: 'pending' },
-        { label: '已完成', value: 'completed' },
-        { label: '已豁免', value: 'waived' },
-        { label: '失败', value: 'failed' }
-      ]
+      options: controlStatusOptions
     },
     { label: '截止日期', key: 'dueDate', type: 'date', props: { class: '!w-full' } },
     { label: '证明/工单引用', key: 'evidenceReference', type: 'input', props: { maxlength: 240 } },

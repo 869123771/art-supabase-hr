@@ -15,21 +15,24 @@
     </header>
 
     <div v-if="count" class="hr-history-section__records"><slot /></div>
-    <div v-else class="hr-history-section__empty">
-      <span aria-hidden="true"><ArtSvgIcon :icon="icon" /></span>
-      <strong>暂无{{ title }}</strong>
-      <p>{{
+    <ArtEmptyState
+      v-else
+      class="hr-history-section__empty"
+      :title="`暂无${title}`"
+      :description="
         readonly
           ? '当前权限仅支持查看，无法维护此类履历。'
           : `点击“${addLabel}”补充员工的${title}。`
-      }}</p>
+      "
+    >
       <ElButton v-if="!readonly" type="primary" @click="emit('add')">{{ addLabel }}</ElButton>
-    </div>
+    </ArtEmptyState>
   </section>
 </template>
 
 <script setup lang="ts">
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
+  import ArtEmptyState from '@/components/core/feedback/art-empty-state/index.vue'
 
   defineOptions({ name: 'HrHistorySection' })
   defineProps<{
@@ -95,39 +98,10 @@
     }
 
     &__empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
       min-height: 250px;
-      padding: 30px;
-      text-align: center;
       background: color-mix(in srgb, var(--el-fill-color-light) 62%, transparent);
       border: 1px dashed var(--el-border-color);
       border-radius: var(--custom-radius);
-
-      > span {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 54px;
-        height: 54px;
-        margin-bottom: 12px;
-        font-size: 26px;
-        color: var(--el-color-primary);
-        background: var(--el-color-primary-light-9);
-        border-radius: 16px;
-      }
-
-      strong {
-        font-size: 15px;
-      }
-
-      p {
-        margin: 7px 0 16px;
-        font-size: 12px;
-        color: var(--el-text-color-secondary);
-      }
     }
 
     @media (width <= 640px) {

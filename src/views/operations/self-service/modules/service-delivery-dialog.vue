@@ -44,6 +44,7 @@
   import { fetchGetEnableTenantList } from '@/api/system-manage'
   import { useDocumentNumberRule } from '@/hooks/core/useDocumentNumberRule'
   import { useUserStore } from '@/store/modules/user'
+  import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import { fetchServiceDeliveryRecords, saveServiceCatalog, saveServiceRequest } from '@hr/api'
   import type { DialogType } from '@/types'
 
@@ -89,6 +90,7 @@
 
   const emit = defineEmits<{ success: [type: DialogType, entity: Entity] }>()
   const userStore = useUserStore()
+  const serviceModeOptions = useDictionaryOptions('hrServiceDeliveryMode')
   const { getDictMap, getUserInfo, isPlatformSuper } = storeToRefs(userStore)
   const dialogRef = ref<ArtDialogExpose>()
   const formRef = ref<ArtFormExpose>()
@@ -217,10 +219,7 @@
       label: '交付方式',
       key: 'serviceMode',
       type: 'select',
-      options: [
-        { label: '服务工单', value: 'case' },
-        { label: '跳转专业流程', value: 'redirect' }
-      ]
+      options: serviceModeOptions
     },
     {
       label: '服务说明',

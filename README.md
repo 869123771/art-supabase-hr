@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>Art Supabase HR</h1>
+  <h1>亿企工场 HR</h1>
   <p><strong>覆盖组织、员工全生命周期与人才运营的人力资源应用</strong></p>
   <p>从岗位编制和招聘入职，到考勤薪酬、绩效发展、员工服务与用工风险，沉淀一条连续的人才数据主线。</p>
 
@@ -16,7 +16,7 @@
 
 ## 项目定位
 
-Art Supabase HR 是 Art Supabase Pro 的人力资源业务应用，围绕组织与岗位、员工档案、人才获取、人才发展和日常人事运营建立统一的人力数据与流程体系。
+亿企工场 HR 是亿企工场的人力资源业务应用，围绕组织与岗位、员工档案、人才获取、人才发展和日常人事运营建立统一的人力数据与流程体系。
 
 本仓只维护 HR 页面、业务 API、领域类型与适配代码。认证、租户、权限、菜单、布局、路由、公共组件、Store 和 Supabase 公共客户端由 [`art-supabase-pro`](https://gitee.com/wangyanghub/art-supabase-pro) 统一提供。
 

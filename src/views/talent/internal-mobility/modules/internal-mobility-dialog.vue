@@ -62,6 +62,7 @@
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import { fetchGetEnableTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
+  import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import {
     fetchInternalMobilityOptions,
     saveInternalMobilityApplication,
@@ -116,6 +117,9 @@
 
   const emit = defineEmits<{ success: [entity: Entity, type: DialogType] }>()
   const userStore = useUserStore()
+  const opportunityTypeOptions = useDictionaryOptions('hrMobilityOpportunityType')
+  const workModeOptions = useDictionaryOptions('hrMobilityWorkMode')
+  const managerAwarenessOptions = useDictionaryOptions('hrMobilityManagerAwareness')
   const { getUserInfo, isPlatformSuper } = storeToRefs(userStore)
   const dialogRef = ref<ArtDialogExpose>()
   const formRef = ref<ArtFormExpose>()
@@ -197,12 +201,7 @@
       label: '机会类型',
       key: 'opportunityType',
       type: 'select',
-      options: [
-        { label: '永久岗位', value: 'permanent' },
-        { label: '轮岗机会', value: 'rotation' },
-        { label: '项目机会', value: 'project' },
-        { label: '短期任务', value: 'gig' }
-      ]
+      options: opportunityTypeOptions
     },
     {
       label: '目标组织',
@@ -248,11 +247,7 @@
       label: '工作方式',
       key: 'workMode',
       type: 'select',
-      options: [
-        { label: '现场办公', value: 'onsite' },
-        { label: '混合办公', value: 'hybrid' },
-        { label: '远程办公', value: 'remote' }
-      ]
+      options: workModeOptions
     },
     { label: '工作地点', key: 'workLocation', type: 'input', props: { maxlength: 160 } },
     { label: '预计开始日', key: 'expectedStartDate', type: 'date', props: { class: '!w-full' } },
@@ -348,11 +343,7 @@
       label: '直属经理知会',
       key: 'managerAwareness',
       type: 'select',
-      options: [
-        { label: '尚未知会', value: 'not_informed' },
-        { label: '已知会', value: 'informed' },
-        { label: '明确支持', value: 'supported' }
-      ]
+      options: managerAwarenessOptions
     }
   ])
 

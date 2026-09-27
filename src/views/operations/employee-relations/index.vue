@@ -323,7 +323,7 @@
           getDictMap.value[
             activeEntity.value === 'case'
               ? 'hrEmployeeRelationCaseStatus'
-              : 'hrEmployeeRelationActionStatus'
+              : 'commonActionProgressStatus'
           ] ?? [],
         props: { clearable: true, placeholder: '全部状态' }
       },
@@ -523,7 +523,7 @@
       prop: 'status',
       label: '行动状态',
       width: 110,
-      dict: { code: 'hrEmployeeRelationActionStatus', display: 'auto' }
+      dict: { code: 'commonActionProgressStatus', display: 'auto' }
     },
     { prop: 'completionNote', label: '完成说明', minWidth: 220, showOverflowTooltip: true },
     actionColumn()
@@ -931,7 +931,7 @@
         'hrEmployeeRelationSource',
         'hrEmployeeRelationOutcome',
         'hrEmployeeRelationActionType',
-        'hrEmployeeRelationActionStatus',
+        'commonActionProgressStatus',
         'hrEmployeeRelationEventType'
       ].map((code) => userStore.ensureDictLoaded(code))
     )

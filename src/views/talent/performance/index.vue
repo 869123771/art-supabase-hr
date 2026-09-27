@@ -52,12 +52,14 @@
             </li>
           </ol>
         </div>
-        <div v-else class="performance-page__empty-cycle">
-          <span class="performance-page__empty-icon"><ArtSvgIcon icon="ri:flag-2-line" /></span>
-          <div>
-            <strong>先建立考核周期与员工考核范围</strong>
-            <small>配置员工目标且权重合计达到 100% 后，周期才能启动并开放员工自评。</small>
-          </div>
+        <ArtEmptyState
+          v-else
+          class="performance-page__empty-cycle"
+          title="先建立考核周期与员工考核范围"
+          description="配置员工目标且权重合计达到 100% 后，周期才能启动并开放员工自评。"
+          size="compact"
+          :visual-size="64"
+        >
           <ElButton
             v-if="hasAuth('Hr:Performance:Add')"
             type="primary"
@@ -65,7 +67,7 @@
           >
             新建绩效周期
           </ElButton>
-        </div>
+        </ArtEmptyState>
 
         <HrEntityNavigation
           v-model="activeEntity"
@@ -119,6 +121,7 @@
   import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
   import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
+  import ArtEmptyState from '@/components/core/feedback/art-empty-state/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
     type BusinessWorkspaceTag
@@ -1171,8 +1174,7 @@
       }
     }
 
-    &__section-icon,
-    &__empty-icon {
+    &__section-icon {
       display: grid;
       flex: 0 0 auto;
       place-items: center;
@@ -1328,30 +1330,9 @@
     }
 
     &__empty-cycle {
-      display: grid;
-      grid-template-columns: 42px minmax(0, 1fr) auto;
-      gap: 14px;
-      align-items: center;
-      padding: 16px 18px;
       background: color-mix(in srgb, var(--theme-color) 3%, var(--art-main-bg-color));
       border: 1px dashed color-mix(in srgb, var(--theme-color) 24%, var(--art-card-border));
       border-radius: calc(var(--el-border-radius-base) + 2px);
-
-      > div {
-        display: grid;
-        gap: 4px;
-      }
-
-      strong {
-        font-size: 14px;
-        color: var(--art-text-gray-900);
-      }
-
-      small {
-        font-size: 12px;
-        line-height: 1.55;
-        color: var(--art-text-gray-600);
-      }
     }
 
     &__control-note {
@@ -1449,8 +1430,7 @@
         padding: 14px;
       }
 
-      &__control-heading,
-      &__empty-cycle {
+      &__control-heading {
         grid-template-columns: 1fr;
       }
 
@@ -1458,8 +1438,7 @@
         display: grid;
       }
 
-      &__governance-badge,
-      &__empty-cycle .el-button {
+      &__governance-badge {
         justify-self: start;
       }
 

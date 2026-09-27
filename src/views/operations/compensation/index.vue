@@ -76,6 +76,7 @@
 </template>
 
 <script setup lang="tsx">
+  import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import dayjs from 'dayjs'
   import { ElTag } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
@@ -223,10 +224,7 @@
   const lifecycleStatusOptions = computed(
     () => getDictMap.value.hrCompensationLifecycleStatus ?? []
   )
-  const enabledStatusOptions = [
-    { label: '启用', value: 'enabled' },
-    { label: '停用', value: 'disabled' }
-  ]
+  const enabledStatusOptions = useDictionaryOptions('commonEnabledStatus')
   const searchItems = computed<SearchFormItem[]>(() => [
     {
       label: '所属租户',

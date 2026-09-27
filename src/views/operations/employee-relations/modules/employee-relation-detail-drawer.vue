@@ -112,7 +112,7 @@
               <div>
                 <strong>{{ action.title }}</strong>
                 <ElTag effect="plain" size="small">
-                  {{ dictLabel('hrEmployeeRelationActionStatus', action.status) }}
+                  {{ dictLabel('commonActionProgressStatus', action.status) }}
                 </ElTag>
               </div>
               <p>
@@ -124,7 +124,7 @@
             </div>
           </article>
         </div>
-        <div v-else class="employee-relation-detail__empty">暂无处置行动</div>
+        <ArtEmptyState v-else title="暂无处置行动" size="compact" :visual-size="64" />
       </section>
 
       <section class="employee-relation-detail__section">
@@ -165,7 +165,7 @@
             </article>
           </ElTimelineItem>
         </ElTimeline>
-        <div v-else class="employee-relation-detail__empty">暂无案件审计记录</div>
+        <ArtEmptyState v-else title="暂无案件审计记录" size="compact" :visual-size="64" />
       </section>
     </div>
   </ArtDrawer>
@@ -176,6 +176,7 @@
   import ArtDrawer from '@/components/core/drawers/art-drawer/index.vue'
   import type { ArtDrawerExpose } from '@/components/core/drawers/art-drawer/types'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
+  import ArtEmptyState from '@/components/core/feedback/art-empty-state/index.vue'
   import { createDateTimeFormatter, formatDateTimeValue as formatDateTime } from '@/utils/ui/format'
   import { useUserStore } from '@/store/modules/user'
   import { fetchEmployeeRelationCaseDetail } from '@hr/api'
@@ -661,15 +662,6 @@
         margin: 6px 0 0;
         line-height: 1.55;
       }
-    }
-
-    &__empty {
-      padding: 20px;
-      font-size: 12px;
-      color: var(--art-text-gray-600);
-      text-align: center;
-      background: var(--art-gray-100);
-      border-radius: var(--el-border-radius-base);
     }
   }
 

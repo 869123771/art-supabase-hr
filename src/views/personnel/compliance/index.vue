@@ -123,6 +123,7 @@
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
+  import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import { pageInfoHandler } from '@/utils/table/tableUtils'
   import { fetchGetEnableTenantList } from '@/api/system-manage'
   import type { ColumnOption, DialogType } from '@/types'
@@ -201,6 +202,7 @@
   ]
 
   const userStore = useUserStore()
+  const complianceRiskObjectOptions = useDictionaryOptions('hrComplianceRiskObject')
   const { getDictMap, isPlatformSuper } = storeToRefs(userStore)
   const { confirmAction } = useArtFeedback()
   const activeEntity = ref<Entity>('risk')
@@ -321,10 +323,7 @@
         label: '风险对象',
         key: 'status',
         type: 'select',
-        options: [
-          { label: '劳动合同', value: 'contract' },
-          { label: '员工资质', value: 'qualification' }
-        ],
+        options: complianceRiskObjectOptions,
         props: { clearable: true, placeholder: '全部对象' }
       })
     } else {

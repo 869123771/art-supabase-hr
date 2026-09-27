@@ -41,6 +41,7 @@
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import { fetchGetEnableTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
+  import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import {
     fetchOrganizationDesignOptions,
     saveOrganizationDesignChange,
@@ -85,6 +86,8 @@
 
   const emit = defineEmits<{ success: [entity: Entity, type: DialogType] }>()
   const userStore = useUserStore()
+  const changeTypeOptions = useDictionaryOptions('hrOrganizationChangeType')
+  const organizationTypeOptions = useDictionaryOptions('organizationType')
   const { getUserInfo, isPlatformSuper } = storeToRefs(userStore)
   const dialogRef = ref<ArtDialogExpose>()
   const formRef = ref<ArtFormExpose>()
@@ -173,12 +176,7 @@
       label: '变更类型',
       key: 'changeType',
       type: 'select',
-      options: [
-        { label: '新增组织', value: 'create' },
-        { label: '组织更名', value: 'rename' },
-        { label: '调整上级', value: 'reparent' },
-        { label: '停用组织', value: 'inactivate' }
-      ]
+      options: changeTypeOptions
     },
     ...(formModel.changeType !== 'create'
       ? [
@@ -220,12 +218,7 @@
             label: '拟组织类型',
             key: 'proposedType',
             type: 'select' as const,
-            options: [
-              { label: '公司', value: 'company' },
-              { label: '事业部', value: 'division' },
-              { label: '部门', value: 'department' },
-              { label: '团队', value: 'team' }
-            ]
+            options: organizationTypeOptions
           }
         ]
       : []),

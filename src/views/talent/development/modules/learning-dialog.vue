@@ -269,7 +269,7 @@
           ...common,
           select('courseId', '草稿课程', draftCourseOptions.value, '请选择待配置课程'),
           select('competencyId', '目标能力', competencyOptions.value, '请选择能力项'),
-          dict('targetLevel', '完成目标等级', 'hrLearningCompetencyLevel')
+          dict('targetLevel', '完成目标等级', 'commonCompetencyLevel')
         ]
       if (entity.value === 'session')
         return [

@@ -69,13 +69,13 @@
             }}</span>
           </div>
         </div>
-        <div v-else class="workforce-page__bridge-empty">
-          <ArtSvgIcon icon="ri:route-line" />
-          <span
-            ><strong>尚未建立人力规划</strong
-            ><small>先创建规划周期，再按岗位维护增减员和成本假设。</small></span
-          >
-        </div>
+        <ArtEmptyState
+          v-else
+          title="尚未建立人力规划"
+          description="先创建规划周期，再按岗位维护增减员和成本假设。"
+          size="compact"
+          :visual-size="64"
+        />
 
         <HrEntityNavigation
           :model-value="activeEntity"
@@ -112,6 +112,7 @@
 </template>
 
 <script setup lang="tsx">
+  import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import dayjs from 'dayjs'
   import { ElProgress, ElTag } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
@@ -125,6 +126,7 @@
   import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
   import ArtDictDisplay from '@/components/core/base/art-dict-display/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
+  import ArtEmptyState from '@/components/core/feedback/art-empty-state/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
     type BusinessWorkspaceTag
@@ -271,11 +273,7 @@
     }
   ])
 
-  const effectiveStatusOptions = [
-    { label: '有空缺', value: 'vacant' },
-    { label: '已满编', value: 'full' },
-    { label: '已超编', value: 'over' }
-  ]
+  const effectiveStatusOptions = useDictionaryOptions('hrHeadcountFulfillmentStatus')
   const searchItems = computed<SearchFormItem[]>(() => {
     const items: SearchFormItem[] = [
       {
@@ -956,31 +954,6 @@
         &.is-over {
           color: var(--el-color-danger);
         }
-      }
-    }
-
-    &__bridge-empty {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      min-height: 76px;
-      padding: 12px 16px;
-      color: var(--art-text-gray-600);
-      background: var(--art-gray-100);
-      border-radius: var(--el-border-radius-base);
-
-      > :deep(.art-svg-icon) {
-        font-size: 22px;
-        color: var(--el-color-primary);
-      }
-
-      span {
-        display: grid;
-        gap: 3px;
-      }
-
-      strong {
-        color: var(--art-text-gray-800);
       }
     }
 

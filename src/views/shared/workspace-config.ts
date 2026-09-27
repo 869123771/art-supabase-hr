@@ -313,7 +313,12 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
             label: '岗位 / 能力项',
             minWidth: 210
           },
-          { key: 'requiredLevel', label: '要求等级', width: 120, dictCode: 'hrCompetencyLevel' },
+          {
+            key: 'requiredLevel',
+            label: '要求等级',
+            width: 120,
+            dictCode: 'commonCompetencyLevel'
+          },
           { key: 'weight', label: '权重', width: 90, suffix: '%' }
         ],
         fields: [
@@ -326,7 +331,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
             optionEntity: 'competency',
             optionLabelKeys: ['competencyCode', 'competencyName']
           },
-          dict('requiredLevel', '要求等级', 'hrCompetencyLevel', true),
+          dict('requiredLevel', '要求等级', 'commonCompetencyLevel', true),
           number('weight', '权重（%）')
         ],
         defaults: { weight: 0 }
@@ -344,7 +349,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
             label: '员工 / 能力项',
             minWidth: 200
           },
-          { key: 'currentLevel', label: '当前等级', width: 120, dictCode: 'hrCompetencyLevel' },
+          { key: 'currentLevel', label: '当前等级', width: 120, dictCode: 'commonCompetencyLevel' },
           { key: 'assessedDate', label: '评估日期', width: 120 },
           { key: 'evidence', label: '评估依据', minWidth: 200 }
         ],
@@ -358,7 +363,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
             optionEntity: 'competency',
             optionLabelKeys: ['competencyCode', 'competencyName']
           },
-          dict('currentLevel', '当前等级', 'hrCompetencyLevel', true),
+          dict('currentLevel', '当前等级', 'commonCompetencyLevel', true),
           date('assessedDate', '评估日期', true),
           textarea('evidence', '评估依据')
         ],

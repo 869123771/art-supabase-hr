@@ -41,6 +41,7 @@
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import { fetchGetEnableTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
+  import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import { fetchSuccessionOptions, saveSuccessionRecord } from '@hr/api'
   import type { DialogType } from '@/types'
 
@@ -92,6 +93,7 @@
 
   const emit = defineEmits<{ success: [type: DialogType] }>()
   const userStore = useUserStore()
+  const nominationSourceOptions = useDictionaryOptions('hrSuccessionNominationSource')
   const { getDictMap, getUserInfo, isPlatformSuper } = storeToRefs(userStore)
   const dialogRef = ref<ArtDialogExpose>()
   const formRef = ref<FormExpose>()
@@ -177,7 +179,7 @@
             true
           ),
           dict('criticality', '岗位关键度', 'hrSuccessionCriticality'),
-          dict('vacancyRisk', '空缺风险', 'hrSuccessionVacancyRisk'),
+          dict('vacancyRisk', '空缺风险', 'commonRiskLevel'),
           dict('businessImpact', '业务影响', 'hrSuccessionCriticality'),
           number('targetSuccessors', '目标继任人数', { min: 1, max: 20, precision: 0 }),
           number('reviewCycleMonths', '复盘周期（月）', { min: 1, max: 36, precision: 0 }),
@@ -192,7 +194,7 @@
           select('employeeId', '候选人', employeeOptions.value, '请选择候选员工'),
           dict('readiness', '继任准备度', 'hrSuccessionReadiness'),
           dict('potentialLevel', '人才潜力', 'hrSuccessionPotential'),
-          dict('retentionRisk', '留任风险', 'hrSuccessionRetentionRisk'),
+          dict('retentionRisk', '留任风险', 'commonRiskLevel'),
           number('priority', '计划内优先级', { min: 1, max: 20, precision: 0 }),
           nominationSourceItem(),
           { label: '已确认发展意愿', key: 'aspirationConfirmed', type: 'switch' },
@@ -343,13 +345,7 @@
     label: '提名来源',
     key: 'nominationSource',
     type: 'select',
-    options: [
-      { label: '人才盘点', value: 'talent_review' },
-      { label: '直属经理', value: 'manager' },
-      { label: 'HR 提名', value: 'hr' },
-      { label: '员工自荐', value: 'self' },
-      { label: '外部测评', value: 'external_assessment' }
-    ],
+    options: nominationSourceOptions,
     props: { placeholder: '请选择提名来源' }
   })
   const replaceModel = (next: FormModel) => {

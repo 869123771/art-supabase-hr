@@ -449,7 +449,7 @@
           formatter: (row) => (
             <div class="succession-page__tag-stack">
               <ElTag type={riskType((row as Api.Hr.SuccessionPlan).vacancyRisk)} effect="plain">
-                {dictLabel('hrSuccessionVacancyRisk', (row as Api.Hr.SuccessionPlan).vacancyRisk)}
+                {dictLabel('commonRiskLevel', (row as Api.Hr.SuccessionPlan).vacancyRisk)}
               </ElTag>
               <span>
                 影响：
@@ -575,10 +575,7 @@
               type={riskType((row as Api.Hr.SuccessionCandidate).retentionRisk)}
               effect="plain"
             >
-              {dictLabel(
-                'hrSuccessionRetentionRisk',
-                (row as Api.Hr.SuccessionCandidate).retentionRisk
-              )}
+              {dictLabel('commonRiskLevel', (row as Api.Hr.SuccessionCandidate).retentionRisk)}
             </ElTag>
           )
         },
@@ -789,10 +786,10 @@
       [
         'hrSuccessionPlanStatus',
         'hrSuccessionCriticality',
-        'hrSuccessionVacancyRisk',
+        'commonRiskLevel',
         'hrSuccessionReadiness',
         'hrSuccessionPotential',
-        'hrSuccessionRetentionRisk',
+        'commonRiskLevel',
         'hrSuccessionCandidateStatus',
         'hrSuccessionActionType',
         'hrSuccessionActionStatus'

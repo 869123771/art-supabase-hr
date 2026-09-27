@@ -506,10 +506,7 @@
       minWidth: 160,
       formatter: (row) => (
         <ElTag type="primary" effect="light" round>
-          {dictLabel(
-            'hrLearningCompetencyLevel',
-            (row as Api.Hr.LearningCourseCompetency).targetLevel
-          )}
+          {dictLabel('commonCompetencyLevel', (row as Api.Hr.LearningCourseCompetency).targetLevel)}
         </ElTag>
       )
     },
@@ -1076,7 +1073,7 @@
         'hrLearningSessionStatus',
         'hrLearningEnrollmentStatus',
         'hrLearningCertificateStatus',
-        'hrLearningCompetencyLevel'
+        'commonCompetencyLevel'
       ].map((code) => userStore.ensureDictLoaded(code))
     )
     if (isPlatformSuper.value) {

@@ -104,6 +104,7 @@
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
+  import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import { pageInfoHandler } from '@/utils/table/tableUtils'
   import { formatDateTimeValue as formatDateTime } from '@/utils/ui/format'
   import type { ColumnOption, DialogType } from '@/types'
@@ -122,6 +123,8 @@
   import ServiceRequestDrawer from './modules/service-request-drawer.vue'
 
   defineOptions({ name: 'HrSelfService' })
+
+  const queueScopeOptions = useDictionaryOptions('hrServiceQueueScope')
 
   type Entity = Api.Hr.ServiceDeliveryEntity
   type RecordItem = Api.Hr.ServiceDeliveryRecord
@@ -304,10 +307,7 @@
         label: '范围',
         key: 'scope',
         type: 'select',
-        options: [
-          { label: '我的工单', value: 'mine' },
-          { label: '团队队列', value: 'team' }
-        ],
+        options: queueScopeOptions,
         props: { clearable: false }
       })
     }

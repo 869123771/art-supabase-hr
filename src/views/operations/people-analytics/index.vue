@@ -284,15 +284,11 @@
   import ArtHBarChart from '@/components/core/charts/art-h-bar-chart/index.vue'
   import ArtBarChart from '@/components/core/charts/art-bar-chart/index.vue'
   import { fetchPeopleAnalyticsOverview } from '@hr/api'
+  import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
 
   defineOptions({ name: 'HrPeopleAnalytics' })
 
-  const periodOptions = [
-    { label: '近 6 个月', value: 6 },
-    { label: '近 12 个月', value: 12 },
-    { label: '近 24 个月', value: 24 },
-    { label: '近 36 个月', value: 36 }
-  ]
+  const periodOptions = useDictionaryOptions<number>('hrPeopleAnalyticsPeriod', Number)
   const employmentLabels: Record<string, string> = {
     full_time: '全日制',
     part_time: '非全日制',

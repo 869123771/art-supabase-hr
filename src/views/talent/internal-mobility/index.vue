@@ -150,6 +150,7 @@
 </template>
 
 <script setup lang="tsx">
+  import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import dayjs from 'dayjs'
   import { ElButton, ElProgress, ElTag, type TagProps } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
@@ -369,24 +370,8 @@
   const identity = (title?: string | null, subtitle?: string | null, extra?: string | null) => (
     <BusinessTableIdentityCell primary={title} secondary={subtitle} tertiary={extra} />
   )
-  const opportunityStatusOptions = [
-    { label: '草稿', value: 'draft' },
-    { label: '开放中', value: 'open' },
-    { label: '已暂停', value: 'paused' },
-    { label: '已关闭', value: 'closed' },
-    { label: '已取消', value: 'cancelled' }
-  ]
-  const applicationStatusOptions = [
-    { label: '草稿', value: 'draft' },
-    { label: '已提交', value: 'submitted' },
-    { label: '评审中', value: 'under_review' },
-    { label: '候选名单', value: 'shortlisted' },
-    { label: '已发意向', value: 'offered' },
-    { label: '已接受', value: 'accepted' },
-    { label: '未通过', value: 'rejected' },
-    { label: '已撤回', value: 'withdrawn' },
-    { label: '已转异动', value: 'converted' }
-  ]
+  const opportunityStatusOptions = useDictionaryOptions('hrMobilityOpportunityStatus')
+  const applicationStatusOptions = useDictionaryOptions('hrMobilityApplicationStatus')
   const searchItems = computed<SearchFormItem[]>(() => {
     const items: SearchFormItem[] = []
     if (isPlatformSuper.value)

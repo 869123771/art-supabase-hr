@@ -98,7 +98,7 @@
             </article>
           </ElTimelineItem>
         </ElTimeline>
-        <div v-else class="service-request-drawer__empty">暂无服务交付记录</div>
+        <ArtEmptyState v-else title="暂无服务交付记录" size="compact" :visual-size="64" />
       </section>
     </div>
   </ArtDrawer>
@@ -109,6 +109,7 @@
   import ArtDrawer from '@/components/core/drawers/art-drawer/index.vue'
   import type { ArtDrawerExpose } from '@/components/core/drawers/art-drawer/types'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
+  import ArtEmptyState from '@/components/core/feedback/art-empty-state/index.vue'
   import { formatDateTimeValue as formatDateTime } from '@/utils/ui/format'
   import { useUserStore } from '@/store/modules/user'
   import { fetchServiceRequestDetail } from '@hr/api'
@@ -407,15 +408,6 @@
           border-radius: var(--el-border-radius-base);
         }
       }
-    }
-
-    &__empty {
-      padding: 22px;
-      font-size: 12px;
-      color: var(--art-text-gray-600);
-      text-align: center;
-      background: var(--art-gray-100);
-      border-radius: var(--el-border-radius-base);
     }
   }
 

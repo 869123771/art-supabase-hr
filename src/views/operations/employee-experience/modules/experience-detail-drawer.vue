@@ -73,9 +73,13 @@
               </ElTag>
             </article>
           </div>
-          <div v-else class="experience-detail__empty">
-            <ArtSvgIcon icon="ri:question-mark" />尚未配置题目，发布前至少添加一道数值量表题。
-          </div>
+          <ArtEmptyState
+            v-else
+            title="尚未配置题目"
+            description="发布前至少添加一道数值量表题。"
+            size="compact"
+            :visual-size="64"
+          />
         </section>
 
         <section class="experience-detail__section">
@@ -131,7 +135,12 @@
               />
             </article>
           </div>
-          <div v-else class="experience-detail__empty">当前主题没有可计算的量表题结果</div>
+          <ArtEmptyState
+            v-else
+            title="当前主题没有可计算的量表题结果"
+            size="compact"
+            :visual-size="64"
+          />
         </section>
 
         <section class="experience-detail__section">
@@ -160,9 +169,13 @@
               />
             </article>
           </div>
-          <div v-else class="experience-detail__empty">
-            没有组织群组独立达到本调查的匿名阈值，系统不会返回细分结果。
-          </div>
+          <ArtEmptyState
+            v-else
+            title="暂无可展示的组织结果"
+            description="没有组织群组独立达到匿名阈值，系统不会返回细分结果。"
+            size="compact"
+            :visual-size="64"
+          />
         </section>
 
         <section class="experience-detail__section">
@@ -191,7 +204,7 @@
               >
             </blockquote>
           </div>
-          <div v-else class="experience-detail__empty">当前主题暂无开放文本反馈</div>
+          <ArtEmptyState v-else title="当前主题暂无开放文本反馈" size="compact" :visual-size="64" />
         </section>
 
         <section class="experience-detail__section">
@@ -208,7 +221,7 @@
                 <div
                   ><strong>{{ action.title }}</strong
                   ><ElTag effect="plain" size="small">{{
-                    dictLabel('hrExperienceActionStatus', action.status)
+                    dictLabel('commonActionProgressStatus', action.status)
                   }}</ElTag></div
                 >
                 <p>计划完成日 {{ formatDate(action.dueDate) }}</p>
@@ -216,7 +229,7 @@
               </div>
             </article>
           </div>
-          <div v-else class="experience-detail__empty">尚未针对该主题建立改善行动</div>
+          <ArtEmptyState v-else title="尚未建立改善行动" size="compact" :visual-size="64" />
         </section>
       </template>
 
@@ -306,6 +319,7 @@
   import ArtDrawer from '@/components/core/drawers/art-drawer/index.vue'
   import type { ArtDrawerExpose } from '@/components/core/drawers/art-drawer/types'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
+  import ArtEmptyState from '@/components/core/feedback/art-empty-state/index.vue'
   import { createDateTimeFormatter, formatDateTimeValue as formatDateTime } from '@/utils/ui/format'
   import { useUserStore } from '@/store/modules/user'
   import { fetchEmployeeExperienceDetail } from '@hr/api'
@@ -401,7 +415,7 @@
         eyebrow: actionDetail.value.survey?.surveyName || 'EMPLOYEE EXPERIENCE ACTION',
         title: actionDetail.value.title,
         description: `${dictLabel('hrExperienceDimension', actionDetail.value.dimension)} · ${actionDetail.value.organization?.organizationName || '全组织行动'}`,
-        status: dictLabel('hrExperienceActionStatus', actionDetail.value.status),
+        status: dictLabel('commonActionProgressStatus', actionDetail.value.status),
         tone: statusTone(actionDetail.value.status),
         icon: 'ri:route-line'
       }
@@ -1044,21 +1058,6 @@
         line-height: 1.55;
         color: var(--art-text-gray-600);
       }
-    }
-
-    &__empty {
-      display: flex;
-      gap: 7px;
-      align-items: center;
-      justify-content: center;
-      min-height: 68px;
-      padding: 12px;
-      font-size: 11px;
-      color: var(--art-text-gray-500);
-      text-align: center;
-      background: color-mix(in srgb, var(--art-gray-100) 45%, transparent);
-      border: 1px dashed var(--art-card-border);
-      border-radius: var(--el-border-radius-base);
     }
   }
 

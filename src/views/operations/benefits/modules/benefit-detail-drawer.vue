@@ -67,7 +67,13 @@
             />
           </article>
         </div>
-        <div v-else class="benefit-detail__empty">尚未配置覆盖方案，计划不能生效</div>
+        <ArtEmptyState
+          v-else
+          title="尚未配置覆盖方案"
+          description="配置方案后，计划才能生效。"
+          size="compact"
+          :visual-size="64"
+        />
       </section>
 
       <section v-if="isEnrollment" class="benefit-detail__section">
@@ -119,9 +125,14 @@
             }}<ArtSvgIcon icon="ri:external-link-line"
           /></a>
         </div>
-        <div v-else class="benefit-detail__empty">
-          {{ lifeEventRecord.evidenceRestricted ? '当前权限不可查看证明材料' : '未上传证明材料' }}
-        </div>
+        <ArtEmptyState
+          v-else
+          :title="
+            lifeEventRecord.evidenceRestricted ? '当前权限不可查看证明材料' : '未上传证明材料'
+          "
+          size="compact"
+          :visual-size="64"
+        />
         <div v-if="lifeEventRecord.enrollments?.length" class="benefit-detail__linked">
           <article v-for="item in lifeEventRecord.enrollments" :key="item.id">
             <strong>{{ item.planName }}</strong
@@ -162,7 +173,7 @@
             </article>
           </ElTimelineItem>
         </ElTimeline>
-        <div v-else class="benefit-detail__empty">暂无审计记录</div>
+        <ArtEmptyState v-else title="暂无审计记录" size="compact" :visual-size="64" />
       </section>
     </div>
   </ArtDrawer>
@@ -174,6 +185,7 @@
   import type { ArtDrawerExpose } from '@/components/core/drawers/art-drawer/types'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
+  import ArtEmptyState from '@/components/core/feedback/art-empty-state/index.vue'
   import { createDateTimeFormatter, formatDateTimeValue as formatDateTime } from '@/utils/ui/format'
   import { useUserStore } from '@/store/modules/user'
   import { fetchBenefitDetail } from '@hr/api'
@@ -631,15 +643,6 @@
     &__timeline article small {
       font-size: 11px;
       color: var(--art-text-gray-600);
-    }
-
-    &__empty {
-      padding: 22px;
-      font-size: 12px;
-      color: var(--art-text-gray-600);
-      text-align: center;
-      background: var(--art-gray-100);
-      border-radius: var(--el-border-radius-base);
     }
   }
 

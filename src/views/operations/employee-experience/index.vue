@@ -368,7 +368,7 @@
     if (activeEntity.value === 'my') return 'hrExperienceParticipantStatus'
     if (activeEntity.value === 'survey' || activeEntity.value === 'insight')
       return 'hrExperienceSurveyStatus'
-    return 'hrExperienceActionStatus'
+    return 'commonActionProgressStatus'
   })
   const searchItems = computed<SearchFormItem[]>(() => {
     const items: SearchFormItem[] = []
@@ -708,7 +708,7 @@
       prop: 'status',
       label: '状态',
       minWidth: 115,
-      dict: { code: 'hrExperienceActionStatus', display: 'auto' }
+      dict: { code: 'commonActionProgressStatus', display: 'auto' }
     },
     operationColumn()
   ]
@@ -1069,7 +1069,7 @@
         'hrExperienceDimension',
         'hrExperienceAnswerType',
         'hrExperienceParticipantStatus',
-        'hrExperienceActionStatus',
+        'commonActionProgressStatus',
         'hrExperienceAudienceType'
       ].map((code) => userStore.ensureDictLoaded(code))
     )

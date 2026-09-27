@@ -46,6 +46,7 @@
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import { fetchGetEnableTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
+  import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import { fetchPolicyAcknowledgementOptions, savePolicyDocument } from '@hr/api'
   import type { DialogType } from '@/types'
 
@@ -79,6 +80,9 @@
 
   const emit = defineEmits<{ success: [type: DialogType] }>()
   const userStore = useUserStore()
+  const policyCategoryOptions = useDictionaryOptions('hrPolicyCategory')
+  const audienceTypeOptions = useDictionaryOptions('hrPolicyAudienceType')
+  const audienceEmploymentTypeOptions = useDictionaryOptions('hrPolicyAudienceEmploymentType')
   const { getUserInfo, isPlatformSuper } = storeToRefs(userStore)
   const dialogRef = ref<ArtDialogExpose>()
   const formRef = ref<ArtFormExpose>()
@@ -130,9 +134,7 @@
       label: '政策分类',
       key: 'category',
       type: 'select',
-      options: ['人事管理', '行为准则', '信息安全', '健康安全', '合规治理', '薪酬福利'].map(
-        (value) => ({ label: value, value })
-      ),
+      options: policyCategoryOptions,
       props: { filterable: true, allowCreate: true, defaultFirstOption: true }
     },
     {
@@ -153,11 +155,7 @@
       label: '适用人群',
       key: 'audienceType',
       type: 'select',
-      options: [
-        { label: '全部在册员工', value: 'all' },
-        { label: '指定组织及下级组织', value: 'organization' },
-        { label: '指定用工类型', value: 'employment_type' }
-      ]
+      options: audienceTypeOptions
     },
     ...(formModel.audienceType === 'organization'
       ? [
@@ -176,12 +174,7 @@
             label: '用工类型',
             key: 'audienceEmploymentType',
             type: 'select' as const,
-            options: [
-              { label: '全职', value: 'full_time' },
-              { label: '兼职', value: 'part_time' },
-              { label: '实习', value: 'intern' },
-              { label: '合同制', value: 'contractor' }
-            ]
+            options: audienceEmploymentTypeOptions
           }
         ]
       : []),

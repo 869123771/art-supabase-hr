@@ -8,7 +8,7 @@
     "node": ">=22.0.0",
     "pnpm": ">=11.9.0"
   },
-  "description": "Art Supabase Pro 的 HR 人力资源业务模块",
+  "description": "亿企工场的 HR 人力资源业务模块",
   "exports": {
     ".": "./src/index.ts",
     "./*": "./src/*"

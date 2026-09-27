@@ -1,0 +1,1 @@
+import{o as e}from"./style-DIMSCtn-.js";import{u as t}from"./art-form-hcaTURce.js";function n(n,r){return n&&n.length?t(n,e(r,2)):[]}export{n as t};

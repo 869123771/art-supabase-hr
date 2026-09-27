@@ -20,12 +20,13 @@
       </article>
     </ElTimelineItem>
   </ElTimeline>
-  <div v-else class="experience-timeline__empty">暂无审计记录</div>
+  <ArtEmptyState v-else title="暂无审计记录" size="compact" :visual-size="64" />
 </template>
 
 <script setup lang="ts">
   import { ElTimeline, ElTimelineItem, type TimelineItemProps } from 'element-plus'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
+  import ArtEmptyState from '@/components/core/feedback/art-empty-state/index.vue'
   import { formatDateTimeValue as formatDateTime } from '@/utils/ui/format'
   import { useUserStore } from '@/store/modules/user'
 
@@ -33,7 +34,7 @@
   const userStore = useUserStore()
   const { getDictMap } = storeToRefs(userStore)
   const statusLabel = (value: string): string => {
-    for (const code of ['hrExperienceSurveyStatus', 'hrExperienceActionStatus']) {
+    for (const code of ['hrExperienceSurveyStatus', 'commonActionProgressStatus']) {
       const label = getDictMap.value[code]?.find((item) => item.value === value)?.label
       if (label) return label
     }
@@ -85,17 +86,6 @@
       margin-top: 5px;
       font-size: 10px;
       color: var(--art-text-gray-500);
-    }
-
-    &__empty {
-      display: grid;
-      place-items: center;
-      min-height: 64px;
-      font-size: 11px;
-      color: var(--art-text-gray-500);
-      background: color-mix(in srgb, var(--art-gray-100) 45%, transparent);
-      border: 1px dashed var(--art-card-border);
-      border-radius: var(--el-border-radius-base);
     }
   }
 </style>
