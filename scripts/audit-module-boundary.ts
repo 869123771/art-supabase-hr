@@ -6,7 +6,6 @@ const sourceRoot = path.join(repositoryRoot, 'src')
 const allowedSourceRoots = new Set(['api', 'types', 'views'])
 const allowedRootFiles = new Set(['index.ts', 'main.ts'])
 const sourceExtensions = new Set(['.ts', '.tsx', '.vue'])
-const allowedFunctionSharedFiles = new Set<string>()
 const violations: string[] = []
 
 for (const entry of readdirSync(sourceRoot, { withFileTypes: true })) {
@@ -48,12 +47,8 @@ for (const filePath of collectSourceFiles(sourceRoot)) {
   }
 }
 
-const functionSharedRoot = path.join(repositoryRoot, 'supabase/functions/_shared')
-for (const filePath of collectSourceFiles(functionSharedRoot)) {
-  const fileName = path.basename(filePath)
-  if (!allowedFunctionSharedFiles.has(fileName)) {
-    violations.push(`Edge Function 包含平台公共实现: supabase/functions/_shared/${fileName}`)
-  }
+if (existsSync(path.join(repositoryRoot, 'supabase'))) {
+  violations.push('Supabase 资源必须放在主仓，子仓不能有 supabase 目录')
 }
 
 if (violations.length > 0) {

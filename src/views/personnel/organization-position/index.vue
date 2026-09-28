@@ -21,6 +21,7 @@
         >
           <template #primary>
             <ArtSectionCard
+              :show-scrollbar="false"
               class="organization-position-page__organization-card"
               title="组织"
               :subtitle="`${flatOrganizations.length} 个可用节点`"
@@ -101,6 +102,7 @@
 
           <div class="organization-position-page__directory">
             <ArtSectionCard
+              :show-scrollbar="false"
               class="organization-position-page__position-card"
               title="岗位"
               :subtitle="positionSubtitle"
@@ -160,6 +162,7 @@
             </ArtSectionCard>
 
             <ArtSectionCard
+              :show-scrollbar="false"
               class="organization-position-page__employee-card"
               title="员工"
               :subtitle="employeeSubtitle"
