@@ -1010,6 +1010,11 @@
       box-shadow: 0 8px 28px rgb(37 42 62 / 3%);
     }
 
+    &__command > header,
+    &__workspace > header {
+      min-width: 0;
+    }
+
     &__command {
       overflow: hidden;
       background:
@@ -1019,11 +1024,6 @@
           transparent 30%
         ),
         var(--art-bg-color);
-
-      > header,
-      &__workspace > header {
-        min-width: 0;
-      }
 
       > header {
         display: flex;
