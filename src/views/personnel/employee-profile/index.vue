@@ -1567,6 +1567,7 @@
 
     :deep(.hr-profile-page__tab-count) {
       display: inline-flex;
+      flex: none;
       align-items: center;
       justify-content: center;
       min-width: 20px;
@@ -1574,6 +1575,8 @@
       padding: 0 6px;
       margin-left: 4px;
       font-size: 11px;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
       background: var(--el-fill-color);
       border-radius: 999px;
     }

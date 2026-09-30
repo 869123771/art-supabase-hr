@@ -1102,7 +1102,7 @@
     await confirmAction(`确定删除「${label}」吗？仅未进入流程的记录允许删除。`, '删除招聘记录', {
       confirmButtonText: '确认删除',
       type: 'warning',
-      confirmButtonClass: 'el-button--danger'
+      confirmButtonType: 'danger'
     })
     await deleteRecruitmentRecord(entity, row.id!)
     void tableQueryRef.value?.refreshRemove()

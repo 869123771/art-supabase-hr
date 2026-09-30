@@ -680,7 +680,7 @@
         confirmButtonText: '删除',
         cancelButtonText: '取消',
         type: 'warning',
-        confirmButtonClass: 'el-button--danger'
+        confirmButtonType: 'danger'
       })
       await deleteAbsenceRecord(activeEntity.value as 'type' | 'policy' | 'request', row.id)
       await tableQueryRef.value?.refreshRemove()

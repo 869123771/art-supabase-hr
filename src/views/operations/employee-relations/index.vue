@@ -807,7 +807,7 @@
           confirmButtonText: '删除',
           cancelButtonText: '返回',
           type: 'warning',
-          confirmButtonClass: 'el-button--danger'
+          confirmButtonType: 'danger'
         })
         await deleteEmployeeRelationRecord('action', row.id)
         await tableQueryRef.value?.refreshRemove()
@@ -902,7 +902,7 @@
             confirmButtonText: '删除',
             cancelButtonText: '返回',
             type: 'warning',
-            confirmButtonClass: 'el-button--danger'
+            confirmButtonType: 'danger'
           }
         )
         await deleteEmployeeRelationRecord('case', row.id)

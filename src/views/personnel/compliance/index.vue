@@ -878,7 +878,7 @@
           confirmButtonText: '删除',
           cancelButtonText: '返回',
           type: 'warning',
-          confirmButtonClass: 'el-button--danger'
+          confirmButtonType: 'danger'
         }
       )
       await deleteComplianceRecord(entity, record.id)
