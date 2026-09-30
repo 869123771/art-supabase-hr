@@ -28,7 +28,13 @@
 
     <section class="hr-profile-page__summary art-card-xs">
       <div class="hr-profile-page__avatar">
-        <ArtUploadImage v-model="form.avatarUrl" title="上传头像" :size="104" :limit="1" />
+        <ArtUploadImage
+          v-model="form.avatarUrl"
+          :resource-tenant-id="form.tenantId || ''"
+          title="上传头像"
+          :size="104"
+          :limit="1"
+        />
       </div>
       <div class="hr-profile-page__summary-copy">
         <span>EMPLOYEE PROFILE</span>
