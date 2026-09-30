@@ -233,16 +233,17 @@
     } else if (defaults.organizationId) {
       form.organizationId = defaults.organizationId
     }
-    await positionNumber.loadRule()
     await dialogRef.value?.handleOpen(row, {
       title: row ? '编辑岗位' : '新增岗位',
       subtitle: row ? '维护岗位归属、任职规则与启用状态' : '创建组织中的具体任职岗位',
       confirmText: row ? '保存更改' : '创建岗位',
       contentMaxHeight: 'calc(100vh - 184px)',
+      loading: true,
       onOpen: async (_openRow, api) => {
         api.setLoading(true)
         try {
           await Promise.all([
+            positionNumber.loadRule(),
             formRef.value?.reloadOptions('organizationId'),
             formRef.value?.reloadOptions('jobProfileId'),
             formRef.value?.reloadOptions('gradeId')

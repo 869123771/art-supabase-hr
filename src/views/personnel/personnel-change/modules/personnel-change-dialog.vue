@@ -604,7 +604,6 @@
     await resetForm()
     Object.assign(form.model, cloneDeep({ status: 'draft', ...data.record }))
     snapshot.data = cloneDeep(data.record?.beforeAssignmentSnapshot)
-    await changeNumber.loadRule()
     await dialogRef.value?.handleOpen(data, {
       title: data.record?.id ? '编辑人事异动单' : '新增人事异动单',
       subtitle: '先确认员工与异动类型，再维护本次需要变化的任职信息；审批通过后按生效日期更新。',
@@ -615,7 +614,7 @@
       onOpen: async (_openData, api) => {
         api.setLoading(true)
         try {
-          await formRef.value?.reloadOptions('employeeId')
+          await Promise.all([changeNumber.loadRule(), formRef.value?.reloadOptions('employeeId')])
           await reloadTargetOptions(form.model.changeType)
         } finally {
           api.setLoading(false)
