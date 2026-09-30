@@ -30,16 +30,18 @@
             }}
           </ElTag>
         </header>
-        <ol class="org-design-page__lifecycle" aria-label="组织变革治理链路">
-          <li v-for="(stage, index) in lifecycleStages" :key="stage.label" :class="stage.state">
-            <span class="org-design-page__stage-index">0{{ index + 1 }}</span
-            ><span class="org-design-page__stage-icon"><ArtSvgIcon :icon="stage.icon" /></span>
-            <div
-              ><strong>{{ stage.label }}</strong
-              ><small>{{ stage.description }}</small></div
-            ><b>{{ stage.value }}</b>
-          </li>
-        </ol>
+        <ElScrollbar class="org-design-page__lifecycle-scroll">
+          <ol class="org-design-page__lifecycle" aria-label="组织变革治理链路">
+            <li v-for="(stage, index) in lifecycleStages" :key="stage.label" :class="stage.state">
+              <span class="org-design-page__stage-index">0{{ index + 1 }}</span
+              ><span class="org-design-page__stage-icon"><ArtSvgIcon :icon="stage.icon" /></span>
+              <div
+                ><strong>{{ stage.label }}</strong
+                ><small>{{ stage.description }}</small></div
+              ><b>{{ stage.value }}</b>
+            </li>
+          </ol>
+        </ElScrollbar>
         <div class="org-design-page__guardrails">
           <article class="is-success"
             ><span><ArtSvgIcon icon="ri:camera-lens-line" /></span
@@ -801,7 +803,6 @@
       gap: 1px;
       padding: 0;
       margin: 18px 0 0;
-      overflow-x: auto;
       list-style: none;
       background: var(--org-border);
       border: 1px solid var(--org-border);

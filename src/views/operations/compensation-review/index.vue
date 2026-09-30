@@ -59,17 +59,19 @@
           </div>
         </header>
 
-        <ol class="review-page__lifecycle" aria-label="调薪复核状态流转">
-          <li v-for="(stage, index) in lifecycleStages" :key="stage.key" :class="stage.state">
-            <span class="review-page__stage-index">0{{ index + 1 }}</span>
-            <span class="review-page__stage-icon"><ArtSvgIcon :icon="stage.icon" /></span>
-            <div
-              ><strong>{{ stage.label }}</strong
-              ><small>{{ stage.description }}</small></div
-            >
-            <b>{{ stage.value }}</b>
-          </li>
-        </ol>
+        <ElScrollbar class="review-page__lifecycle-scroll">
+          <ol class="review-page__lifecycle" aria-label="调薪复核状态流转">
+            <li v-for="(stage, index) in lifecycleStages" :key="stage.key" :class="stage.state">
+              <span class="review-page__stage-index">0{{ index + 1 }}</span>
+              <span class="review-page__stage-icon"><ArtSvgIcon :icon="stage.icon" /></span>
+              <div
+                ><strong>{{ stage.label }}</strong
+                ><small>{{ stage.description }}</small></div
+              >
+              <b>{{ stage.value }}</b>
+            </li>
+          </ol>
+        </ElScrollbar>
 
         <div v-if="selectedCycle" class="review-page__guardrails">
           <article>
@@ -1579,7 +1581,6 @@
 
       &__lifecycle {
         grid-template-columns: repeat(5, minmax(145px, 1fr));
-        overflow-x: auto;
       }
 
       &__guardrails {

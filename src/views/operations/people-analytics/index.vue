@@ -95,22 +95,24 @@
             </header>
           </template>
 
-          <div class="people-analytics-page__bridge" aria-label="人员存量变化对账">
-            <template v-for="(item, index) in flowBridge" :key="item.key">
-              <article :class="['people-analytics-page__bridge-node', `is-${item.tone}`]">
-                <span>{{ item.label }}</span>
-                <strong>{{ item.value }}</strong>
-                <small>{{ item.description }}</small>
-              </article>
-              <span
-                v-if="index < flowBridge.length - 1"
-                class="people-analytics-page__bridge-connector"
-                aria-hidden="true"
-              >
-                <ArtSvgIcon icon="ri:arrow-right-line" />
-              </span>
-            </template>
-          </div>
+          <ElScrollbar class="people-analytics-page__bridge-scroll">
+            <div class="people-analytics-page__bridge" aria-label="人员存量变化对账">
+              <template v-for="(item, index) in flowBridge" :key="item.key">
+                <article :class="['people-analytics-page__bridge-node', `is-${item.tone}`]">
+                  <span>{{ item.label }}</span>
+                  <strong>{{ item.value }}</strong>
+                  <small>{{ item.description }}</small>
+                </article>
+                <span
+                  v-if="index < flowBridge.length - 1"
+                  class="people-analytics-page__bridge-connector"
+                  aria-hidden="true"
+                >
+                  <ArtSvgIcon icon="ri:arrow-right-line" />
+                </span>
+              </template>
+            </div>
+          </ElScrollbar>
 
           <div class="people-analytics-page__formula">
             <ArtSvgIcon icon="ri:information-line" />
@@ -965,7 +967,6 @@
     @media (width <= 1280px) {
       &__bridge {
         grid-template-columns: repeat(5, minmax(116px, 1fr));
-        overflow-x: auto;
       }
 
       &__bridge-connector {

@@ -30,17 +30,19 @@
           </ElTag>
         </header>
 
-        <ol class="policy-page__lifecycle" aria-label="政策发布与签收治理链路">
-          <li v-for="(stage, index) in lifecycleStages" :key="stage.label" :class="stage.state">
-            <span class="policy-page__stage-index">0{{ index + 1 }}</span>
-            <span class="policy-page__stage-icon"><ArtSvgIcon :icon="stage.icon" /></span>
-            <div>
-              <strong>{{ stage.label }}</strong>
-              <small>{{ stage.description }}</small>
-            </div>
-            <b>{{ stage.value }}</b>
-          </li>
-        </ol>
+        <ElScrollbar class="policy-page__lifecycle-scroll">
+          <ol class="policy-page__lifecycle" aria-label="政策发布与签收治理链路">
+            <li v-for="(stage, index) in lifecycleStages" :key="stage.label" :class="stage.state">
+              <span class="policy-page__stage-index">0{{ index + 1 }}</span>
+              <span class="policy-page__stage-icon"><ArtSvgIcon :icon="stage.icon" /></span>
+              <div>
+                <strong>{{ stage.label }}</strong>
+                <small>{{ stage.description }}</small>
+              </div>
+              <b>{{ stage.value }}</b>
+            </li>
+          </ol>
+        </ElScrollbar>
 
         <div class="policy-page__guardrails">
           <article class="is-restricted">
@@ -842,7 +844,6 @@
       gap: 1px;
       padding: 0;
       margin: 18px 0 0;
-      overflow-x: auto;
       list-style: none;
       background: var(--policy-border);
       border: 1px solid var(--policy-border);
