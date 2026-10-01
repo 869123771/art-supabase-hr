@@ -556,6 +556,7 @@
   import { fetchGetEnableOrganizationTree, fetchGetEnableTenantList } from '@/api/system-manage'
   import { linkUserToEmployee } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
+  import { useTenantScopeStore } from '@/store/modules/tenantScope'
   import { useDocumentNumberRule } from '@/hooks/core/useDocumentNumberRule'
   import {
     canEditField,
@@ -587,14 +588,13 @@
   const route = useRoute()
   const router = useRouter()
   const userStore = useUserStore()
+  const tenantScopeStore = useTenantScopeStore()
   const { getDictMap, getUserInfo, isPlatformSuper } = storeToRefs(userStore)
   const savePermission = computed(() => (route.params.id ? 'Hr:Employee:Edit' : 'Hr:Employee:Add'))
   const basicFormRef = ref<FormExpose>()
   const tenantFormOptions = ref<FormItemOption[]>([])
   const organizationFormOptions = ref<FormItemOption[]>([])
   const positionOptions = ref<Api.Hr.PositionOption[]>([])
-  const employeeNumber = useDocumentNumberRule('hr.employee')
-  const contractNumber = useDocumentNumberRule('hr.employee_contract')
   const historyValidationErrors = reactive<Record<string, string>>({})
   const isDesktop = useMediaQuery('(min-width: 1200px)')
   const isTablet = useMediaQuery('(min-width: 720px)')
@@ -627,8 +627,13 @@
     error: null
   })
 
-  const initialTenantId = () => (isPlatformSuper.value ? undefined : getUserInfo.value.tenantId)
+  const initialTenantId = () =>
+    isPlatformSuper.value
+      ? (tenantScopeStore.effectiveTenantId ?? undefined)
+      : getUserInfo.value.tenantId
   const form = reactive<EmployeeProfileForm>(createEmployeeProfile(initialTenantId()))
+  const employeeNumber = useDocumentNumberRule('hr.employee', () => form.tenantId)
+  const contractNumber = useDocumentNumberRule('hr.employee_contract', () => form.tenantId)
   const fieldAccessFallback = computed<Api.Common.FieldAccessLevel>(() =>
     isEdit.value ? 'hidden' : 'edit'
   )
@@ -804,7 +809,6 @@
     form.positionId = null
     void loadOrganizationOptions()
     void loadPositionOptions()
-    void Promise.all([employeeNumber.loadRule(), contractNumber.loadRule()])
   }
 
   const basicRules = computed<FormRules<EmployeeProfileForm>>(() => ({
@@ -1122,11 +1126,7 @@
     page.loading = true
     page.error = null
     try {
-      await Promise.all([
-        ensureDictionaries(),
-        employeeNumber.loadRule(),
-        contractNumber.loadRule()
-      ])
+      await ensureDictionaries()
       if (isPlatformSuper.value) {
         const response = await fetchGetEnableTenantList()
         tenantFormOptions.value = (response.data ?? []).map((tenant) => ({
@@ -1141,7 +1141,12 @@
       } else {
         applyUserLinkPrefill()
       }
-      await Promise.all([loadOrganizationOptions(), loadPositionOptions()])
+      await Promise.all([
+        employeeNumber.loadRule(),
+        contractNumber.loadRule(),
+        loadOrganizationOptions(),
+        loadPositionOptions()
+      ])
     } catch (error) {
       page.error = error instanceof Error ? error : new Error('员工档案加载失败')
     } finally {
