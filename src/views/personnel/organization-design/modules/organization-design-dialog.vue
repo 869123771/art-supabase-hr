@@ -33,6 +33,8 @@
 </template>
 
 <script setup lang="ts">
+  import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
+  import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import dayjs from 'dayjs'
   import { ElMessage, type FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
@@ -308,7 +310,7 @@
   }
   const submit = async (): Promise<boolean> => {
     try {
-      await formRef.value?.validate()
+      if (!(await validateArtFormForSubmit(formRef.value))) return false
       if (
         entity.value === 'change' &&
         formModel.changeType === 'reparent' &&
@@ -350,7 +352,8 @@
         })
       emit('success', entity.value, dialogType.value)
       return true
-    } catch {
+    } catch (error) {
+      notifyFriendlyError(error, '保存失败，请检查填写内容后重试', 'warning')
       return false
     }
   }

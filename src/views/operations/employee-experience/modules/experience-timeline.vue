@@ -20,7 +20,13 @@
       </article>
     </ElTimelineItem>
   </ElTimeline>
-  <ArtEmptyState v-else title="暂无审计记录" size="compact" :visual-size="64" />
+  <ArtEmptyState
+    v-else
+    title="暂无审计记录"
+    description="主题变更记录产生后会显示在此。"
+    size="compact"
+    :visual-size="64"
+  />
 </template>
 
 <script setup lang="ts">

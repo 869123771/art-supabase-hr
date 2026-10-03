@@ -53,13 +53,14 @@
 </template>
 
 <script setup lang="ts">
-  import { ElMessage, type FormRules } from 'element-plus'
+  import type { FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
   import ArtForm, { type FormItem } from '@/components/core/forms/art-form/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import { formatWithDayjs } from '@/utils/time'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import { fetchEmployeeExperienceDetail, submitEmployeeExperienceResponse } from '@hr/api'
 
@@ -181,17 +182,22 @@
 
   const submit = async (): Promise<boolean> => {
     try {
-      await formRef.value?.validate()
-      await confirmAction(
-        '匿名提交后不能再次编辑。系统只保留完成状态，不保存员工与答案之间的关联。',
-        '确认匿名提交',
-        { confirmButtonText: '确认匿名提交', cancelButtonText: '返回检查', type: 'info' }
-      )
+      if (!(await validateArtFormForSubmit(formRef.value))) return false
+      try {
+        await confirmAction(
+          '匿名提交后不能再次编辑。系统只保留完成状态，不保存员工与答案之间的关联。',
+          '确认匿名提交',
+          { confirmButtonText: '确认匿名提交', cancelButtonText: '返回检查', type: 'info' }
+        )
+      } catch (error) {
+        if (error === 'cancel' || error === 'close') return false
+        throw error
+      }
       await submitEmployeeExperienceResponse(participantId.value, toAnswers())
       emit('success')
       return true
     } catch (error) {
-      if (error instanceof Error && error.message) ElMessage.warning(error.message)
+      notifyFriendlyError(error, '提交失败，请检查填写内容后重试', 'warning')
       return false
     }
   }

@@ -22,6 +22,6 @@ export async function fetchPeopleAnalyticsOverview(
         }),
         options
       ),
-    { showErrorMessage: true }
+    { showErrorMessage: false }
   )
 }

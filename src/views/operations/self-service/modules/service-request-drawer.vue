@@ -98,7 +98,13 @@
             </article>
           </ElTimelineItem>
         </ElTimeline>
-        <ArtEmptyState v-else title="暂无服务交付记录" size="compact" :visual-size="64" />
+        <ArtEmptyState
+          v-else
+          title="暂无服务交付记录"
+          description="服务处理后，可在此查看交付过程。"
+          size="compact"
+          :visual-size="64"
+        />
       </section>
     </div>
   </ArtDrawer>

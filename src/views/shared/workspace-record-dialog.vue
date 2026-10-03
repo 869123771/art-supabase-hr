@@ -3,6 +3,7 @@
     <div class="hr-record-dialog">
       <section class="hr-record-dialog__intro">
         <div class="hr-record-dialog__icon" aria-hidden="true">
+          <span class="hr-record-dialog__icon-fallback">HR</span>
           <ArtSvgIcon :icon="currentWorkspace?.icon ?? 'ri:file-edit-line'" />
         </div>
         <div class="hr-record-dialog__intro-copy">
@@ -46,20 +47,23 @@
 </template>
 
 <script setup lang="ts">
-  import { cloneDeep, compact, get, uniqBy } from 'lodash-es'
+  import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
+  import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
+  import { cloneDeep, compact, get } from 'lodash-es'
   import type { FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
   import ArtForm, { type FormItem } from '@/components/core/forms/art-form/index.vue'
-  import type { ArtUserSelectOption } from '@/components/core/forms/art-user-select/types'
+  import ArtEmployeeSelect from '@/components/business/art-employee-select/index.vue'
+  import type { EmployeeIntegrationItem } from '@/api/integration/employees'
   import ArtSectionTitle from '@/components/core/surfaces/art-section-title/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import TreeUtils from '@/utils/tree'
   import { useUserStore } from '@/store/modules/user'
   import { useDocumentNumberRule } from '@/hooks/core/useDocumentNumberRule'
+  import { useTenantScopeFormPolicy } from '@/hooks/core/useTenantScopeFormPolicy'
   import {
     fetchEmployeeOrganizationTree,
-    fetchEmployeeSelectorList,
     fetchHrWorkspaceRecords,
     fetchPositionOptions,
     saveHrWorkspaceRecord
@@ -87,15 +91,20 @@
   const dialogRef = ref<ArtDialogExpose<DialogOpenData>>()
   const formRef = ref<ArtFormExpose>()
   const userStore = useUserStore()
-  const { getDictMap, getUserInfo } = storeToRefs(userStore)
+  const { getDictMap } = storeToRefs(userStore)
+  const { defaultWriteTenantId } = useTenantScopeFormPolicy()
+  const targetTenantId = ref<string>()
   const currentTab = shallowRef<HrWorkspaceTab>()
   const currentWorkspace = shallowRef<HrWorkspaceDefinition>()
   const isEditing = ref(false)
   const documentNumberRules: Record<string, ReturnType<typeof useDocumentNumberRule>> = {
-    'hr.employee_contract': useDocumentNumberRule('hr.employee_contract'),
-    'hr.personnel_change': useDocumentNumberRule('hr.personnel_change'),
-    'hr.lifecycle_case': useDocumentNumberRule('hr.lifecycle_case'),
-    'hr.recruitment_requisition': useDocumentNumberRule('hr.recruitment_requisition')
+    'hr.employee_contract': useDocumentNumberRule('hr.employee_contract', targetTenantId),
+    'hr.personnel_change': useDocumentNumberRule('hr.personnel_change', targetTenantId),
+    'hr.lifecycle_case': useDocumentNumberRule('hr.lifecycle_case', targetTenantId),
+    'hr.recruitment_requisition': useDocumentNumberRule(
+      'hr.recruitment_requisition',
+      targetTenantId
+    )
   }
   const dialogModeLabel = computed(() => (isEditing.value ? '编辑记录' : '新增记录'))
   const organizationTreeUtils = new TreeUtils({
@@ -128,7 +137,6 @@
       return rules
     })
   })
-
   const getOptionLabel = (
     option: Record<string, unknown>,
     keys: Array<string | number | symbol>
@@ -139,68 +147,37 @@
   const fetchFieldOptions = async (field: HrWorkspaceField): Promise<Record<string, unknown>[]> => {
     const key = String(field.key)
     if (key.toLowerCase().includes('positionid')) {
-      const result = await fetchPositionOptions({ tenantId: getUserInfo.value.tenantId })
+      const result = await fetchPositionOptions({ tenantId: targetTenantId.value })
       return (result.data ?? []).map((item) => ({ ...item }))
     }
     if (key.toLowerCase().includes('organizationid')) {
-      const result = await fetchEmployeeOrganizationTree({ tenantId: getUserInfo.value.tenantId })
+      const result = await fetchEmployeeOrganizationTree({ tenantId: targetTenantId.value })
       return organizationTreeUtils.treeToList(result.data ?? [])
     }
     if (!field.optionEntity) return []
-    const result = await fetchHrWorkspaceRecords(field.optionEntity, { from: 0, to: 499 })
+    const result = await fetchHrWorkspaceRecords(field.optionEntity, {
+      from: 0,
+      to: 499,
+      tenantId: targetTenantId.value
+    })
     return result.data.map((item) => ({ ...item }))
   }
 
-  const toEmployeeUserOption = (
-    employee: Pick<
-      Api.Hr.EmployeeSelectorItem,
-      'id' | 'employeeNo' | 'employeeName' | 'avatarUrl' | 'email' | 'jobTitle' | 'organization'
-    >
-  ): ArtUserSelectOption => {
-    const employeeName = employee.employeeName?.trim() || '未命名员工'
-    const employeeNo = employee.employeeNo?.trim() || ''
-    const departmentName = compact([
-      employee.organization?.organizationName,
-      employee.jobTitle
-    ]).join(' · ')
-
-    return {
-      value: employee.id,
-      label: compact([employeeName, employeeNo]).join(' · '),
-      avatar: employee.avatarUrl,
-      nickName: employeeName,
-      userName: employeeNo,
-      userEmail: employee.email,
-      departmentName: departmentName || undefined
-    }
-  }
-
-  const getSelectedEmployeeOption = (): ArtUserSelectOption | undefined => {
+  const getSelectedEmployeeData = (): EmployeeIntegrationItem[] => {
     const employeeId = form.model.employeeId
     const employee = form.model.employee
-    if (!employeeId || !employee?.employeeName) return undefined
+    const tenantId = targetTenantId.value
+    if (!employeeId || !employee?.employeeName || employee.id !== employeeId || !tenantId) return []
 
-    return toEmployeeUserOption({
-      id: employeeId,
-      employeeNo: employee.employeeNo ?? '',
-      employeeName: employee.employeeName,
-      avatarUrl: null,
-      email: null,
-      jobTitle: null,
-      organization: null
-    })
-  }
-
-  const fetchEmployeeUserOptions = async (): Promise<ArtUserSelectOption[]> => {
-    const result = await fetchEmployeeSelectorList({
-      tenantId: getUserInfo.value.tenantId,
-      from: 0,
-      to: 999
-    })
-    const selectedOption = getSelectedEmployeeOption()
-    const options = result.data.map(toEmployeeUserOption)
-
-    return uniqBy(selectedOption ? [...options, selectedOption] : options, 'value')
+    return [
+      {
+        id: employeeId,
+        tenantId,
+        employeeNo: employee.employeeNo ?? '',
+        employeeName: employee.employeeName,
+        employmentStatus: ''
+      }
+    ]
   }
 
   const createFormItem = (field: HrWorkspaceField): FormItem => {
@@ -223,15 +200,23 @@
     }
     if (field.dictCode) {
       base.props = { ...base.props, options: getDictMap.value[field.dictCode] ?? [] }
-    } else if (field.type === 'userSelect') {
-      const selectedOption = getSelectedEmployeeOption()
-      base.options = selectedOption ? [selectedOption] : []
-      base.api = fetchEmployeeUserOptions
+    } else if (field.type === 'employeeSelect') {
+      base.render = ArtEmployeeSelect
       base.props = {
         ...base.props,
+        tenantId: targetTenantId.value,
+        selectedData: getSelectedEmployeeData(),
         placeholder: `请选择${field.label}`,
-        noDataText: '暂无可选员工',
-        noMatchText: '未找到匹配员工'
+        'onUpdate:selectedData': (rows: EmployeeIntegrationItem[]) => {
+          const employee = rows[0]
+          form.model.employee = employee
+            ? {
+                id: employee.id,
+                employeeNo: employee.employeeNo,
+                employeeName: employee.employeeName
+              }
+            : null
+        }
       }
     } else if (field.type === 'select') {
       base.api = () => fetchFieldOptions(field)
@@ -256,7 +241,10 @@
   const buildWriteRecord = (): Api.Hr.WorkspaceRecord => {
     const tab = currentTab.value
     if (!tab) return {}
-    const payload: Record<string, unknown> = { id: form.model.id }
+    const payload: Record<string, unknown> = {
+      id: form.model.id,
+      tenantId: targetTenantId.value
+    }
     tab.fields.forEach((field) => {
       const value = form.model[field.key]
       payload[field.key] = value === '' ? null : value
@@ -268,21 +256,37 @@
     const tab = currentTab.value
     if (!tab) return false
     try {
-      await formRef.value?.validate()
+      if (!(await validateArtFormForSubmit(formRef.value))) return false
       await saveHrWorkspaceRecord(tab.entity, buildWriteRecord())
       emit('success')
       return true
-    } catch {
+    } catch (error) {
+      notifyFriendlyError(error, '保存失败，请检查填写内容后重试', 'warning')
       return false
     }
   }
 
   const handleOpen = async (data: DialogOpenData): Promise<void> => {
+    const recordTenantId = data.record?.id
+      ? data.record.tenantId?.trim()
+      : defaultWriteTenantId.value?.trim()
+    if (!recordTenantId) {
+      notifyFriendlyError(
+        new Error('记录缺少目标租户'),
+        '无法确定记录所属租户，请刷新后重试',
+        'warning'
+      )
+      return
+    }
+    targetTenantId.value = recordTenantId
     Object.keys(form.model).forEach((key) => delete form.model[key as keyof Api.Hr.WorkspaceRecord])
     currentWorkspace.value = data.workspace
     currentTab.value = data.tab
     isEditing.value = Boolean(data.record?.id)
-    Object.assign(form.model, cloneDeep({ ...data.tab.defaults, ...data.record }))
+    Object.assign(
+      form.model,
+      cloneDeep({ ...data.tab.defaults, ...data.record, tenantId: recordTenantId })
+    )
     const ruleKeys = data.tab.fields.flatMap((field) =>
       field.documentNumberRuleKey ? [field.documentNumberRuleKey] : []
     )
@@ -309,6 +313,7 @@
         currentTab.value = undefined
         currentWorkspace.value = undefined
         isEditing.value = false
+        targetTenantId.value = undefined
       }
     })
   }
@@ -329,12 +334,8 @@
       align-items: center;
       padding: 16px 18px;
       overflow: hidden;
-      background: linear-gradient(
-        135deg,
-        color-mix(in srgb, var(--el-color-primary) 10%, var(--el-bg-color)) 0%,
-        color-mix(in srgb, var(--el-color-primary) 3%, var(--el-bg-color)) 100%
-      );
-      border: 1px solid color-mix(in srgb, var(--el-color-primary) 18%, var(--el-border-color));
+      background: color-mix(in srgb, var(--el-color-primary) 5%, var(--el-bg-color));
+      border: 1px solid color-mix(in srgb, var(--el-color-primary) 14%, var(--el-border-color));
       border-radius: 12px;
     }
 
@@ -345,9 +346,23 @@
       height: 46px;
       font-size: 23px;
       color: var(--el-color-white);
-      background: linear-gradient(145deg, var(--el-color-primary-light-3), var(--el-color-primary));
+      background: var(--el-color-primary);
       border-radius: 12px;
-      box-shadow: 0 8px 20px color-mix(in srgb, var(--el-color-primary) 24%, transparent);
+
+      > :deep(.art-svg-icon),
+      > .hr-record-dialog__icon-fallback {
+        grid-area: 1 / 1;
+      }
+
+      &:has(svg path) .hr-record-dialog__icon-fallback {
+        display: none;
+      }
+    }
+
+    &__icon-fallback {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
     }
 
     &__intro-copy {

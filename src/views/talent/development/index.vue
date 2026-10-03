@@ -84,7 +84,7 @@
 
 <script setup lang="tsx">
   import dayjs from 'dayjs'
-  import { ElMessage, ElProgress, ElTag } from 'element-plus'
+  import { ElProgress, ElTag } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
     ArtTableQueryExpose,
@@ -102,9 +102,9 @@
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
-  import { pageInfoHandler } from '@/utils/table/tableUtils'
+  import { pageInfoHandler } from '@/utils/table/table-utils'
   import type { ColumnOption, DialogType } from '@/types'
   import { fetchGetEnableTenantList } from '@/api/system-manage'
   import {
@@ -1022,7 +1022,7 @@
       await refreshOverview()
     } catch (error) {
       if (error instanceof Error && error.message && !error.message.includes('cancel'))
-        ElMessage.warning(error.message)
+        notifyFriendlyError(error, '培养任务操作未完成，请检查状态后重试', 'warning')
     }
   }
   const handleTransition = async (row: RecordItem, action: string): Promise<void> => {
@@ -1058,7 +1058,7 @@
       await refreshOverview()
     } catch (error) {
       if (error instanceof Error && error.message && !error.message.includes('cancel'))
-        ElMessage.warning(error.message)
+        notifyFriendlyError(error, '培养任务操作未完成，请检查状态后重试', 'warning')
     }
   }
 

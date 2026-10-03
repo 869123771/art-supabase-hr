@@ -124,7 +124,13 @@
             </div>
           </article>
         </div>
-        <ArtEmptyState v-else title="暂无处置行动" size="compact" :visual-size="64" />
+        <ArtEmptyState
+          v-else
+          title="暂无处置行动"
+          description="添加处置行动后，可在此跟踪进展。"
+          size="compact"
+          :visual-size="64"
+        />
       </section>
 
       <section class="employee-relation-detail__section">
@@ -165,7 +171,13 @@
             </article>
           </ElTimelineItem>
         </ElTimeline>
-        <ArtEmptyState v-else title="暂无案件审计记录" size="compact" :visual-size="64" />
+        <ArtEmptyState
+          v-else
+          title="暂无案件审计记录"
+          description="案件状态或内容变更后，会在此留下记录。"
+          size="compact"
+          :visual-size="64"
+        />
       </section>
     </div>
   </ArtDrawer>

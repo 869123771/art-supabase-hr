@@ -23,6 +23,8 @@
 </template>
 
 <script setup lang="ts">
+  import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
+  import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import { ElMessage, type FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
@@ -193,7 +195,7 @@
 
   const handleSubmit = async (): Promise<boolean> => {
     try {
-      await formRef.value?.validate()
+      if (!(await validateArtFormForSubmit(formRef.value))) return false
       if (isInterviewEvaluation.value && !form.model.feedback.trim()) {
         ElMessage.warning('请填写可复盘的面试评价依据')
         return false
@@ -201,7 +203,8 @@
       await executeAction()
       emit('success')
       return true
-    } catch {
+    } catch (error) {
+      notifyFriendlyError(error, '处理未完成，请检查状态后重试', 'warning')
       return false
     }
   }

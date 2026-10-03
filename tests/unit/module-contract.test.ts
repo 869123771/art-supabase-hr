@@ -12,11 +12,11 @@ test('HR module exposes its standalone application contract', () => {
   })
 })
 
-test('HR workspace employee fields use the shared user selector contract', () => {
+test('HR workspace employee fields use the shared employee selector contract', () => {
   const employeeFields = Object.values(hrWorkspaceDefinitions).flatMap((workspace) =>
     workspace.tabs.flatMap((tab) => tab.fields.filter((field) => field.key === 'employeeId'))
   )
 
   assert.ok(employeeFields.length > 0)
-  employeeFields.forEach((field) => assert.equal(field.type, 'userSelect'))
+  employeeFields.forEach((field) => assert.equal(field.type, 'employeeSelect'))
 })

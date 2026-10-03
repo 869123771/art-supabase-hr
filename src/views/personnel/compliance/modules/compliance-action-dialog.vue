@@ -40,9 +40,11 @@
 </template>
 
 <script setup lang="ts">
+  import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
+  import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import { getFriendlySupabaseErrorMessage } from '@/utils/supabase'
   import dayjs from 'dayjs'
-  import { ElMessage, type FormRules } from 'element-plus'
+  import type { FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
   import ArtForm, { type FormItem } from '@/components/core/forms/art-form/index.vue'
@@ -319,7 +321,7 @@
   const submit = async (): Promise<boolean> => {
     if (loadError.value || !record.value?.id) return false
     try {
-      await formRef.value?.validate()
+      if (!(await validateArtFormForSubmit(formRef.value))) return false
       validateBusiness()
       await transitionComplianceRecord(entity.value, record.value.id, action.value, {
         contractNo: formModel.contractNo || 'AUTO',
@@ -340,7 +342,7 @@
       emit('success', entity.value)
       return true
     } catch (error) {
-      if (error instanceof Error && error.message) ElMessage.warning(error.message)
+      notifyFriendlyError(error, '保存失败，请检查填写内容后重试', 'warning')
       return false
     }
   }

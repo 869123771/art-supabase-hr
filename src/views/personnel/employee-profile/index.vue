@@ -556,7 +556,7 @@
   import { fetchGetEnableOrganizationTree, fetchGetEnableTenantList } from '@/api/system-manage'
   import { linkUserToEmployee } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
-  import { useTenantScopeStore } from '@/store/modules/tenantScope'
+  import { useTenantScopeStore } from '@/store/modules/tenant-scope'
   import { useDocumentNumberRule } from '@/hooks/core/useDocumentNumberRule'
   import {
     canEditField,

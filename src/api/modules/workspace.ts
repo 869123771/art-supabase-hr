@@ -1,6 +1,10 @@
 import { buildOrIlikeFilter } from '@/utils/supabase/search'
 import { omit } from 'lodash-es'
 import { useSupabase } from '@/hooks'
+import { useTenantScopeStore } from '@/store/modules/tenant-scope'
+import { useUserStore } from '@/store/modules/user'
+import { resolveTenantReadTargetId } from '@/utils/tenant-scope-access-policy'
+import { resolveTenantWriteTargetId } from '@/utils/tenant-scope-context'
 import { withRequestOptions } from '@/api/providers/supabase/query'
 import type { ApiRequestOptions } from '@/types/api/request'
 
@@ -215,6 +219,20 @@ export async function fetchHrWorkspaceRecords(
   params: WorkspaceSearchParams,
   options?: ApiRequestOptions
 ) {
+  const tenantScopeStore = useTenantScopeStore()
+  const readTenantId = resolveTenantReadTargetId({
+    effectiveTenantId: tenantScopeStore.effectiveTenantId,
+    requestedTenantId: params.tenantId,
+    isPlatformSuper: tenantScopeStore.isPlatformScope
+  })
+  if (readTenantId === undefined) {
+    return {
+      data: [] as WorkspaceRecord[],
+      total: 0,
+      error: new Error('所选租户不在当前工作范围内，请切换租户后重试')
+    }
+  }
+
   const config = workspaceTransportConfigs[entity]
   const from = Math.max(params.from ?? 0, 0)
   const to = Math.max(params.to ?? from + 19, from)
@@ -231,7 +249,7 @@ export async function fetchHrWorkspaceRecords(
   if (params.status && config.statusColumn) query = query.eq(config.statusColumn, params.status)
   if (params.employeeId && config.employeeColumn)
     query = query.eq(config.employeeColumn, params.employeeId)
-  if (params.tenantId) query = query.eq('tenant_id', params.tenantId)
+  if (readTenantId) query = query.eq('tenant_id', readTenantId)
 
   const result = await responseHandle<WorkspaceRecord[]>(() => withRequestOptions(query, options), {
     showErrorMessage: true
@@ -243,11 +261,21 @@ export async function fetchHrWorkspaceRecords(
 export async function saveHrWorkspaceRecord(entity: WorkspaceEntity, record: WorkspaceRecord) {
   const config = workspaceTransportConfigs[entity]
   const id = record.id
-  const payload = keysToSnakeDeep(omit(record, ['id']))
+  const userStore = useUserStore()
+  const tenantId = resolveTenantWriteTargetId({
+    explicitTenantId: record.tenantId,
+    effectiveTenantId: useTenantScopeStore().effectiveTenantId,
+    actorTenantId: userStore.getUserInfo.tenantId,
+    canWriteToOtherTenant: userStore.isPlatformSuper
+  })
+  const payload = keysToSnakeDeep({
+    ...omit(record, ['id', 'tenantId']),
+    ...(!id ? { tenantId } : {})
+  })
   return await responseHandle<WorkspaceRecord>(
     () => {
       const query = id
-        ? supabase.from(config.table).update(payload).eq('id', id)
+        ? supabase.from(config.table).update(payload).eq('id', id).eq('tenant_id', tenantId)
         : supabase.from(config.table).insert(payload)
       return query.select(config.select).single()
     },

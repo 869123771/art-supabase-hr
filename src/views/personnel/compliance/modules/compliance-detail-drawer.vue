@@ -79,7 +79,13 @@
             </article>
           </ElTimelineItem>
         </ElTimeline>
-        <ArtEmptyState v-else title="暂无合规审计记录" size="compact" :visual-size="64" />
+        <ArtEmptyState
+          v-else
+          title="暂无合规审计记录"
+          description="合规状态或处理结果变化后，会在此留下记录。"
+          size="compact"
+          :visual-size="64"
+        />
       </section>
     </div>
   </ArtDrawer>

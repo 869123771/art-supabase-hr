@@ -145,6 +145,11 @@
         <ArtEmptyState
           v-else
           :title="form.model.planId ? '该方案仅包含基本工资' : '请先选择薪酬方案'"
+          :description="
+            form.model.planId
+              ? '配置更多薪酬项目后可在此查看。'
+              : '选择方案后可查看对应的薪酬项目。'
+          "
           size="compact"
           :visual-size="64"
         />
@@ -154,6 +159,8 @@
 </template>
 
 <script setup lang="ts">
+  import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
+  import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import dayjs from 'dayjs'
   import { cloneDeep, compact, uniqBy } from 'lodash-es'
   import type { FormRules } from 'element-plus'
@@ -737,14 +744,14 @@
 
   const handleSubmit = async (): Promise<boolean> => {
     try {
-      await formRef.value?.validate()
+      if (!(await validateArtFormForSubmit(formRef.value))) return false
       validateBusinessRules()
       const type: DialogType = form.model.id ? 'edit' : 'add'
       await saveCompensationRecord(entity.value, toRecord())
       emit('success', type)
       return true
     } catch (error) {
-      if (error instanceof Error && error.message) ElMessage.warning(error.message)
+      notifyFriendlyError(error, '保存失败，请检查填写内容后重试', 'warning')
       return false
     }
   }

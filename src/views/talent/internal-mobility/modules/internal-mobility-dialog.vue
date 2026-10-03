@@ -53,6 +53,8 @@
 </template>
 
 <script setup lang="ts">
+  import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
+  import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import { normalizeNullableText } from '@/utils/form/normalize'
   import dayjs from 'dayjs'
   import { ElMessage, type FormRules } from 'element-plus'
@@ -449,7 +451,7 @@
 
   const submit = async (): Promise<boolean> => {
     try {
-      await formRef.value?.validate()
+      if (!(await validateArtFormForSubmit(formRef.value))) return false
       if (!validateDates()) return false
       if (entity.value === 'opportunity') {
         await saveInternalMobilityOpportunity({
@@ -491,7 +493,8 @@
       }
       emit('success', entity.value, dialogType.value)
       return true
-    } catch {
+    } catch (error) {
+      notifyFriendlyError(error, '保存失败，请检查填写内容后重试', 'warning')
       return false
     }
   }

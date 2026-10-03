@@ -62,17 +62,25 @@
 </template>
 
 <script setup lang="ts">
-  import { cloneDeep, compact, uniqBy } from 'lodash-es'
+  import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
+  import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
+  import { cloneDeep } from 'lodash-es'
   import type { FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
   import ArtForm, { type FormItem } from '@/components/core/forms/art-form/index.vue'
-  import type { ArtUserSelectOption } from '@/components/core/forms/art-user-select/types'
+  import ArtEmployeeSelect from '@/components/business/art-employee-select/index.vue'
+  import type {
+    EmployeeIntegrationItem,
+    EmployeeSelectorContractParams
+  } from '@/api/integration/employees'
   import ArtDictDisplay from '@/components/core/base/art-dict-display/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import ArtSectionCard from '@/components/core/surfaces/art-section-card/index.vue'
   import { useDocumentNumberRule } from '@/hooks/core/useDocumentNumberRule'
+  import { useTenantScopeFormPolicy } from '@/hooks/core/useTenantScopeFormPolicy'
   import { useUserStore } from '@/store/modules/user'
+  import { useTenantScopeStore } from '@/store/modules/tenant-scope'
   import {
     fetchAssignmentPositionOptions,
     fetchEmployeeOrganizationOptions,
@@ -122,13 +130,16 @@
   const dialogRef = ref<ArtDialogExpose<DialogOpenData>>()
   const formRef = ref<FormExpose>()
   const userStore = useUserStore()
-  const { getDictMap, getUserInfo } = storeToRefs(userStore)
+  const tenantScopeStore = useTenantScopeStore()
+  const { getDictMap } = storeToRefs(userStore)
+  const { defaultWriteTenantId } = useTenantScopeFormPolicy()
+  const targetTenantId = ref<string>()
   const isEditing = ref(false)
   const currentWorkspace = shallowRef<HrWorkspaceDefinition>()
   const currentTab = shallowRef<HrWorkspaceTab>()
   const employeeOptions = shallowRef<Api.Hr.PersonnelChangeEmployeeOption[]>([])
   const positionOptions = shallowRef<Api.Hr.PositionOption[]>([])
-  const changeNumber = useDocumentNumberRule('hr.personnel_change')
+  const changeNumber = useDocumentNumberRule('hr.personnel_change', targetTenantId)
   const snapshot = reactive<SnapshotState>({ data: undefined, loading: false })
   const formModel = reactive<Api.Hr.WorkspaceRecord>({})
 
@@ -218,47 +229,31 @@
     }
   ])
 
-  const toEmployeeOption = (
-    employee: Api.Hr.PersonnelChangeEmployeeOption
-  ): ArtUserSelectOption => ({
-    value: employee.id,
-    label: compact([employee.employeeName, employee.employeeNo]).join(' · '),
-    avatar: employee.avatarUrl,
-    nickName: employee.employeeName,
-    userName: employee.employeeNo,
-    departmentName:
-      compact([
-        employee.assignmentSnapshot.organizationName,
-        employee.assignmentSnapshot.positionName
-      ]).join(' · ') || undefined
-  })
-
-  const getSelectedEmployeeOption = (): ArtUserSelectOption | undefined => {
+  const getSelectedEmployeeData = (): EmployeeIntegrationItem[] => {
     const employeeId = form.model.employeeId
     const employee = form.model.employee
-    if (!employeeId || !employee?.employeeName) return undefined
-    return {
-      value: employeeId,
-      label: compact([employee.employeeName, employee.employeeNo]).join(' · '),
-      nickName: employee.employeeName,
-      userName: employee.employeeNo
-    }
+    const selected = employeeOptions.value.find((item) => item.id === employeeId)
+    if (selected) return [selected]
+    if (!employeeId || !employee?.employeeName || !targetTenantId.value) return []
+    return [
+      {
+        id: employeeId,
+        tenantId: targetTenantId.value,
+        employeeNo: employee.employeeNo ?? '',
+        employeeName: employee.employeeName,
+        employmentStatus: ''
+      }
+    ]
   }
 
-  const loadEmployeeOptions = async (): Promise<ArtUserSelectOption[]> => {
-    const result = await fetchPersonnelChangeEmployees({ from: 0, to: 199 })
+  const loadEmployeeOptions = async (params: EmployeeSelectorContractParams) => {
+    const result = await fetchPersonnelChangeEmployees(params)
     employeeOptions.value = result.data
-    const selected = getSelectedEmployeeOption()
-    return uniqBy(
-      selected
-        ? [...result.data.map(toEmployeeOption), selected]
-        : result.data.map(toEmployeeOption),
-      'value'
-    )
+    return { ...result, fieldAccess: {} }
   }
 
   const loadOrganizationOptions = async () =>
-    (await fetchEmployeeOrganizationOptions({ tenantId: getUserInfo.value.tenantId })).data ?? []
+    (await fetchEmployeeOrganizationOptions({ tenantId: targetTenantId.value })).data ?? []
 
   const loadPositionOptions = async (): Promise<Api.Hr.PositionOption[]> => {
     const result = await fetchAssignmentPositionOptions(form.model.toOrganizationId ?? undefined)
@@ -267,11 +262,13 @@
   }
 
   const loadArchitectureOptions = async (kind: Api.Hr.JobArchitectureEntity) =>
-    (await fetchJobArchitectureOptions(kind, getUserInfo.value.tenantId)).data ?? []
+    (await fetchJobArchitectureOptions(kind, targetTenantId.value)).data ?? []
 
   const applySelectedEmployee = (employeeId?: string): void => {
     const employee = employeeOptions.value.find((item) => item.id === employeeId)
     snapshot.data = employee?.assignmentSnapshot
+    targetTenantId.value = employee?.tenantId || defaultWriteTenantId.value || undefined
+    form.model.tenantId = targetTenantId.value
     if (!employee) return
     Object.assign(form.model, {
       beforeAssignmentSnapshot: cloneDeep(employee.assignmentSnapshot),
@@ -285,6 +282,7 @@
       fromEmploymentStatus: employee.employmentStatus
     })
     applyChangeTypeDefaults(form.model.changeType)
+    void reloadTargetOptions(form.model.changeType)
   }
 
   const applyChangeTypeDefaults = (changeType?: string): void => {
@@ -365,7 +363,6 @@
     model: formModel,
     items: computed(() => {
       const changeType = formModel.changeType ?? ''
-      const selectedEmployee = getSelectedEmployeeOption()
       return [
         { label: '异动基本信息', key: 'baseSection', type: 'divider', span: 24 },
         {
@@ -381,15 +378,27 @@
         {
           label: '员工',
           key: 'employeeId',
-          type: 'userSelect',
-          options: selectedEmployee ? [selectedEmployee] : [],
-          api: loadEmployeeOptions,
+          type: 'employeeSelect',
+          render: ArtEmployeeSelect,
           props: {
+            apiFn: loadEmployeeOptions,
+            tenantId:
+              tenantScopeStore.isAllTenants && !isEditing.value ? undefined : targetTenantId.value,
+            allowAllTenantRead: true,
+            selectedData: getSelectedEmployeeData(),
             placeholder: '请选择需要办理异动的员工',
-            noDataText: '暂无可异动员工',
-            noMatchText: '未找到匹配员工',
             disabled: isEditing.value,
-            onChange: (value?: string) => applySelectedEmployee(value)
+            onChange: (value?: string) => applySelectedEmployee(value),
+            'onUpdate:selectedData': (rows: EmployeeIntegrationItem[]) => {
+              const employee = rows[0]
+              form.model.employee = employee
+                ? {
+                    id: employee.id,
+                    employeeNo: employee.employeeNo,
+                    employeeName: employee.employeeName
+                  }
+                : null
+            }
           },
           description: '员工选定后，系统会读取并冻结当前有效任职快照。'
         },
@@ -566,12 +575,14 @@
     snapshot.loading = false
     employeeOptions.value = []
     positionOptions.value = []
+    targetTenantId.value = undefined
     await nextTick()
     formRef.value?.clearValidate()
   }
 
   const buildWriteRecord = (): Api.Hr.WorkspaceRecord => ({
     id: form.model.id,
+    tenantId: targetTenantId.value,
     changeNo: form.model.changeNo,
     employeeId: form.model.employeeId,
     changeType: form.model.changeType,
@@ -588,21 +599,37 @@
 
   const handleSubmit = async (): Promise<boolean> => {
     try {
-      await formRef.value?.validate()
+      if (!(await validateArtFormForSubmit(formRef.value))) return false
       await savePersonnelChange(buildWriteRecord())
       emit('success')
       return true
-    } catch {
+    } catch (error) {
+      notifyFriendlyError(error, '保存失败，请检查填写内容后重试', 'warning')
       return false
     }
   }
 
   const handleOpen = async (data: DialogOpenData): Promise<void> => {
+    const recordTenantId = data.record?.id
+      ? data.record.tenantId?.trim()
+      : defaultWriteTenantId.value?.trim()
+    if (!recordTenantId) {
+      notifyFriendlyError(
+        new Error('记录缺少目标租户'),
+        '无法确定异动单所属租户，请刷新后重试',
+        'warning'
+      )
+      return
+    }
     currentWorkspace.value = data.workspace
     currentTab.value = data.tab
     isEditing.value = Boolean(data.record?.id)
     await resetForm()
-    Object.assign(form.model, cloneDeep({ status: 'draft', ...data.record }))
+    targetTenantId.value = recordTenantId
+    Object.assign(
+      form.model,
+      cloneDeep({ status: 'draft', ...data.record, tenantId: recordTenantId })
+    )
     snapshot.data = cloneDeep(data.record?.beforeAssignmentSnapshot)
     await dialogRef.value?.handleOpen(data, {
       title: data.record?.id ? '编辑人事异动单' : '新增人事异动单',
@@ -614,7 +641,7 @@
       onOpen: async (_openData, api) => {
         api.setLoading(true)
         try {
-          await Promise.all([changeNumber.loadRule(), formRef.value?.reloadOptions('employeeId')])
+          await changeNumber.loadRule()
           await reloadTargetOptions(form.model.changeType)
         } finally {
           api.setLoading(false)

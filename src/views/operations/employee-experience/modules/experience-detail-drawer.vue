@@ -138,6 +138,7 @@
           <ArtEmptyState
             v-else
             title="当前主题没有可计算的量表题结果"
+            description="收集量表题反馈后，可在此查看分析结果。"
             size="compact"
             :visual-size="64"
           />
@@ -204,7 +205,13 @@
               >
             </blockquote>
           </div>
-          <ArtEmptyState v-else title="当前主题暂无开放文本反馈" size="compact" :visual-size="64" />
+          <ArtEmptyState
+            v-else
+            title="当前主题暂无开放文本反馈"
+            description="收到开放文本反馈后，可在此查看。"
+            size="compact"
+            :visual-size="64"
+          />
         </section>
 
         <section class="experience-detail__section">
@@ -229,7 +236,13 @@
               </div>
             </article>
           </div>
-          <ArtEmptyState v-else title="尚未建立改善行动" size="compact" :visual-size="64" />
+          <ArtEmptyState
+            v-else
+            title="尚未建立改善行动"
+            description="创建改善行动并指定负责人后，可在此跟踪进展。"
+            size="compact"
+            :visual-size="64"
+          />
         </section>
       </template>
 

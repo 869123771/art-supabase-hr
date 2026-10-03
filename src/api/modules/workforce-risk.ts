@@ -28,9 +28,8 @@ const riskLevel = (days: number | null): Api.Hr.WorkforceRiskLevel => {
 }
 
 export async function fetchWorkforceRiskOverview(): Promise<Api.Hr.WorkforceRiskOverview> {
-  const result = await responseHandle<WorkforceRiskSource>(
-    () => supabase.rpc('hr_get_workforce_risk_secure'),
-    { showErrorMessage: true }
+  const result = await responseHandle<WorkforceRiskSource>(() =>
+    supabase.rpc('hr_get_workforce_risk_secure')
   )
   if (result.error) throw result.error
 

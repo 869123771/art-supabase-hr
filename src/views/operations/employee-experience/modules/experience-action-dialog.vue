@@ -41,6 +41,8 @@
 </template>
 
 <script setup lang="ts">
+  import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
+  import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import { normalizeNullableText } from '@/utils/form/normalize'
   import dayjs from 'dayjs'
   import { ElMessage, type FormRules } from 'element-plus'
@@ -284,7 +286,7 @@
   }
   const submit = async (): Promise<boolean> => {
     try {
-      await formRef.value?.validate()
+      if (!(await validateArtFormForSubmit(formRef.value))) return false
       if (dayjs(formModel.dueDate).isBefore(dayjs(), 'day')) {
         ElMessage.warning('计划完成日不能早于今天')
         return false
@@ -298,7 +300,7 @@
       emit('success', dialogType.value)
       return true
     } catch (error) {
-      if (error instanceof Error && error.message) ElMessage.warning(error.message)
+      notifyFriendlyError(error, '保存失败，请检查填写内容后重试', 'warning')
       return false
     }
   }

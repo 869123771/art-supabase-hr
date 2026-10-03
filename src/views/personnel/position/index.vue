@@ -113,11 +113,11 @@
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
   import OrganizationScopeFilter from '@/views/system/shared/organization-scope-filter.vue'
   import { ColumnOption, DialogType } from '@/types'
-  import { pageInfoHandler } from '@/utils/table/tableUtils'
+  import { pageInfoHandler } from '@/utils/table/table-utils'
   import { formatWithDayjs } from '@/utils/time'
   import TreeUtils from '@/utils/tree'
   import { useUserStore } from '@/store/modules/user'
-  import { useTenantScopeStore } from '@/store/modules/tenantScope'
+  import { useTenantScopeStore } from '@/store/modules/tenant-scope'
   import { deletePosition, fetchPositionList, fetchPositionOrganizationTree } from '@hr/api'
   import PositionDialog from './modules/position-dialog.vue'
 

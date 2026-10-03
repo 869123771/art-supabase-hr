@@ -26,14 +26,14 @@
     "check": "pnpm boundary:audit && pnpm ui:audit && pnpm typecheck && pnpm lint && pnpm stylelint && pnpm test:unit"
   },
   "dependencies": {
-    "art-supabase-pro": "https://gitee.com/wangyanghub/art-supabase-pro/repository/archive/70c6bddad553a31083d5fc5a43bb06f1579ff492.tar.gz"
+    "art-supabase-pro": "https://gitee.com/wangyanghub/art-supabase-pro/repository/archive/25ec7c36297d8f20a54ff42b205efa5f985ea063.tar.gz"
   },
   "peerDependencies": {
     "@vueuse/core": "^14.3.0",
     "dayjs": "^1.11.21",
     "element-plus": "^2.14.2",
     "lodash-es": "^4.18.1",
-    "pinia": "^3.0.3",
+    "pinia": "^3.0.4",
     "vue": "^3.5.38",
     "vue-router": "^5.1.0"
   },

@@ -61,6 +61,8 @@
 </template>
 
 <script setup lang="ts">
+  import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
+  import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import { normalizeNullableText } from '@/utils/form/normalize'
   import dayjs from 'dayjs'
   import { ElMessage, type FormRules } from 'element-plus'
@@ -412,7 +414,7 @@
 
   const submit = async (): Promise<boolean> => {
     try {
-      await formRef.value?.validate()
+      if (!(await validateArtFormForSubmit(formRef.value))) return false
       if (entity.value === 'case' && !formModel.anonymousReport && !formModel.reporterEmployeeId) {
         ElMessage.warning('实名报告需要选择报告员工')
         return false
@@ -425,7 +427,7 @@
       emit('success', entity.value, dialogType.value)
       return true
     } catch (error) {
-      if (error instanceof Error && error.message) ElMessage.warning(error.message)
+      notifyFriendlyError(error, '保存失败，请检查填写内容后重试', 'warning')
       return false
     }
   }

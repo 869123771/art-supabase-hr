@@ -32,7 +32,9 @@
 </template>
 
 <script setup lang="ts">
-  import { ElMessage, type FormRules } from 'element-plus'
+  import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
+  import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
+  import type { FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
   import ArtForm, {
@@ -375,7 +377,7 @@
 
   const submit = async (): Promise<boolean> => {
     try {
-      await formRef.value?.validate()
+      if (!(await validateArtFormForSubmit(formRef.value))) return false
       validateBusiness()
       const type: DialogType = editing.value ? 'edit' : 'add'
       if (entity.value === 'service') {
@@ -417,7 +419,7 @@
       emit('success', type, entity.value)
       return true
     } catch (error) {
-      if (error instanceof Error && error.message) ElMessage.warning(error.message)
+      notifyFriendlyError(error, '保存失败，请检查填写内容后重试', 'warning')
       return false
     }
   }

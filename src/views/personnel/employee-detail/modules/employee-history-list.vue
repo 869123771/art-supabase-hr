@@ -24,7 +24,13 @@
         <ArtDescriptions :data="record" :items="items" :columns="columns" />
       </article>
     </div>
-    <ArtEmptyState v-else :title="`暂无${title}`" size="compact" :visual-size="72" />
+    <ArtEmptyState
+      v-else
+      :title="`暂无${title}`"
+      description="相关变更记录产生后会显示在此。"
+      size="compact"
+      :visual-size="72"
+    />
   </ArtSectionCard>
 </template>
 

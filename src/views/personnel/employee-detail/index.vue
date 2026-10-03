@@ -6,6 +6,7 @@
     :error="page.error"
     :empty="!profile"
     empty-text="暂无员工档案"
+    empty-description="请返回员工列表重新选择，或刷新后重试。"
     @retry="loadPage"
   >
     <ArtPageHeader

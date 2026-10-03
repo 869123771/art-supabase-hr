@@ -47,6 +47,7 @@
         <ArtEmptyState
           v-else-if="!filteredItems.length"
           title="当前筛选范围没有需要处置的人力风险"
+          description="可调整筛选范围，继续关注最新风险识别结果。"
           :visual-size="96"
         />
 
@@ -86,7 +87,6 @@
   import { getFriendlySupabaseErrorMessage } from '@/utils/supabase'
   import ArtSectionCard from '@/components/core/surfaces/art-section-card/index.vue'
   import ArtEmptyState from '@/components/core/feedback/art-empty-state/index.vue'
-  import { ElMessage } from 'element-plus'
   import { useRouter } from 'vue-router'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric
@@ -190,7 +190,6 @@
       overview.value = await fetchWorkforceRiskOverview()
     } catch (error) {
       errorMessage.value = getFriendlySupabaseErrorMessage(error, '人力风险数据加载失败')
-      ElMessage.error(errorMessage.value)
     } finally {
       loading.value = false
     }

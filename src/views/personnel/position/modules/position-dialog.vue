@@ -16,6 +16,8 @@
 </template>
 
 <script setup lang="ts">
+  import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
+  import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import type { FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
@@ -40,12 +42,12 @@
   }
 
   const emit = defineEmits<{ (event: 'success', type: 'add' | 'edit'): void }>()
-  const { effectiveTenantId } = useTenantScopeFormPolicy()
+  const { defaultWriteTenantId } = useTenantScopeFormPolicy()
   const dialogRef = ref<ArtDialogExpose<Position | undefined>>()
   const formRef = ref<DialogExposeForm>()
 
   const createInitialForm = (): Position => ({
-    tenantId: effectiveTenantId.value ?? undefined,
+    tenantId: defaultWriteTenantId.value ?? undefined,
     organizationId: null,
     jobProfileId: '',
     gradeId: null,
@@ -212,13 +214,14 @@
 
   const handleSubmit = async (): Promise<boolean> => {
     try {
-      await formRef.value?.validate()
+      if (!(await validateArtFormForSubmit(formRef.value))) return false
       const type = form.id ? 'edit' : 'add'
       if (type === 'edit') await editPosition(structuredClone(toRaw(form)))
       else await addPosition(structuredClone(toRaw(form)))
       emit('success', type)
       return true
-    } catch {
+    } catch (error) {
+      notifyFriendlyError(error, '保存失败，请检查填写内容后重试', 'warning')
       return false
     }
   }

@@ -1,6 +1,9 @@
 import { normalizeNullableText } from '@/utils/form/normalize'
 import { omit } from 'lodash-es'
 import { useSupabase } from '@/hooks'
+import { useTenantScopeStore } from '@/store/modules/tenant-scope'
+import { useUserStore } from '@/store/modules/user'
+import { resolveTenantWriteTargetId } from '@/utils/tenant-scope-context'
 import { withRequestOptions } from '@/api/providers/supabase/query'
 import type { ApiRequestOptions } from '@/types/api/request'
 
@@ -52,6 +55,13 @@ export async function fetchAssignmentPositionOptions(
 }
 
 export async function savePersonnelChange(record: Api.Hr.WorkspaceRecord) {
+  const userStore = useUserStore()
+  resolveTenantWriteTargetId({
+    explicitTenantId: record.tenantId,
+    effectiveTenantId: useTenantScopeStore().effectiveTenantId,
+    actorTenantId: userStore.getUserInfo.tenantId,
+    canWriteToOtherTenant: userStore.isPlatformSuper
+  })
   const payload = keysToSnakeDeep(
     omit(record, [
       'employee',

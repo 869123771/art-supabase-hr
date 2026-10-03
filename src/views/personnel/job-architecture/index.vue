@@ -78,9 +78,9 @@
     type HrEntityNavigationItem
   } from '../../shared/hr-entity-navigation.vue'
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
-  import { useTenantScopeStore } from '@/store/modules/tenantScope'
+  import { useTenantScopeStore } from '@/store/modules/tenant-scope'
   import { useUserStore } from '@/store/modules/user'
-  import { pageInfoHandler } from '@/utils/table/tableUtils'
+  import { pageInfoHandler } from '@/utils/table/table-utils'
   import type { ColumnOption, DialogType } from '@/types'
   import { deleteJobArchitectureRecord, fetchJobArchitectureList } from '@hr/api'
   import JobArchitectureDialog from './modules/job-architecture-dialog.vue'

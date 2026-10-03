@@ -274,7 +274,6 @@
 <script setup lang="ts">
   import { getFriendlySupabaseErrorMessage } from '@/utils/supabase'
   import dayjs from 'dayjs'
-  import { ElMessage } from 'element-plus'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric
   } from '@/components/business/business-workspace-header/index.vue'
@@ -534,12 +533,13 @@
         analytics.value = response.data
       } else {
         analytics.value = null
-        const responseError = response.error as { message?: string } | null
-        errorMessage.value = responseError?.message || '人力分析数据加载失败'
+        errorMessage.value = getFriendlySupabaseErrorMessage(
+          response.error,
+          '人力分析数据加载失败，请稍后重试'
+        )
       }
     } catch (error) {
       errorMessage.value = getFriendlySupabaseErrorMessage(error, '人力分析数据加载失败')
-      ElMessage.error(errorMessage.value)
     } finally {
       loading.value = false
     }

@@ -47,6 +47,8 @@
 </template>
 
 <script setup lang="ts">
+  import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
+  import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import { nextTick, reactive, ref, shallowRef } from 'vue'
   import type { FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
@@ -83,15 +85,16 @@
   const submit = async (): Promise<boolean> => {
     if (!record.value?.id) return false
     try {
-      await formRef.value?.validate()
-    } catch {
+      if (!(await validateArtFormForSubmit(formRef.value))) return false
+      const assigneeEmployeeId = form.assigneeEmployeeId
+      if (!assigneeEmployeeId) return false
+      await transitionServiceRequest(record.value.id, 'assign', assigneeEmployeeId, form.comment)
+      emit('success')
+      return true
+    } catch (error) {
+      notifyFriendlyError(error, '工单分派失败，请核对处理人后重试', 'warning')
       return false
     }
-    const assigneeEmployeeId = form.assigneeEmployeeId
-    if (!assigneeEmployeeId) return false
-    await transitionServiceRequest(record.value.id, 'assign', assigneeEmployeeId, form.comment)
-    emit('success')
-    return true
   }
 
   const handleOpen = async (request: Api.Hr.ServiceRequest): Promise<void> => {

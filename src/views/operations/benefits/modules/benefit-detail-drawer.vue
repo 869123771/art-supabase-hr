@@ -130,6 +130,11 @@
           :title="
             lifeEventRecord.evidenceRestricted ? '当前权限不可查看证明材料' : '未上传证明材料'
           "
+          :description="
+            lifeEventRecord.evidenceRestricted
+              ? '请联系具备证明材料查看权限的管理员。'
+              : '补充证明材料后可在此查看。'
+          "
           size="compact"
           :visual-size="64"
         />
@@ -173,7 +178,13 @@
             </article>
           </ElTimelineItem>
         </ElTimeline>
-        <ArtEmptyState v-else title="暂无审计记录" size="compact" :visual-size="64" />
+        <ArtEmptyState
+          v-else
+          title="暂无审计记录"
+          description="操作记录产生后会显示在此。"
+          size="compact"
+          :visual-size="64"
+        />
       </section>
     </div>
   </ArtDrawer>

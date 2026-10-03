@@ -15,7 +15,8 @@ export interface HrWorkspaceColumn {
 export interface HrWorkspaceField {
   key: keyof Api.Hr.WorkspaceRecord
   label: string
-  type: 'input' | 'textarea' | 'select' | 'userSelect' | 'date' | 'number' | 'switch' | 'timeSelect'
+  type:
+    'input' | 'textarea' | 'select' | 'employeeSelect' | 'date' | 'number' | 'switch' | 'timeSelect'
   required?: boolean
   dictCode?: string
   optionEntity?: Api.Hr.WorkspaceEntity
@@ -52,7 +53,7 @@ export interface HrWorkspaceDefinition {
 const employeeField = (): HrWorkspaceField => ({
   key: 'employeeId',
   label: '员工',
-  type: 'userSelect',
+  type: 'employeeSelect',
   required: true
 })
 const positionField = (
