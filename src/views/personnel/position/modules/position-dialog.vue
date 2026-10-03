@@ -23,7 +23,7 @@
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
   import ArtForm, { type FormItem } from '@/components/core/forms/art-form/index.vue'
   import { addPosition, editPosition, fetchJobArchitectureOptions } from '@hr/api'
-  import { fetchGetEnableOrganizationTree } from '@/api/system-manage'
+  import { fetchEnabledOrganizationTree } from '@/api/system-manage'
   import { useTenantScopeFormPolicy } from '@/hooks/core/useTenantScopeFormPolicy'
   import { useDocumentNumberRule } from '@/hooks/core/useDocumentNumberRule'
 
@@ -98,8 +98,7 @@
       key: 'organizationId',
       type: 'treeSelect',
       immediate: false,
-      api: async () =>
-        (await fetchGetEnableOrganizationTree({ tenantId: form.tenantId })).data ?? [],
+      api: async () => (await fetchEnabledOrganizationTree({ tenantId: form.tenantId })).data ?? [],
       valueField: 'id',
       labelField: 'organizationName',
       childrenField: 'children',

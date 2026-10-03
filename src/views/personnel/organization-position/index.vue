@@ -252,7 +252,7 @@
     type BusinessWorkspaceMetric,
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
-  import { fetchGetOrganizationOptionsTree } from '@/api/system-manage'
+  import { fetchOrganizationOptionsTree } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
   import TreeUtils from '@/utils/tree'
   import { getFriendlySupabaseErrorMessage } from '@/utils/supabase/error'
@@ -440,7 +440,7 @@
     organizationState.loading = true
     organizationState.error = null
     try {
-      const response = await fetchGetOrganizationOptionsTree({
+      const response = await fetchOrganizationOptionsTree({
         status: '1'
       })
       organizationState.tree = response.data ?? []

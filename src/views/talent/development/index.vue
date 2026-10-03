@@ -106,7 +106,7 @@
   import { useUserStore } from '@/store/modules/user'
   import { pageInfoHandler } from '@/utils/table/table-utils'
   import type { ColumnOption, DialogType } from '@/types'
-  import { fetchGetEnableTenantList } from '@/api/system-manage'
+  import { fetchEnabledTenantList } from '@/api/system-manage'
   import {
     deleteLearningRecord,
     fetchLearningOverview,
@@ -1077,7 +1077,7 @@
       ].map((code) => userStore.ensureDictLoaded(code))
     )
     if (isPlatformSuper.value) {
-      const response = await fetchGetEnableTenantList()
+      const response = await fetchEnabledTenantList()
       tenantOptions.value = (response.data ?? []).map((tenant) => ({
         label: `${tenant.tenantName}（${tenant.tenantCode}）`,
         value: tenant.id!

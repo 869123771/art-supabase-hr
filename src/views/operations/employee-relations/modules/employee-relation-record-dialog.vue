@@ -72,7 +72,7 @@
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import ArtEmployeeSelect from '@/components/business/art-employee-select/index.vue'
   import type { EmployeeIntegrationItem } from '@/api/integration/employees'
-  import { fetchGetEnableTenantList } from '@/api/system-manage'
+  import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
   import { fetchEmployeeRelationCaseDetail, saveEmployeeRelationRecord } from '@hr/api'
   import type { DialogType } from '@/types'
@@ -465,7 +465,7 @@
         api.setLoading(true)
         try {
           if (isPlatformSuper.value && !tenantOptions.value.length) {
-            const response = await fetchGetEnableTenantList()
+            const response = await fetchEnabledTenantList()
             tenantOptions.value = (response.data ?? []).map((tenant) => ({
               label: `${tenant.tenantName}（${tenant.tenantCode}）`,
               value: tenant.id!

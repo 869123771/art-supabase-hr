@@ -100,7 +100,7 @@
   import { useUserStore } from '@/store/modules/user'
   import { pageInfoHandler } from '@/utils/table/table-utils'
   import type { ColumnOption, DialogType } from '@/types'
-  import { fetchGetEnableTenantList } from '@/api/system-manage'
+  import { fetchEnabledTenantList } from '@/api/system-manage'
   import {
     deleteTimeAttendanceRecord,
     fetchTimeAttendanceOverview,
@@ -940,7 +940,7 @@
 
   onMounted(async () => {
     if (isPlatformSuper.value) {
-      const tenants = await fetchGetEnableTenantList()
+      const tenants = await fetchEnabledTenantList()
       tenantOptions.value = (tenants.data ?? [])
         .filter((tenant): tenant is typeof tenant & { id: string } => Boolean(tenant.id))
         .map((tenant) => ({ label: tenant.tenantName, value: tenant.id }))

@@ -168,7 +168,7 @@
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
-  import { fetchGetEnableTenantList } from '@/api/system-manage'
+  import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import { pageInfoHandler } from '@/utils/table/table-utils'
@@ -980,7 +980,7 @@
   }
   onMounted(async () => {
     if (isPlatformSuper.value) {
-      const response = await fetchGetEnableTenantList()
+      const response = await fetchEnabledTenantList()
       tenantOptions.value = (response.data ?? []).map((tenant) => ({
         label: `${tenant.tenantName}（${tenant.tenantCode}）`,
         value: tenant.id!

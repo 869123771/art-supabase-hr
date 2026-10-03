@@ -62,7 +62,7 @@
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
   import ArtForm, { type FormItem } from '@/components/core/forms/art-form/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
-  import { fetchGetEnableTenantList } from '@/api/system-manage'
+  import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
   import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import {
@@ -520,7 +520,7 @@
         api.setLoading(true)
         try {
           if (isPlatformSuper.value && !tenantOptions.value.length) {
-            const response = await fetchGetEnableTenantList()
+            const response = await fetchEnabledTenantList()
             tenantOptions.value = (response.data ?? []).map((tenant) => ({
               label: `${tenant.tenantName}（${tenant.tenantCode}）`,
               value: tenant.id!

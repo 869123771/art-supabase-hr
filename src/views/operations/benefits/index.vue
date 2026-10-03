@@ -134,7 +134,7 @@
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import { pageInfoHandler } from '@/utils/table/table-utils'
-  import { fetchGetEnableTenantList } from '@/api/system-manage'
+  import { fetchEnabledTenantList } from '@/api/system-manage'
   import type { ColumnOption, DialogType } from '@/types'
   import { fetchBenefitRecords, fetchBenefitsOverview, transitionBenefitRecord } from '@hr/api'
   import HrEntityNavigation, {
@@ -858,7 +858,7 @@
     ]
     if (isPlatformSuper.value)
       tasks.push(
-        fetchGetEnableTenantList().then((response) => {
+        fetchEnabledTenantList().then((response) => {
           tenantOptions.value = (response.data ?? []).map((tenant) => ({
             label: `${tenant.tenantName}（${tenant.tenantCode}）`,
             value: tenant.id!

@@ -5,7 +5,7 @@
     "moduleResolution": "bundler",
     "strict": true,
     "ignoreDeprecations": "6.0",
-    "types": ["node", "vite/client", "art-supabase-pro"],
+    "types": ["node", "vite/client", "element-plus/global"],
     "jsx": "preserve",
     "jsxImportSource": "vue",
     "lib": ["esnext", "dom"],

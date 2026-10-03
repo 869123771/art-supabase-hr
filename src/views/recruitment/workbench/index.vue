@@ -104,7 +104,7 @@
   import { pageInfoHandler } from '@/utils/table/table-utils'
   import { formatWithDayjs } from '@/utils/time'
   import type { ColumnOption } from '@/types'
-  import { fetchGetEnableTenantList } from '@/api/system-manage'
+  import { fetchEnabledTenantList } from '@/api/system-manage'
   import {
     completeRecruitmentTask,
     deleteRecruitmentRecord,
@@ -1126,7 +1126,7 @@
       ].map((code) => userStore.ensureDictLoaded(code))
     )
     if (isPlatformSuper.value) {
-      const response = await fetchGetEnableTenantList()
+      const response = await fetchEnabledTenantList()
       tenantOptions.value = (response.data ?? []).map((tenant) => ({
         label: `${tenant.tenantName}（${tenant.tenantCode}）`,
         value: tenant.id!
@@ -1318,14 +1318,6 @@
     &__overdue {
       font-weight: 600;
       color: var(--el-color-danger);
-    }
-
-    &__actions {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      min-width: 0;
-      white-space: nowrap;
     }
 
     :deep(.art-table-query) {

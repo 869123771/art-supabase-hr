@@ -108,7 +108,7 @@
   import { pageInfoHandler } from '@/utils/table/table-utils'
   import { formatDateTimeValue as formatDateTime } from '@/utils/ui/format'
   import type { ColumnOption, DialogType } from '@/types'
-  import { fetchGetEnableTenantList } from '@/api/system-manage'
+  import { fetchEnabledTenantList } from '@/api/system-manage'
   import {
     deleteServiceRequest,
     fetchServiceDeliveryOverview,
@@ -825,7 +825,7 @@
 
   onMounted(async () => {
     if (isPlatformSuper.value) {
-      const response = await fetchGetEnableTenantList()
+      const response = await fetchEnabledTenantList()
       tenantOptions.value = (response.data ?? [])
         .filter((tenant): tenant is typeof tenant & { id: string } => Boolean(tenant.id))
         .map((tenant) => ({ label: tenant.tenantName, value: tenant.id }))

@@ -61,7 +61,7 @@
   } from '@/components/core/forms/art-form/index.vue'
   import ArtEmployeeSelect from '@/components/business/art-employee-select/index.vue'
   import type { EmployeeIntegrationItem } from '@/api/integration/employees'
-  import { fetchGetEnableTenantList } from '@/api/system-manage'
+  import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
   import { fetchLifecycleOptions, saveLifecycleRecord } from '@hr/api'
   import type { DialogType } from '@/types'
@@ -663,7 +663,7 @@
         api.setLoading(true)
         try {
           if (isPlatformSuper.value && !tenantOptions.value.length) {
-            const tenants = await fetchGetEnableTenantList()
+            const tenants = await fetchEnabledTenantList()
             tenantOptions.value = (tenants.data ?? []).map((tenant) => ({
               label: tenant.tenantName,
               value: tenant.id

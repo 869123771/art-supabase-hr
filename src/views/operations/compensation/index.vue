@@ -103,7 +103,7 @@
   import { useUserStore } from '@/store/modules/user'
   import { pageInfoHandler } from '@/utils/table/table-utils'
   import type { ColumnOption, DialogType } from '@/types'
-  import { fetchGetEnableTenantList } from '@/api/system-manage'
+  import { fetchEnabledTenantList } from '@/api/system-manage'
   import {
     actCompensationRecord,
     deleteCompensationRecord,
@@ -709,7 +709,7 @@
       userStore.ensureDictLoaded('hrPayFrequency')
     ])
     if (isPlatformSuper.value) {
-      const response = await fetchGetEnableTenantList()
+      const response = await fetchEnabledTenantList()
       tenantOptions.value = (response.data ?? []).map((tenant) => ({
         label: `${tenant.tenantName}（${tenant.tenantCode}）`,
         value: tenant.id!
@@ -847,12 +847,6 @@
         line-height: 1.5;
         color: var(--art-text-gray-600);
       }
-    }
-
-    &__actions {
-      display: flex;
-      gap: 2px;
-      align-items: center;
     }
 
     :deep(.art-table-query) {

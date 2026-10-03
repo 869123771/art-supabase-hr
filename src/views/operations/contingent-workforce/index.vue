@@ -1504,13 +1504,6 @@
       color: var(--el-color-warning-dark-2);
     }
 
-    :deep(&__tags),
-    :deep(&__actions) {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-    }
-
     :deep(&__locked) {
       font-size: 11px;
       color: var(--art-text-gray-500);

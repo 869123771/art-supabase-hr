@@ -175,7 +175,7 @@
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import ArtSectionCard from '@/components/core/surfaces/art-section-card/index.vue'
   import ArtEmptyState from '@/components/core/feedback/art-empty-state/index.vue'
-  import { fetchGetEnableTenantList } from '@/api/system-manage'
+  import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
   import {
     fetchCompensationOptions,
@@ -797,7 +797,7 @@
         api.setLoading(true)
         try {
           if (isPlatformSuper.value && !tenantOptions.value.length) {
-            const response = await fetchGetEnableTenantList()
+            const response = await fetchEnabledTenantList()
             tenantOptions.value = (response.data ?? []).map((tenant) => ({
               label: `${tenant.tenantName}（${tenant.tenantCode}）`,
               value: tenant.id!

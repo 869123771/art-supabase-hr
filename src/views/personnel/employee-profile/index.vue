@@ -529,6 +529,7 @@
 </template>
 
 <script setup lang="ts">
+  import { getScrollBehavior } from '@/utils/ui/scroll'
   import { getFriendlySupabaseErrorMessage } from '@/utils/supabase'
   import { useMediaQuery } from '@vueuse/core'
   import type { FormRules } from 'element-plus'
@@ -553,7 +554,7 @@
     type EmployeeProfileForm
   } from './modules/employee-profile-model'
   import { fetchEmployeeProfile, fetchPositionOptions, saveEmployeeProfile } from '@hr/api'
-  import { fetchGetEnableOrganizationTree, fetchGetEnableTenantList } from '@/api/system-manage'
+  import { fetchEnabledOrganizationTree, fetchEnabledTenantList } from '@/api/system-manage'
   import { linkUserToEmployee } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
   import { useTenantScopeStore } from '@/store/modules/tenant-scope'
@@ -791,7 +792,7 @@
       organizationFormOptions.value = []
       return
     }
-    const response = await fetchGetEnableOrganizationTree({ tenantId: form.tenantId })
+    const response = await fetchEnabledOrganizationTree({ tenantId: form.tenantId })
     organizationFormOptions.value = mapOrganizationOptions(response.data ?? [])
   }
 
@@ -1128,7 +1129,7 @@
     try {
       await ensureDictionaries()
       if (isPlatformSuper.value) {
-        const response = await fetchGetEnableTenantList()
+        const response = await fetchEnabledTenantList()
         tenantFormOptions.value = (response.data ?? []).map((tenant) => ({
           label: `${tenant.tenantName}（${tenant.tenantCode}）`,
           value: tenant.id
@@ -1322,7 +1323,7 @@
       ? `[data-validation-key="${target.historyKey}"]`
       : '.hr-profile-page .el-form-item.is-error'
     const field = document.querySelector<HTMLElement>(selector)
-    field?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    field?.scrollIntoView({ behavior: getScrollBehavior(), block: 'center' })
     window.setTimeout(() => {
       field
         ?.querySelector<HTMLElement>(

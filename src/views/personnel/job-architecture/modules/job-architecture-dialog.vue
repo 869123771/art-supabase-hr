@@ -24,7 +24,7 @@
     type FormItem,
     type FormItemOption
   } from '@/components/core/forms/art-form/index.vue'
-  import { fetchGetEnableTenantList } from '@/api/system-manage'
+  import { fetchEnabledTenantList } from '@/api/system-manage'
   import { fetchJobArchitectureOptions, saveJobArchitectureRecord } from '@hr/api'
   import { useUserStore } from '@/store/modules/user'
   import type { DialogType } from '@/types'
@@ -329,7 +329,7 @@
         api.setLoading(true)
         try {
           if (isPlatformSuper.value && !tenantOptions.value.length) {
-            const response = await fetchGetEnableTenantList()
+            const response = await fetchEnabledTenantList()
             tenantOptions.value = (response.data ?? []).map((tenant) => ({
               label: `${tenant.tenantName}（${tenant.tenantCode}）`,
               value: tenant.id!

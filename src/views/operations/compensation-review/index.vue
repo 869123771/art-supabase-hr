@@ -1553,12 +1553,6 @@
       color: var(--art-text-gray-500);
     }
 
-    &__actions {
-      display: flex;
-      gap: 2px;
-      align-items: center;
-    }
-
     &__locked {
       font-size: 11px;
       color: var(--art-text-gray-400);

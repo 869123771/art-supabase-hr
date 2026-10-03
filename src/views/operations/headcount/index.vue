@@ -139,7 +139,7 @@
   import { useUserStore } from '@/store/modules/user'
   import { pageInfoHandler } from '@/utils/table/table-utils'
   import type { ColumnOption, DialogType } from '@/types'
-  import { fetchGetEnableTenantList } from '@/api/system-manage'
+  import { fetchEnabledTenantList } from '@/api/system-manage'
   import {
     deleteWorkforcePlanningRecord,
     fetchWorkforcePlanningOptions,
@@ -786,7 +786,7 @@
 
   onMounted(async () => {
     if (isPlatformSuper.value) {
-      const result = await fetchGetEnableTenantList()
+      const result = await fetchEnabledTenantList()
       tenantOptions.value = (result.data ?? []).map((tenant) => ({
         label: `${tenant.tenantName}（${tenant.tenantCode}）`,
         value: tenant.id!

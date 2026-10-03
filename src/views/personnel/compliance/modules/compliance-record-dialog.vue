@@ -73,7 +73,7 @@
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import ArtEmployeeSelect from '@/components/business/art-employee-select/index.vue'
   import type { EmployeeIntegrationItem } from '@/api/integration/employees'
-  import { fetchGetEnableTenantList } from '@/api/system-manage'
+  import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useDocumentNumberRule } from '@/hooks/core/useDocumentNumberRule'
   import { useUserStore } from '@/store/modules/user'
   import { saveComplianceRecord } from '@hr/api'
@@ -479,7 +479,7 @@
           await Promise.all([
             ...(isPlatformSuper.value && !tenantOptions.value.length
               ? [
-                  fetchGetEnableTenantList().then((response) => {
+                  fetchEnabledTenantList().then((response) => {
                     tenantOptions.value = (response.data ?? []).map((tenant) => ({
                       label: `${tenant.tenantName}（${tenant.tenantCode}）`,
                       value: tenant.id!
