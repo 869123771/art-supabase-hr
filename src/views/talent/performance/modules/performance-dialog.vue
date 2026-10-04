@@ -374,7 +374,7 @@
         description: '每次沟通沉淀成果、阻碍、风险和下一步行动，并同步目标推进状态。'
       },
       calibration: {
-        icon: 'ri:scale-line',
+        icon: 'ri:scales-line',
         title: '校准会议统一评分尺度',
         description: '会议开始后自动载入待校准结果，定案后写回最终评分与等级。'
       },

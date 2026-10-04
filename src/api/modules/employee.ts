@@ -1,3 +1,4 @@
+import { buildSupabaseRpcRange } from '@/utils/supabase'
 import { normalizeNullableText } from '@/utils/form/normalize'
 import { useSupabase } from '@/hooks'
 import TreeUtils from '@/utils/tree'
@@ -50,8 +51,7 @@ export async function fetchEmployeeList(params: EmployeeSearchParams) {
   const result = await responseHandle<EmployeeListPayload>(
     () =>
       supabase.rpc('hr_list_employees_secure', {
-        p_from: Math.max(from, 0),
-        p_to: Math.max(to, from),
+        ...buildSupabaseRpcRange(from, to),
         p_tenant_id: params.tenantId || null,
         p_organization_ids: params.organizationIds?.length ? params.organizationIds : null,
         p_organization_unassigned: Boolean(params.organizationUnassigned),
@@ -80,8 +80,7 @@ export async function fetchEmployeeSelectorList(
   const result = await responseHandle<EmployeeSelectorListPayload>(
     () =>
       supabase.rpc('hr_list_employee_selector_secure', {
-        p_from: Math.max(from, 0),
-        p_to: Math.max(to, from),
+        ...buildSupabaseRpcRange(from, to),
         p_tenant_id: tenantId || null,
         p_keyword: normalizeNullableText(keyword)
       }),

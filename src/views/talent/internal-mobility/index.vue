@@ -55,7 +55,7 @@
             >
           </article>
           <article>
-            <span><ArtSvgIcon icon="ri:scale-line" /></span>
+            <span><ArtSvgIcon icon="ri:scales-line" /></span>
             <div
               ><small>公平评估</small><strong>分数与依据留痕</strong
               ><em>候选、录用均受容量约束</em></div

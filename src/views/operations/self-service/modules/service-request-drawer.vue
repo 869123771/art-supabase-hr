@@ -70,7 +70,7 @@
         <ul class="service-request-drawer__attachments">
           <li v-for="(url, index) in request.attachmentUrls" :key="url">
             <a :href="url" target="_blank" rel="noopener noreferrer">
-              <ArtSvgIcon icon="ri:file-link-line" />
+              <ArtSvgIcon icon="ri:file-transfer-line" />
               附件 {{ index + 1 }}
               <ArtSvgIcon icon="ri:external-link-line" />
             </a>

@@ -307,7 +307,7 @@
       label: '存在能力缺口',
       value: overview.value?.gapEmployeeCount ?? 0,
       description: '至少一项低于岗位要求',
-      icon: 'ri:gap-line',
+      icon: 'ri:arrow-left-right-line',
       tone: 'warning',
       interactive: true,
       selected: activeScope.value === 'gap',

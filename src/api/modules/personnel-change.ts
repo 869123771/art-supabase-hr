@@ -1,3 +1,4 @@
+import { buildSupabaseRpcRange } from '@/utils/supabase'
 import { normalizeNullableText } from '@/utils/form/normalize'
 import { omit } from 'lodash-es'
 import { useSupabase } from '@/hooks'
@@ -23,8 +24,7 @@ export async function fetchPersonnelChangeEmployees(
     () =>
       withRequestOptions(
         supabase.rpc('hr_list_personnel_change_employees_secure', {
-          p_from: from,
-          p_to: Math.max(params.to ?? from + 19, from),
+          ...buildSupabaseRpcRange(from, params.to ?? from + 19),
           p_keyword: normalizeNullableText(params.keyword)
         }),
         options

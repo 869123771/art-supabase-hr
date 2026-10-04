@@ -1,3 +1,4 @@
+import { buildSupabaseRpcRange } from '@/utils/supabase'
 import { normalizeNullableText } from '@/utils/form/normalize'
 import { omit } from 'lodash-es'
 import { useSupabase } from '@/hooks'
@@ -37,8 +38,7 @@ export async function fetchJobArchitectureList<TRecord extends JobArchitectureRe
     () =>
       withRequestOptions(
         supabase.rpc(listRpcMap[entity], {
-          p_from: from,
-          p_to: Math.max(params.to ?? from + 19, from),
+          ...buildSupabaseRpcRange(from, params.to ?? from + 19),
           p_keyword: normalizeNullableText(params.keyword),
           p_enabled: params.enabled ?? null,
           p_tenant_id: params.tenantId || null

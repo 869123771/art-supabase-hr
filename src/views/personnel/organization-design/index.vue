@@ -285,7 +285,7 @@
       label: '决策批准',
       description: '记录依据与责任人',
       value: `${overview.approvedCount} 个批准`,
-      icon: 'ri:seal-line',
+      icon: 'ri:verified-badge-line',
       state: overview.approvedCount ? 'is-current' : ''
     },
     {
