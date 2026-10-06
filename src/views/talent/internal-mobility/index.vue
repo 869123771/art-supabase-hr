@@ -171,7 +171,7 @@
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
-  import { pageInfoHandler } from '@/utils/table/table-utils'
+  import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import type { ColumnOption, DialogType } from '@/types'
   import {
     deleteInternalMobilityRecord,
@@ -777,7 +777,7 @@
   }
 
   const fetchTableData = (params: TableParams) => {
-    const { from, to } = pageInfoHandler({ current: params.current, size: params.size })
+    const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
     return fetchInternalMobilityRecords(activeEntity.value, {
       ...params,
       from,

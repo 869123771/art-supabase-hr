@@ -124,7 +124,7 @@
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
-  import { pageInfoHandler } from '@/utils/table/table-utils'
+  import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import type { ColumnOption, DialogType } from '@/types'
   import {
@@ -846,7 +846,7 @@
       ? `${row.entityType}-${row.recordId}`
       : row.id || `${activeEntity.value}-record`
   const fetchTableData = (params: TableParams) => {
-    const { from, to } = pageInfoHandler({ current: params.current, size: params.size })
+    const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
     return fetchComplianceRecords(activeEntity.value, { ...params, from, to })
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (_rows, response) => {

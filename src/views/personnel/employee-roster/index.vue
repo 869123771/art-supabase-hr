@@ -109,7 +109,7 @@
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { formatWithDayjs } from '@/utils/time'
   import { canViewField, getFieldAccess } from '@/utils/field-permission'
-  import { pageInfoHandler } from '@/utils/table/table-utils'
+  import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import TreeUtils from '@/utils/tree'
   import { useUserStore } from '@/store/modules/user'
   import { useTenantScopeStore } from '@/store/modules/tenant-scope'
@@ -389,7 +389,7 @@
     }
   ]
   const fetchTableData = async (params: TableParams) => {
-    const { from, to } = pageInfoHandler({ current: params.current, size: params.size })
+    const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
     const result = await fetchEmployeeList({
       ...params,
       tenantId: selectedTenantId.value || undefined,

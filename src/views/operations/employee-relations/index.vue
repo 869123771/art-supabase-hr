@@ -133,7 +133,7 @@
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
-  import { pageInfoHandler } from '@/utils/table/table-utils'
+  import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import type { ColumnOption, DialogType } from '@/types'
   import {
@@ -712,7 +712,7 @@
       : []
   )
   const fetchTableData = (params: TableParams) => {
-    const { from, to } = pageInfoHandler({ current: params.current, size: params.size })
+    const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
     return fetchEmployeeRelationsRecords(activeEntity.value, { ...params, from, to })
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (_rows, response) => {

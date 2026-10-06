@@ -137,7 +137,7 @@
   } from '../../shared/hr-entity-navigation.vue'
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
-  import { pageInfoHandler } from '@/utils/table/table-utils'
+  import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import type { ColumnOption, DialogType } from '@/types'
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import {
@@ -697,7 +697,7 @@
     }
   ])
   const fetchTableData = async (params: TableParams) => {
-    const page = pageInfoHandler(params)
+    const page = buildSupabasePageRange(params)
     return await fetchWorkforcePlanningRecords(activeEntity.value, {
       ...tableState.searchQuery,
       from: page.from,

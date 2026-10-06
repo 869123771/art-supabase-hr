@@ -80,7 +80,7 @@
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useTenantScopeStore } from '@/store/modules/tenant-scope'
   import { useUserStore } from '@/store/modules/user'
-  import { pageInfoHandler } from '@/utils/table/table-utils'
+  import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import type { ColumnOption, DialogType } from '@/types'
   import { deleteJobArchitectureRecord, fetchJobArchitectureList } from '@hr/api'
   import JobArchitectureDialog from './modules/job-architecture-dialog.vue'
@@ -311,7 +311,7 @@
     }
   ])
   const fetchTableData = (params: TableParams) => {
-    const { from, to } = pageInfoHandler({ current: params.current, size: params.size })
+    const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
     return fetchJobArchitectureList(activeEntity.value, {
       ...params,
       tenantId: selectedTenantId.value || undefined,

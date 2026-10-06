@@ -133,7 +133,7 @@
   import { useAuth } from '@/hooks/core/useAuth'
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
-  import { pageInfoHandler } from '@/utils/table/table-utils'
+  import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import type { ColumnOption, DialogType } from '@/types'
   import { fetchBenefitRecords, fetchBenefitsOverview, transitionBenefitRecord } from '@hr/api'
@@ -737,7 +737,7 @@
   ])
 
   const fetchTableData = async (params: TableParams) => {
-    const { from, to } = pageInfoHandler(params)
+    const { from, to } = buildSupabasePageRange(params)
     return fetchBenefitRecords(activeEntity.value, { ...params, from, to })
   }
   const refreshOverview = async (): Promise<void> => {

@@ -105,7 +105,7 @@
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
-  import { pageInfoHandler } from '@/utils/table/table-utils'
+  import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import { formatDateTimeValue as formatDateTime } from '@/utils/ui/format'
   import type { ColumnOption, DialogType } from '@/types'
   import { fetchEnabledTenantList } from '@/api/system-manage'
@@ -734,7 +734,7 @@
     }
   ])
   const fetchTableData = (params: TableParams) => {
-    const { from, to } = pageInfoHandler({ current: params.current, size: params.size })
+    const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
     return fetchServiceDeliveryRecords(activeEntity.value, { ...params, from, to })
   }
   const refreshOverview = async () => {

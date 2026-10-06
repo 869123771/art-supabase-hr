@@ -113,7 +113,7 @@
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
   import OrganizationScopeFilter from '@/views/system/shared/organization-scope-filter.vue'
   import { ColumnOption, DialogType } from '@/types'
-  import { pageInfoHandler } from '@/utils/table/table-utils'
+  import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import { formatWithDayjs } from '@/utils/time'
   import TreeUtils from '@/utils/tree'
   import { useUserStore } from '@/store/modules/user'
@@ -358,7 +358,7 @@
   ])
 
   const fetchTableData = (params: TableParams) => {
-    const { from, to } = pageInfoHandler({ current: params.current, size: params.size })
+    const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
     return fetchPositionList({
       ...params,
       tenantId: selectedTenantId.value || undefined,

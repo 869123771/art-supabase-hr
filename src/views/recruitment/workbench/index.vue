@@ -101,7 +101,7 @@
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useAuth } from '@/hooks/core/useAuth'
   import { useUserStore } from '@/store/modules/user'
-  import { pageInfoHandler } from '@/utils/table/table-utils'
+  import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import { formatWithDayjs } from '@/utils/time'
   import type { ColumnOption } from '@/types'
   import { fetchEnabledTenantList } from '@/api/system-manage'
@@ -1015,7 +1015,7 @@
   )
 
   const fetchTableData: ArtTableQueryApiFn = async (params) => {
-    const { from, to } = pageInfoHandler(params as TableParams)
+    const { from, to } = buildSupabasePageRange(params as TableParams)
     const response = await fetchRecruitmentRecords(activeEntity.value, { ...params, from, to })
     sensitiveAccess.value = response.sensitiveAccess
     return response

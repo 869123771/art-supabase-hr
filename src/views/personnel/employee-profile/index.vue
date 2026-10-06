@@ -70,7 +70,8 @@
       <ElTabPane label="基础信息" name="basic">
         <ArtForm
           ref="basicFormRef"
-          v-model="form"
+          :model-value="form"
+          @update:model-value="replaceReactiveModel(form, $event)"
           :items="basicItems"
           :rules="basicRules"
           :span="formSpan"
@@ -529,6 +530,7 @@
 </template>
 
 <script setup lang="ts">
+  import { replaceReactiveModel } from '@/utils/form/model'
   import { getScrollBehavior } from '@/utils/ui/scroll'
   import { getFriendlySupabaseErrorMessage } from '@/utils/supabase'
   import { useMediaQuery } from '@vueuse/core'
@@ -1558,10 +1560,34 @@
     }
 
     &__tabs {
+      display: flex;
+      flex-direction: column;
       flex: 1 0 auto;
       min-height: 0;
       padding: 0 22px 22px;
       overflow: hidden;
+    }
+
+    &__tabs :deep(.el-tabs__content) {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+    }
+
+    &__tabs :deep(.el-tab-pane) {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+    }
+
+    &__tabs :deep(.hr-history-section) {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+    }
+
+    &__tabs :deep(.hr-history-section__empty) {
+      flex: 1;
     }
 
     &__tabs :deep(.el-tabs__header) {

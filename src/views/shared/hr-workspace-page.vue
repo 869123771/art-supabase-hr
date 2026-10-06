@@ -83,7 +83,7 @@
     type BusinessWorkspaceMetric,
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
-  import { pageInfoHandler } from '@/utils/table/table-utils'
+  import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import { formatWithDayjs } from '@/utils/time'
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
@@ -372,7 +372,7 @@
   }
 
   const fetchTableData: ArtTableQueryApiFn = async (params) => {
-    const { from, to } = pageInfoHandler(params as TableParams)
+    const { from, to } = buildSupabasePageRange(params as TableParams)
     const result = await fetchHrWorkspaceRecords(activeTab.value.entity, { ...params, from, to })
     if (result.error) throw result.error
     return result
