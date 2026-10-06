@@ -1507,7 +1507,7 @@
       border-radius: calc(var(--custom-radius) - 4px);
     }
 
-    &__avatar :deep(.resource-btn) {
+    &__avatar :deep(.resource-picker-action) {
       color: var(--el-text-color-secondary);
       background: var(--el-bg-color);
       border-color: var(--el-border-color-lighter);
@@ -1561,8 +1561,8 @@
 
     &__tabs {
       display: flex;
-      flex-direction: column;
       flex: 1 0 auto;
+      flex-direction: column;
       min-height: 0;
       padding: 0 22px 22px;
       overflow: hidden;
