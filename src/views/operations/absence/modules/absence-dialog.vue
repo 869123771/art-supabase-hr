@@ -16,7 +16,18 @@
         label-position="top"
         :show-reset="false"
         :show-submit="false"
-      />
+      >
+        <template #employeeId>
+          <ArtEmployeeSelect
+            v-model="form.model.employeeId"
+            v-model:selected-data="employeeSelection"
+            :tenant-id="form.model.tenantId"
+            :api-fn="fetchAbsenceEmployeeSelector"
+            :display-fields="[]"
+            placeholder="请选择员工"
+          />
+        </template>
+      </ArtForm>
     </div>
   </ArtDialog>
 </template>
@@ -35,6 +46,9 @@
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
   import { adjustLeaveBalance, fetchAbsenceOptions, saveAbsenceRecord } from '@hr/api'
+  import ArtEmployeeSelect from '@/components/business/art-employee-select/index.vue'
+  import type { EmployeeIntegrationItem } from '@/api/integration/employees'
+  import { fetchAbsenceEmployeeSelector } from '@hr/api/modules/absence'
   import type { DialogType } from '@/types'
 
   type Entity = Exclude<Api.Hr.AbsenceEntity, 'ledger'>
@@ -59,7 +73,7 @@
     policyName: string
     scopeType: Api.Hr.LeavePolicyScope
     organizationId?: string | null
-    employeeId?: string | null
+    employeeId?: string
     gradeId?: string | null
     entitlementMethod: Api.Hr.LeaveEntitlementMethod
     annualQuota: number
@@ -96,7 +110,7 @@
   const formRef = ref<FormExpose>()
   const entity = ref<Entity>('request')
   const tenantOptions = ref<FormItemOption[]>([])
-  const employeeOptions = shallowRef<Api.Hr.AbsenceReference[]>([])
+  const employeeSelection = shallowRef<EmployeeIntegrationItem[]>([])
   const leaveTypeOptions = shallowRef<Api.Hr.AbsenceReference[]>([])
   const organizationOptions = shallowRef<Api.Hr.AbsenceReference[]>([])
   const gradeOptions = shallowRef<Api.Hr.AbsenceReference[]>([])
@@ -119,7 +133,7 @@
     policyName: '',
     scopeType: 'all',
     organizationId: null,
-    employeeId: null,
+    employeeId: undefined,
     gradeId: null,
     entitlementMethod: 'annual',
     annualQuota: 0,
@@ -218,7 +232,7 @@
       if (entity.value === 'request')
         return [
           ...common,
-          select('employeeId', '员工', employeeOptions.value, '请选择申请员工'),
+          { label: '员工', key: 'employeeId', type: 'input' },
           select('leaveTypeId', '假别', leaveTypeOptions.value, '请选择假别'),
           date('startDate', '开始日期'),
           dict('startSession', '开始时段', 'hrLeaveSession'),
@@ -230,7 +244,7 @@
 
       return [
         ...common,
-        select('employeeId', '员工', employeeOptions.value, '请选择员工'),
+        { label: '员工', key: 'employeeId', type: 'input' },
         select('leaveTypeId', '假别', leaveTypeOptions.value, '请选择假别'),
         number('balanceYear', '余额年度', { min: 2000, max: 2200, precision: 0 }),
         number('delta', '调整数量', { precision: 2, placeholder: '正数增加，负数扣减' }),
@@ -365,7 +379,7 @@
     if (form.model.scopeType === 'organization')
       return select('organizationId', '指定组织', organizationOptions.value, '请选择适用组织')
     if (form.model.scopeType === 'employee')
-      return select('employeeId', '指定员工', employeeOptions.value, '请选择适用员工')
+      return { label: '指定员工', key: 'employeeId', type: 'input' }
     if (form.model.scopeType === 'grade')
       return select('gradeId', '指定职级', gradeOptions.value, '请选择适用职级')
     return null
@@ -376,31 +390,30 @@
     Object.assign(form.model, next)
   }
 
+  let referenceRequest = 0
   const loadReferenceData = async (): Promise<void> => {
+    const request = ++referenceRequest
     const tenantId = form.model.tenantId
-    if (isPlatformSuper.value && !tenantId) {
-      employeeOptions.value = []
-      leaveTypeOptions.value = []
-      organizationOptions.value = []
-      gradeOptions.value = []
-      return
-    }
-    const [employees, leaveTypes, organizations, grades] = await Promise.all([
-      fetchAbsenceOptions('employee', tenantId),
-      fetchAbsenceOptions('leave_type', tenantId),
-      fetchAbsenceOptions('organization', tenantId),
-      fetchAbsenceOptions('grade', tenantId)
+    const kind = entity.value
+    leaveTypeOptions.value = []
+    organizationOptions.value = []
+    gradeOptions.value = []
+    if (isPlatformSuper.value && !tenantId) return
+    const [leaveTypes, organizations, grades] = await Promise.all([
+      kind !== 'type' ? fetchAbsenceOptions('leave_type', tenantId) : undefined,
+      kind === 'policy' ? fetchAbsenceOptions('organization', tenantId) : undefined,
+      kind === 'policy' ? fetchAbsenceOptions('grade', tenantId) : undefined
     ])
-    employeeOptions.value = employees.data ?? []
-    leaveTypeOptions.value = leaveTypes.data ?? []
-    organizationOptions.value = organizations.data ?? []
-    gradeOptions.value = grades.data ?? []
+    if (request !== referenceRequest || tenantId !== form.model.tenantId || kind !== entity.value)
+      return
+    leaveTypeOptions.value = leaveTypes?.data ?? []
+    organizationOptions.value = organizations?.data ?? []
+    gradeOptions.value = grades?.data ?? []
   }
 
   const reloadReferenceFields = async (): Promise<void> => {
     await nextTick()
     await Promise.all([
-      formRef.value?.reloadOptions('employeeId'),
       formRef.value?.reloadOptions('leaveTypeId'),
       formRef.value?.reloadOptions('organizationId'),
       formRef.value?.reloadOptions('gradeId')
@@ -408,7 +421,8 @@
   }
 
   const handleTenantChange = async (): Promise<void> => {
-    form.model.employeeId = null
+    form.model.employeeId = undefined
+    employeeSelection.value = []
     form.model.leaveTypeId = undefined
     form.model.organizationId = null
     form.model.gradeId = null
@@ -418,7 +432,8 @@
 
   const handleScopeTypeChange = (): void => {
     form.model.organizationId = null
-    form.model.employeeId = null
+    form.model.employeeId = undefined
+    employeeSelection.value = []
     form.model.gradeId = null
   }
 
@@ -468,7 +483,7 @@
         policyName: form.model.policyName,
         scopeType: form.model.scopeType,
         organizationId: form.model.organizationId,
-        employeeId: form.model.employeeId,
+        employeeId: form.model.employeeId ?? null,
         gradeId: form.model.gradeId,
         entitlementMethod: form.model.entitlementMethod,
         annualQuota: Number(form.model.annualQuota),
@@ -526,10 +541,23 @@
   const handleOpen = async (nextEntity: Entity, row?: RecordItem): Promise<void> => {
     entity.value = nextEntity
     replaceModel(createInitialModel())
+    employeeSelection.value =
+      row && 'employee' in row && row.employee?.id && row.tenantId
+        ? [
+            {
+              id: row.employee.id,
+              tenantId: row.tenantId,
+              employeeName: row.employee.employeeName ?? '未命名员工',
+              employeeNo: row.employee.employeeNo ?? '',
+              employmentStatus: ''
+            }
+          ]
+        : []
     if (row)
       replaceModel({
         ...createInitialModel(),
-        ...(structuredClone(toRaw(row)) as Partial<AbsenceFormModel>)
+        ...(structuredClone(toRaw(row)) as Partial<AbsenceFormModel>),
+        employeeId: 'employeeId' in row ? (row.employeeId ?? undefined) : undefined
       })
     await nextTick()
     formRef.value?.clearValidate()

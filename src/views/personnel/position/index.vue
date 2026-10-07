@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:Position:View">
     <div class="position-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="false" />
       <BusinessWorkspaceHeader
         eyebrow="POSITION CATALOG"
         title="岗位管理"
@@ -86,14 +87,22 @@
       </ArtDrawer>
 
       <PositionDialog ref="dialogRef" @success="handleSaveSuccess" />
+      <MasterDataDeleteGuard ref="deleteGuardRef" />
     </div>
   </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
-  import { ElTag } from 'element-plus'
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
+  import { ElMessage, ElTag } from 'element-plus'
   import { useMediaQuery } from '@vueuse/core'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { useAuth } from '@/hooks/core/useAuth'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
+  import {
+    DeleteReferenceBlockedError,
+    getDeleteReferenceContext
+  } from '@/utils/supabase/delete-reference'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
     ArtTableQueryExpose,
@@ -111,6 +120,8 @@
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
+  import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
   import OrganizationScopeFilter from '@/views/system/shared/organization-scope-filter.vue'
   import { ColumnOption, DialogType } from '@/types'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
@@ -142,7 +153,10 @@
   }
 
   const ALL_ORGANIZATIONS_KEY = '__all_organizations__'
-  const { confirmAction } = useArtFeedback()
+  const { confirmDelete } = useArtFeedback()
+  const { hasAuth } = useAuth()
+  const { deleteGuardRef, inspectDeleteReferences } = useRecordDeleteGuard('mdm_position', '岗位')
+  const deleteBusy = ref(false)
   const userStore = useUserStore()
   const { getDictMap, isPlatformSuper } = storeToRefs(userStore)
   const { effectiveTenantId, isAllTenants } = storeToRefs(useTenantScopeStore())
@@ -260,18 +274,17 @@
       prop: 'positionCode',
       label: '岗位编码',
       minWidth: 150,
-      showOverflowTooltip: true,
-      formatter: (row) => <span class="position-page__code">{row.positionCode}</span>
+      showOverflowTooltip: true
     },
     {
       prop: 'positionName',
       label: '岗位名称',
       minWidth: 220,
       formatter: (row) => (
-        <div class="position-page__name-cell">
-          <strong title={row.positionName}>{row.positionName}</strong>
-          <small title={row.description || undefined}>{row.description || '组织任职岗位'}</small>
-        </div>
+        <BusinessTableIdentityCell
+          primary={row.positionName}
+          secondary={row.description || '组织任职岗位'}
+        />
       )
     },
     {
@@ -339,9 +352,8 @@
           <ArtButtonTable
             type="delete"
             permission="Hr:Position:Delete"
-            disabled={Number(row.employeeCount ?? 0) > 0}
-            label={Number(row.employeeCount ?? 0) > 0 ? '岗位已有在岗人员，不能删除' : '删除'}
-            onClick={() => handleDelete(row)}
+            disabled={deleteBusy.value}
+            onClick={() => void handleDelete(row)}
           />
         </HrTableActions>
       )
@@ -433,19 +445,33 @@
   }
 
   const handleDelete = async (row: Position): Promise<void> => {
-    if (!row.id) return
+    if (deleteBusy.value) return
+    if (!row.id || !hasAuth('Hr:Position:Delete')) {
+      ElMessage.error('当前账号无权删除此岗位，或岗位记录已变化，请刷新后重试')
+      return
+    }
+    const resources = [{ id: row.id, label: `${row.positionName}（${row.positionCode}）` }]
+    deleteBusy.value = true
     try {
-      await confirmAction(`确定删除岗位“${row.positionName}”吗？`, '删除确认', {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-        confirmButtonType: 'danger'
-      })
-      await deletePosition(row.id)
-      await loadOrganizationTree()
-      await tableQueryRef.value?.refreshRemove()
-    } catch {
-      // 用户取消或服务端依赖校验失败时不追加重复提示。
+      if (await inspectDeleteReferences(resources)) return
+      await confirmDelete(
+        `确认删除岗位“${row.positionName}（${row.positionCode}）”？此操作不可恢复。`
+      )
+      try {
+        await deletePosition(row.id)
+      } catch (error) {
+        if (await inspectDeleteReferences(resources, getDeleteReferenceContext(error)?.constraint))
+          return
+        if (error instanceof DeleteReferenceBlockedError) return
+        throw error
+      }
+      ElMessage.success('岗位已删除')
+      await Promise.all([loadOrganizationTree(), tableQueryRef.value?.refreshRemove()])
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '岗位删除失败，请检查网络后重试')
+    } finally {
+      deleteBusy.value = false
     }
   }
 
@@ -514,37 +540,7 @@
       height: 100%;
     }
 
-    &__code {
-      font-family: var(--el-font-family-monospace, ui-monospace, monospace);
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--el-text-color-regular);
-      letter-spacing: 0.02em;
-    }
-
-    &__name-cell {
-      display: grid;
-      min-width: 0;
-
-      strong,
-      small {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      strong {
-        color: var(--el-text-color-primary);
-      }
-
-      small {
-        margin-top: 2px;
-        font-size: 12px;
-        color: var(--el-text-color-secondary);
-      }
-    }
-
-    &__employee-count {
+    :deep(.position-page__employee-count) {
       display: inline-flex;
       gap: 3px;
       align-items: baseline;

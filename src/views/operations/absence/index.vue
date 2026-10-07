@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:Absence:View">
     <div class="absence-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="locationReady" />
       <BusinessWorkspaceHeader
         eyebrow="TIME OFF"
         title="假勤管理"
@@ -71,11 +72,16 @@
       />
 
       <AbsenceDialog ref="dialogRef" @success="handleSaveSuccess" />
+      <MasterDataDeleteGuard ref="deleteGuardRef" />
     </div>
   </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
+  import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
   import dayjs from 'dayjs'
   import { ElTag } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
@@ -98,7 +104,7 @@
   import HrEntityNavigation, {
     type HrEntityNavigationItem
   } from '../../shared/hr-entity-navigation.vue'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import type { ColumnOption, DialogType } from '@/types'
@@ -177,6 +183,17 @@
   const { confirmAction, promptText } = useArtFeedback()
   const activeEntity = ref<Entity>('request')
   const activeTab = computed(() => tabs.find((tab) => tab.entity === activeEntity.value) ?? tabs[0])
+  const deleteTables: Record<Entity, string> = {
+    request: 'hr_leave_request',
+    balance: 'hr_leave_balance',
+    ledger: 'hr_leave_ledger',
+    policy: 'hr_leave_policy',
+    type: 'hr_leave_type'
+  }
+  const { deleteGuardRef, deleteRecord } = useRecordDeleteGuard(
+    () => deleteTables[activeEntity.value],
+    () => activeTab.value.label
+  )
   const tableQueryRef = ref<ArtTableQueryExpose>()
   const dialogRef = ref<AbsenceDialogExpose>()
   const tenantOptions = ref<Array<{ label: string; value: string }>>([])
@@ -188,6 +205,21 @@
       balanceYear: dayjs().year()
     }
   })
+  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+    {
+      hr_leave_request: 'request',
+      hr_leave_balance: 'balance',
+      hr_leave_ledger: 'ledger',
+      hr_leave_policy: 'policy',
+      hr_leave_type: 'type'
+    },
+    activeEntity,
+    tableState.searchQuery,
+    () => void tableQueryRef.value?.refreshData(),
+    () => {
+      tableState.searchQuery.balanceYear = undefined
+    }
+  )
   const overview = reactive<Api.Hr.AbsenceOverview>({
     pendingCount: 0,
     upcomingCount: 0,
@@ -653,7 +685,8 @@
     return fetchAbsenceRecords(activeEntity.value, { ...params, from, to })
   }
 
-  const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (_rows, response) => {
+  const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
+    markRows(rows)
     tableOverview.total = response.total ?? 0
     tableOverview.reasonAccess = Boolean('reasonAccess' in response && response.reasonAccess)
   }
@@ -675,19 +708,24 @@
 
   const handleDelete = async (row: RecordItem): Promise<void> => {
     if (!row.id || !['type', 'policy', 'request'].includes(activeEntity.value)) return
-    try {
-      await confirmAction(`确定删除这条${activeTab.value.label}记录吗？`, '删除确认', {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-        confirmButtonType: 'danger'
-      })
-      await deleteAbsenceRecord(activeEntity.value as 'type' | 'policy' | 'request', row.id)
-      await tableQueryRef.value?.refreshRemove()
-      await refreshOverview()
-    } catch {
-      /* 用户取消或记录已被业务引用时保持当前列表。 */
-    }
+    const entity = activeEntity.value as 'type' | 'policy' | 'request'
+    const label =
+      entity === 'type'
+        ? `${(row as Api.Hr.LeaveType).leaveName}（${(row as Api.Hr.LeaveType).leaveCode}）`
+        : entity === 'policy'
+          ? `${(row as Api.Hr.LeavePolicy).policyName}（${(row as Api.Hr.LeavePolicy).policyCode}）`
+          : ((row as Api.Hr.LeaveRequest).requestNo ??
+            `${(row as Api.Hr.LeaveRequest).employee?.employeeName ?? '员工'} · ${(row as Api.Hr.LeaveRequest).startDate}`)
+    await deleteRecord({
+      resource: { id: row.id, label },
+      resourceLabel: activeTab.value.label,
+      permission: entity === 'request' ? 'Hr:Absence:Request:Delete' : 'Hr:Absence:Policy:Delete',
+      remove: () => deleteAbsenceRecord(entity, row.id!),
+      onDeleted: async () => {
+        await tableQueryRef.value?.refreshRemove()
+        await refreshOverview()
+      }
+    })
   }
 
   const handleRequestAction = async (
@@ -725,8 +763,9 @@
       await actLeaveRequest(row.id, action, comment)
       await tableQueryRef.value?.refreshUpdate()
       await refreshOverview()
-    } catch {
-      /* 用户取消或服务端并发状态校验失败时保持当前列表。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '休假申请处理失败，请刷新申请状态后重试')
     }
   }
 
@@ -767,7 +806,11 @@
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .absence-page {
+    @include hr-table-workspace-layout(360px);
+
     &__control-deck {
       display: grid;
       gap: 12px;

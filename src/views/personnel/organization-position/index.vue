@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:OrganizationPosition:View">
     <div class="organization-position-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="false" />
       <BusinessWorkspaceHeader
         eyebrow="ORGANIZATION DIRECTORY"
         title="组织岗位人员"
@@ -239,6 +240,7 @@
 </template>
 
 <script setup lang="ts">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import ArtEmptyState from '@/components/core/feedback/art-empty-state/index.vue'
   import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
   import type { ElTree, TreeNodeData } from 'element-plus'

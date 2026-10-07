@@ -5,9 +5,10 @@ export {
   fetchEmployeeOrganizationOptions,
   fetchOrganizationPositionDirectory,
   fetchEmployeeProfile,
-  fetchEmployeeSelectorList,
   saveEmployeeProfile
 } from '@hr/api/modules/employee'
+
+export { fetchEmployeeSelectorList } from '@/api/integration/employees'
 
 export {
   addPosition,
@@ -62,6 +63,7 @@ export {
 
 export {
   deleteHrWorkspaceRecord,
+  getHrWorkspaceRecordTable,
   effectPersonnelChange,
   effectRecruitmentRequisition,
   fetchHrWorkspaceRecords,
@@ -170,6 +172,7 @@ export {
 
 export {
   deletePerformanceRecord,
+  getPerformanceDeleteTable,
   fetchPerformanceOptions,
   fetchPerformanceOverview,
   fetchPerformanceRecords,

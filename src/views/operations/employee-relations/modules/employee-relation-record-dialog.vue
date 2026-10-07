@@ -61,6 +61,7 @@
 </template>
 
 <script setup lang="ts">
+  import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import { normalizeNullableText } from '@/utils/form/normalize'
@@ -347,31 +348,14 @@
         }
   )
 
-  const toSelection = (
-    reference?: Api.Hr.EmployeeRelationReference | null,
-    tenantId?: string
-  ): EmployeeIntegrationItem[] =>
-    reference
-      ? [
-          {
-            id: reference.id,
-            tenantId: tenantId || '',
-            employeeNo: reference.employeeNo || '',
-            employeeName: reference.employeeName || '未命名员工',
-            jobTitle: reference.jobTitle,
-            employmentStatus: 'active'
-          }
-        ]
-      : []
-
   const setFromRecord = (record: RecordItem): void => {
     Object.assign(formModel, createInitialModel(), record)
     if ('attachmentUrls' in record) {
       formModel.attachmentText = (record.attachmentUrls ?? []).join('\n')
-      subjectSelection.value = toSelection(record.subjectEmployee, record.tenantId)
-      reporterSelection.value = toSelection(record.reporterEmployee, record.tenantId)
+      subjectSelection.value = employeeReferenceSelection(record.subjectEmployee, record.tenantId)
+      reporterSelection.value = employeeReferenceSelection(record.reporterEmployee, record.tenantId)
     } else {
-      ownerSelection.value = toSelection(record.ownerEmployee, record.tenantId)
+      ownerSelection.value = employeeReferenceSelection(record.ownerEmployee, record.tenantId)
     }
   }
 

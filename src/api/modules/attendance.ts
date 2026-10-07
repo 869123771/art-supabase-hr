@@ -4,6 +4,7 @@ import { omit } from 'lodash-es'
 import { useSupabase } from '@/hooks'
 import { withRequestOptions } from '@/api/providers/supabase/query'
 import type { ApiRequestOptions } from '@/types/api/request'
+import { createEmployeeReferenceSelector } from '@/api/integration/employees'
 
 const { supabase, keysToSnakeDeep, responseHandle } = useSupabase()
 
@@ -59,6 +60,10 @@ export async function fetchTimeAttendanceOptions(
     { showErrorMessage: true }
   )
 }
+
+export const fetchAttendanceEmployeeSelector = createEmployeeReferenceSelector((tenantId) =>
+  fetchTimeAttendanceOptions('employee', tenantId)
+)
 
 const normalizePayload = (record: Api.Hr.TimeAttendanceRecord) =>
   keysToSnakeDeep(

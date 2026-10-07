@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:EmployeeRelations:View">
     <div class="employee-relations-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="locationReady" />
       <BusinessWorkspaceHeader
         eyebrow="EMPLOYEE RELATIONS CASE CONTROL"
         title="员工关系案件"
@@ -106,12 +107,17 @@
 
       <EmployeeRelationRecordDialog ref="recordDialogRef" @success="handleRecordSuccess" />
       <EmployeeRelationActionDialog ref="actionDialogRef" @success="refreshAfterAction" />
+      <MasterDataDeleteGuard ref="deleteGuardRef" />
       <EmployeeRelationDetailDrawer ref="detailDrawerRef" />
     </div>
   </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
+  import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
   import dayjs from 'dayjs'
   import { ElTag, type TagProps } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
@@ -131,7 +137,7 @@
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import { fetchEnabledTenantList } from '@/api/system-manage'
@@ -202,6 +208,11 @@
   const { confirmAction, promptText } = useArtFeedback()
   const activeEntity = ref<Entity>('case')
   const activeTab = computed(() => tabs.find((tab) => tab.value === activeEntity.value) ?? tabs[0]!)
+  const { deleteGuardRef, deleteRecord } = useRecordDeleteGuard(
+    () =>
+      activeEntity.value === 'case' ? 'hr_employee_relation_case' : 'hr_employee_relation_action',
+    () => activeTab.value.label
+  )
   const navigationItems: HrEntityNavigationItem[] = tabs
   const tableQueryRef = ref<ArtTableQueryExpose>()
   const recordDialogRef = ref<RecordDialogExpose>()
@@ -212,6 +223,16 @@
   const tableState = reactive<{ searchQuery: Api.Hr.EmployeeRelationSearchParams }>({
     searchQuery: { keyword: '', status: '', caseType: '', severity: '', tenantId: '' }
   })
+  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+    { hr_employee_relation_case: 'case', hr_employee_relation_action: 'action' },
+    activeEntity,
+    tableState.searchQuery,
+    () => void tableQueryRef.value?.refreshData(),
+    () => {
+      tableState.searchQuery.caseType = ''
+      tableState.searchQuery.severity = ''
+    }
+  )
   const overview = reactive<Api.Hr.EmployeeRelationOverview>({
     openCaseCount: 0,
     criticalCaseCount: 0,
@@ -715,7 +736,8 @@
     const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
     return fetchEmployeeRelationsRecords(activeEntity.value, { ...params, from, to })
   }
-  const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (_rows, response) => {
+  const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
+    markRows(rows)
     tableTotal.value = response.total ?? 0
   }
   const refreshOverview = async (): Promise<void> => {
@@ -778,6 +800,20 @@
       })
       return
     }
+    if (key === 'delete') {
+      await deleteRecord({
+        resource: { id: row.id, label: `${row.title} · ${row.relationCase?.caseNo ?? '案件'}` },
+        resourceLabel: '处置行动',
+        permission: 'Hr:EmployeeRelations:Action:Manage',
+        confirmMessage: `确认删除尚未启动的处置行动“${row.title}”？`,
+        remove: () => deleteEmployeeRelationRecord('action', row.id!),
+        onDeleted: async () => {
+          await tableQueryRef.value?.refreshRemove()
+          await refreshOverview()
+        }
+      })
+      return
+    }
     try {
       if (key === 'start') {
         await confirmAction('确认启动该处置行动？启动后将进入执行中状态。', '启动处置行动', {
@@ -802,21 +838,11 @@
           type: 'warning'
         })
         await transitionEmployeeRelationAction(row.id, 'cancel', comment)
-      } else if (key === 'delete') {
-        await confirmAction('确定删除这条尚未启动的处置行动？', '删除处置行动', {
-          confirmButtonText: '删除',
-          cancelButtonText: '返回',
-          type: 'warning',
-          confirmButtonType: 'danger'
-        })
-        await deleteEmployeeRelationRecord('action', row.id)
-        await tableQueryRef.value?.refreshRemove()
-        await refreshOverview()
-        return
       }
       await refreshAfterAction()
-    } catch {
-      /* 用户取消时保持当前列表。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '处置行动处理失败，请刷新状态后重试')
     }
   }
   const handleCaseRowAction = async (
@@ -834,6 +860,20 @@
     }
     if (key === 'add_action') {
       await recordDialogRef.value?.handleOpen({ entity: 'action', type: 'add', presetCase: row })
+      return
+    }
+    if (key === 'delete') {
+      await deleteRecord({
+        resource: { id: row.id, label: `${row.title}（${row.caseNo}）` },
+        resourceLabel: '员工关系案件',
+        permission: 'Hr:EmployeeRelations:Delete',
+        confirmMessage: `确认删除案件草稿“${row.title}（${row.caseNo}）”？其草稿事件将一并移除。`,
+        remove: () => deleteEmployeeRelationRecord('case', row.id!),
+        onDeleted: async () => {
+          await tableQueryRef.value?.refreshRemove()
+          await refreshOverview()
+        }
+      })
       return
     }
     try {
@@ -894,25 +934,11 @@
           type: 'info'
         })
         await transitionEmployeeRelationCase(row.id, 'comment', { comment })
-      } else if (key === 'delete') {
-        await confirmAction(
-          '确定删除该案件草稿？尚未提交的草稿及其事件将一并移除。',
-          '删除案件草稿',
-          {
-            confirmButtonText: '删除',
-            cancelButtonText: '返回',
-            type: 'warning',
-            confirmButtonType: 'danger'
-          }
-        )
-        await deleteEmployeeRelationRecord('case', row.id)
-        await tableQueryRef.value?.refreshRemove()
-        await refreshOverview()
-        return
       }
       await refreshAfterAction()
-    } catch {
-      /* 用户取消时保持当前列表。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '员工关系案件处理失败，请刷新状态后重试')
     }
   }
 
@@ -947,7 +973,11 @@
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .employee-relations-page {
+    @include hr-table-workspace-layout(360px);
+
     &__control {
       position: relative;
       padding: 18px;

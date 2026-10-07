@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:CompensationReview:View">
     <div class="review-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="locationReady" />
       <BusinessWorkspaceHeader
         eyebrow="COMPENSATION REVIEW & MERIT GOVERNANCE"
         title="调薪复核"
@@ -188,11 +189,16 @@
       />
 
       <CompensationReviewDialog ref="dialogRef" @success="handleDialogSuccess" />
+      <MasterDataDeleteGuard ref="deleteGuardRef" />
     </div>
   </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
+  import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
   import { ElButton, ElOption, ElProgress, ElSelect, ElTag, type TagProps } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
@@ -212,7 +218,7 @@
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
   import { useAuth } from '@/hooks/core/useAuth'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import type { ColumnOption, DialogType } from '@/types'
   import {
@@ -279,6 +285,15 @@
   const { confirmAction, promptText } = useArtFeedback()
   const activeEntity = ref<Entity>('cycle')
   const activeTab = computed(() => tabs.find((tab) => tab.value === activeEntity.value) ?? tabs[0]!)
+  const deleteTables: Record<Entity, string> = {
+    cycle: 'hr_compensation_review_cycle',
+    item: 'hr_compensation_review_item',
+    budget: 'hr_compensation_review_budget'
+  }
+  const { deleteGuardRef, deleteRecord } = useRecordDeleteGuard(
+    () => deleteTables[activeEntity.value],
+    () => activeTab.value.label
+  )
   const navigationItems: HrEntityNavigationItem[] = tabs
   const tableQueryRef = ref<ArtTableQueryExpose>()
   const dialogRef = ref<DialogExpose>()
@@ -289,6 +304,19 @@
   const tableState = reactive<{ searchQuery: Api.Hr.CompensationReviewSearchParams }>({
     searchQuery: { keyword: '', status: '', tenantId: '' }
   })
+  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+    {
+      hr_compensation_review_cycle: 'cycle',
+      hr_compensation_review_item: 'item',
+      hr_compensation_review_budget: 'budget'
+    },
+    activeEntity,
+    tableState.searchQuery,
+    () => void tableQueryRef.value?.refreshData(),
+    () => {
+      selectedCycleId.value = ''
+    }
+  )
   const overview = reactive<Api.Hr.CompensationReviewOverview>({
     cycleCount: 0,
     amountAccess: false,
@@ -938,7 +966,8 @@
       cycleId: activeEntity.value === 'cycle' ? undefined : selectedCycleId.value || undefined
     })
   }
-  const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (_rows, response) => {
+  const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
+    markRows(rows)
     tableTotal.value = response.total ?? 0
     tableAmountAccess.value = Boolean(
       'amountAccess' in response && (response as { amountAccess?: boolean }).amountAccess
@@ -1051,8 +1080,9 @@
       await transitionCompensationReviewCycle(row.id, action, comment)
       selectedCycleId.value = row.id
       await refreshWorkspace()
-    } catch {
-      /* 用户取消或服务端状态、预算和并发校验失败时保持当前工作区。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '调薪周期处理失败，请刷新预算与周期状态后重试')
     }
   }
 
@@ -1061,25 +1091,27 @@
     row: Api.Hr.CompensationReviewCycle | Api.Hr.CompensationReviewBudget
   ): Promise<void> => {
     if (!row.id) return
-    try {
-      await confirmAction(
+    const label =
+      entity === 'cycle'
+        ? `${(row as Api.Hr.CompensationReviewCycle).cycleName}（${(row as Api.Hr.CompensationReviewCycle).cycleCode}）`
+        : `${(row as Api.Hr.CompensationReviewBudget).organizationName ?? '组织预算'} · ${(row as Api.Hr.CompensationReviewBudget).cycleName ?? '调薪周期'}`
+    await deleteRecord({
+      resource: { id: row.id, label },
+      resourceLabel: entity === 'cycle' ? '调薪周期' : '组织预算',
+      permission:
         entity === 'cycle'
-          ? '仅草稿周期可以删除。确认删除该周期？'
-          : '确认删除该组织预算？进入校准前必须确保每个正向增资组织都有足够预算。',
-        entity === 'cycle' ? '删除调薪周期' : '删除组织预算',
-        {
-          confirmButtonText: '删除',
-          cancelButtonText: '取消',
-          type: 'warning',
-          confirmButtonType: 'danger'
-        }
-      )
-      await deleteCompensationReviewRecord(entity, row.id)
-      if (entity === 'cycle' && selectedCycleId.value === row.id) selectedCycleId.value = ''
-      await refreshWorkspace()
-    } catch {
-      /* 用户取消或服务端依赖校验失败时不追加重复提示。 */
-    }
+          ? 'Hr:CompensationReview:Cycle:Manage'
+          : ['Hr:CompensationReview:Budget:Manage', 'Hr:CompensationReview:Amount:Edit'],
+      confirmMessage:
+        entity === 'cycle'
+          ? `确认删除草稿周期“${label}”？`
+          : `确认删除组织预算“${label}”？进入校准前应核对正向增资预算。`,
+      remove: () => deleteCompensationReviewRecord(entity, row.id!),
+      onDeleted: async () => {
+        if (entity === 'cycle' && selectedCycleId.value === row.id) selectedCycleId.value = ''
+        await refreshWorkspace()
+      }
+    })
   }
 
   onMounted(async () => {
@@ -1088,10 +1120,15 @@
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .review-page {
+    @include hr-table-workspace-layout(420px);
+
     &__command,
     &__workspace {
       display: grid;
+      flex: 0 0 auto;
       gap: 14px;
       min-width: 0;
       padding: 16px;
@@ -1105,6 +1142,11 @@
       border: 1px solid color-mix(in srgb, var(--theme-color) 11%, var(--art-card-border));
       border-radius: calc(var(--el-border-radius-base) + 5px);
       box-shadow: 0 8px 26px color-mix(in srgb, var(--art-gray-900) 4%, transparent);
+    }
+
+    &__lifecycle-scroll {
+      min-width: 0;
+      height: auto;
     }
 
     &__command-header {
@@ -1185,8 +1227,9 @@
 
     &__lifecycle {
       display: grid;
-      grid-template-columns: repeat(5, minmax(150px, 1fr));
+      grid-template-columns: repeat(5, minmax(220px, 1fr));
       gap: 1px;
+      min-width: 1106px;
       padding: 0;
       margin: 0;
       overflow: hidden;
@@ -1560,7 +1603,6 @@
 
     :deep(.art-table-query) {
       flex: 1;
-      min-height: 0;
     }
 
     @media (width <= 1200px) {
@@ -1574,7 +1616,7 @@
       }
 
       &__lifecycle {
-        grid-template-columns: repeat(5, minmax(145px, 1fr));
+        grid-template-columns: repeat(5, minmax(220px, 1fr));
       }
 
       &__guardrails {

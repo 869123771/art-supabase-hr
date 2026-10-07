@@ -24,6 +24,8 @@
             v-model="form.model.ownerEmployeeId"
             v-model:selected-data="selections.owner"
             :tenant-id="form.model.tenantId"
+            :api-fn="fetchPerformanceEmployeeSelector"
+            :display-fields="[]"
             placeholder="请选择周期负责人"
           />
         </template>
@@ -32,6 +34,8 @@
             v-model="form.model.employeeId"
             v-model:selected-data="selections.employee"
             :tenant-id="form.model.tenantId"
+            :api-fn="fetchPerformanceEmployeeSelector"
+            :display-fields="[]"
             placeholder="请选择被考核员工"
           />
         </template>
@@ -40,6 +44,8 @@
             v-model="form.model.reviewerEmployeeId"
             v-model:selected-data="selections.reviewer"
             :tenant-id="form.model.tenantId"
+            :api-fn="fetchPerformanceEmployeeSelector"
+            :display-fields="[]"
             placeholder="请选择评价主管"
           />
         </template>
@@ -48,6 +54,8 @@
             v-model="form.model.facilitatorEmployeeId"
             v-model:selected-data="selections.facilitator"
             :tenant-id="form.model.tenantId"
+            :api-fn="fetchPerformanceEmployeeSelector"
+            :display-fields="[]"
             placeholder="请选择沟通或校准负责人"
           />
         </template>
@@ -57,6 +65,7 @@
 </template>
 
 <script setup lang="ts">
+  import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import dayjs from 'dayjs'
@@ -69,6 +78,7 @@
   } from '@/components/core/forms/art-form/index.vue'
   import ArtEmployeeSelect from '@/components/business/art-employee-select/index.vue'
   import type { EmployeeIntegrationItem } from '@/api/integration/employees'
+  import { fetchPerformanceEmployeeSelector } from '@hr/api/modules/performance'
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
   import { fetchPerformanceOptions, savePerformanceRecord } from '@hr/api'
@@ -448,36 +458,35 @@
     props: { filterable: true, clearable, placeholder }
   })
 
-  const toSelection = (reference?: Api.Hr.PerformanceReference | null) =>
-    reference
-      ? ([
-          {
-            id: reference.id,
-            employeeNo: reference.code ?? '',
-            employeeName: reference.name ?? '未命名员工'
-          }
-        ] as EmployeeIntegrationItem[])
-      : []
-
   const resetSelections = (): void => {
     Object.assign(selections, { owner: [], employee: [], reviewer: [], facilitator: [] })
   }
 
+  let referenceRequest = 0
   const loadReferences = async (): Promise<void> => {
-    if (isPlatformSuper.value && !formModel.tenantId) {
-      cycleOptions.value = []
-      reviewOptions.value = []
-      organizationOptions.value = []
+    const request = ++referenceRequest
+    const tenantId = formModel.tenantId
+    const kind = entity.value
+    cycleOptions.value = []
+    reviewOptions.value = []
+    organizationOptions.value = []
+    if (isPlatformSuper.value && !tenantId) {
       return
     }
     const [cycles, reviews, organizations] = await Promise.all([
-      fetchPerformanceOptions('cycle', formModel.tenantId),
-      fetchPerformanceOptions('review', formModel.tenantId),
-      fetchPerformanceOptions('organization', formModel.tenantId)
+      kind === 'review' || kind === 'calibration'
+        ? fetchPerformanceOptions('cycle', tenantId)
+        : undefined,
+      kind === 'goal' || kind === 'check_in'
+        ? fetchPerformanceOptions('review', tenantId)
+        : undefined,
+      kind === 'calibration' ? fetchPerformanceOptions('organization', tenantId) : undefined
     ])
-    cycleOptions.value = cycles.data ?? []
-    reviewOptions.value = reviews.data ?? []
-    organizationOptions.value = organizations.data ?? []
+    if (request !== referenceRequest || tenantId !== formModel.tenantId || kind !== entity.value)
+      return
+    cycleOptions.value = cycles?.data ?? []
+    reviewOptions.value = reviews?.data ?? []
+    organizationOptions.value = organizations?.data ?? []
   }
 
   const handleTenantChange = async (): Promise<void> => {
@@ -640,10 +649,13 @@
       record && 'facilitator' in record
         ? (record as Api.Hr.PerformanceCheckIn | Api.Hr.PerformanceCalibrationSession)
         : undefined
-    selections.owner = toSelection(cycle?.owner)
-    selections.employee = toSelection(review?.employee)
-    selections.reviewer = toSelection(review?.reviewer)
-    selections.facilitator = toSelection(facilitator?.facilitator)
+    selections.owner = employeeReferenceSelection(cycle?.owner, formModel.tenantId)
+    selections.employee = employeeReferenceSelection(review?.employee, formModel.tenantId)
+    selections.reviewer = employeeReferenceSelection(review?.reviewer, formModel.tenantId)
+    selections.facilitator = employeeReferenceSelection(
+      facilitator?.facilitator,
+      formModel.tenantId
+    )
   }
 
   const handleOpen = async (payload: OpenPayload): Promise<void> => {

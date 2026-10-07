@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:Compensation:View">
     <div class="compensation-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="locationReady" />
       <BusinessWorkspaceHeader
         eyebrow="TOTAL REWARDS"
         title="薪酬管理"
@@ -71,11 +72,16 @@
       />
 
       <CompensationDialog ref="dialogRef" @success="handleSaveSuccess" />
+      <MasterDataDeleteGuard ref="deleteGuardRef" />
     </div>
   </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
+  import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
   import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import dayjs from 'dayjs'
   import { ElTag } from 'element-plus'
@@ -99,7 +105,7 @@
   import HrEntityNavigation, {
     type HrEntityNavigationItem
   } from '../../shared/hr-entity-navigation.vue'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import type { ColumnOption, DialogType } from '@/types'
@@ -170,12 +176,33 @@
   const { confirmAction, promptText } = useArtFeedback()
   const activeEntity = ref<Entity>('employee')
   const activeTab = computed(() => tabs.find((tab) => tab.entity === activeEntity.value) ?? tabs[0])
+  const deleteTables: Record<Entity, string> = {
+    employee: 'hr_employee_compensation',
+    band: 'hr_salary_band',
+    plan: 'hr_compensation_plan',
+    component: 'hr_pay_component'
+  }
+  const { deleteGuardRef, deleteRecord } = useRecordDeleteGuard(
+    () => deleteTables[activeEntity.value],
+    () => activeTab.value.label
+  )
   const tableQueryRef = ref<ArtTableQueryExpose>()
   const dialogRef = ref<CompensationDialogExpose>()
   const tenantOptions = ref<Array<{ label: string; value: string }>>([])
   const tableState = reactive<{ searchQuery: Api.Hr.CompensationSearchParams }>({
     searchQuery: { tenantId: '', status: '', keyword: '' }
   })
+  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+    {
+      hr_employee_compensation: 'employee',
+      hr_salary_band: 'band',
+      hr_compensation_plan: 'plan',
+      hr_pay_component: 'component'
+    },
+    activeEntity,
+    tableState.searchQuery,
+    () => void tableQueryRef.value?.refreshData()
+  )
   const overview = reactive<Api.Hr.CompensationOverview>({
     employeeCount: 0,
     coveredCount: 0,
@@ -607,7 +634,8 @@
     const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
     return fetchCompensationRecords(activeEntity.value, { ...params, from, to })
   }
-  const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (_rows, response) => {
+  const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
+    markRows(rows)
     tableOverview.total = response.total ?? 0
     tableOverview.amountAccess = Boolean(
       'amountAccess' in response && (response as { amountAccess?: boolean }).amountAccess
@@ -627,19 +655,26 @@
   }
   const handleDelete = async (row: RecordItem): Promise<void> => {
     if (!row.id) return
-    try {
-      await confirmAction(`确定删除这条${activeTab.value.label}记录吗？`, '删除确认', {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-        confirmButtonType: 'danger'
-      })
-      await deleteCompensationRecord(activeEntity.value, row.id)
-      await tableQueryRef.value?.refreshRemove()
-      await refreshOverview()
-    } catch {
-      /* 用户取消或服务端依赖校验失败时不追加重复提示。 */
-    }
+    const entity = activeEntity.value
+    const label =
+      entity === 'plan'
+        ? `${(row as Api.Hr.CompensationPlan).planName}（${(row as Api.Hr.CompensationPlan).planCode}）`
+        : entity === 'component'
+          ? `${(row as Api.Hr.PayComponent).componentName}（${(row as Api.Hr.PayComponent).componentCode}）`
+          : entity === 'band'
+            ? `${(row as Api.Hr.SalaryBand).grade?.gradeName ?? '职级薪档'} · ${(row as Api.Hr.SalaryBand).effectiveFrom}`
+            : `${(row as Api.Hr.EmployeeCompensation).employee?.employeeName ?? '员工'} · ${(row as Api.Hr.EmployeeCompensation).effectiveFrom}`
+    await deleteRecord({
+      resource: { id: row.id, label },
+      resourceLabel: activeTab.value.label,
+      permission:
+        entity === 'employee' ? 'Hr:Compensation:Record:Delete' : 'Hr:Compensation:Policy:Delete',
+      remove: () => deleteCompensationRecord(entity, row.id!),
+      onDeleted: async () => {
+        await tableQueryRef.value?.refreshRemove()
+        await refreshOverview()
+      }
+    })
   }
   const handleAction = async (row: RecordItem, action: 'approve' | 'cancel'): Promise<void> => {
     if (!row.id || (activeEntity.value !== 'employee' && activeEntity.value !== 'band')) return
@@ -659,8 +694,9 @@
       await actCompensationRecord(activeEntity.value, row.id, action)
       await tableQueryRef.value?.refreshUpdate()
       await refreshOverview()
-    } catch {
-      /* 用户取消或状态并发校验失败时保持当前列表。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '薪酬记录处理失败，请刷新记录后重试')
     }
   }
   const handleEnd = async (row: RecordItem): Promise<void> => {
@@ -686,8 +722,9 @@
       await actCompensationRecord('employee', row.id, 'end', effectiveTo)
       await tableQueryRef.value?.refreshUpdate()
       await refreshOverview()
-    } catch {
-      /* 用户取消或服务端日期校验失败时保持当前列表。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '员工薪酬终止失败，请核对日期并刷新记录后重试')
     }
   }
   const handleTabChange = (): void => {
@@ -720,7 +757,11 @@
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .compensation-page {
+    @include hr-table-workspace-layout(360px);
+
     &__control-deck {
       display: grid;
       gap: 12px;
@@ -851,7 +892,6 @@
 
     :deep(.art-table-query) {
       flex: 1;
-      min-height: 0;
     }
 
     @media (width <= 900px) {

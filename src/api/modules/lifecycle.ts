@@ -4,6 +4,7 @@ import { omit } from 'lodash-es'
 import { useSupabase } from '@/hooks'
 import { withRequestOptions } from '@/api/providers/supabase/query'
 import type { ApiRequestOptions } from '@/types/api/request'
+import { createEmployeeReferenceSelector } from '@/api/integration/employees'
 
 const { supabase, keysToSnakeDeep, responseHandle } = useSupabase()
 
@@ -60,6 +61,10 @@ export async function fetchLifecycleOptions(
     { showErrorMessage: true }
   )
 }
+
+export const fetchLifecycleEmployeeSelector = createEmployeeReferenceSelector((tenantId) =>
+  fetchLifecycleOptions('employee', tenantId)
+)
 
 const normalizePayload = (record: Api.Hr.LifecycleRecord) =>
   keysToSnakeDeep(

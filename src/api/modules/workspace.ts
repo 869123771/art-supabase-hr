@@ -283,6 +283,10 @@ export async function saveHrWorkspaceRecord(entity: WorkspaceEntity, record: Wor
   )
 }
 
+export function getHrWorkspaceRecordTable(entity: WorkspaceEntity): string {
+  return workspaceTransportConfigs[entity].table
+}
+
 export async function deleteHrWorkspaceRecord(entity: WorkspaceEntity, id: string) {
   const config = workspaceTransportConfigs[entity]
   return await responseHandle<void>(() => supabase.from(config.table).delete().eq('id', id), {

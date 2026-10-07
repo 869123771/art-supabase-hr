@@ -52,6 +52,7 @@
 </template>
 
 <script setup lang="ts">
+  import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import dayjs from 'dayjs'
@@ -258,11 +259,18 @@
             key: 'positionId',
             type: 'select',
             immediate: false,
-            api: () => fetchOrganizationPositionDirectory(model.organizationId),
+            api: () =>
+              model.organizationId
+                ? fetchOrganizationPositionDirectory(model.organizationId)
+                : Promise.resolve({ data: { positions: [] } }),
             resultField: 'data.positions',
             labelFn: (option) => `${option.positionName} · ${option.positionCode}`,
             valueField: 'id',
-            props: { filterable: true, placeholder: '请选择招聘岗位' }
+            props: {
+              filterable: true,
+              disabled: !model.organizationId,
+              placeholder: model.organizationId ? '请选择招聘岗位' : '请先选择招聘组织'
+            }
           },
           number('openingCount', '需求人数', { min: 1, max: 999, precision: 0 }),
           date('expectedOnboardDate', '期望到岗日期'),
@@ -511,38 +519,29 @@
   const resetEmployeeSelections = (): void => {
     Object.assign(employeeSelection, { interviewer: [], owner: [], buddy: [], onboard: [] })
   }
-  const toEmployeeSelection = (
-    reference: Api.Hr.RecruitmentReference | null | undefined,
-    tenantId?: string
-  ): EmployeeIntegrationItem[] =>
-    reference
-      ? [
-          {
-            id: reference.id,
-            tenantId: tenantId ?? '',
-            employeeNo: reference.code ?? '',
-            employeeName: reference.name,
-            employmentStatus: 'active'
-          }
-        ]
-      : []
 
   const loadEditSelections = (row?: RecordItem): void => {
     resetEmployeeSelections()
     if (!row) return
     if (entity.value === 'interview') {
       const interview = row as Api.Hr.RecruitmentInterview
-      employeeSelection.interviewer = toEmployeeSelection(interview.interviewer, interview.tenantId)
+      employeeSelection.interviewer = employeeReferenceSelection(
+        interview.interviewer,
+        interview.tenantId
+      )
     }
     if (entity.value === 'handoff') {
       const handoff = row as Api.Hr.RecruitmentHandoff
-      employeeSelection.owner = toEmployeeSelection(handoff.owner, handoff.tenantId)
-      employeeSelection.buddy = toEmployeeSelection(handoff.buddy, handoff.tenantId)
-      employeeSelection.onboard = toEmployeeSelection(handoff.onboardEmployee, handoff.tenantId)
+      employeeSelection.owner = employeeReferenceSelection(handoff.owner, handoff.tenantId)
+      employeeSelection.buddy = employeeReferenceSelection(handoff.buddy, handoff.tenantId)
+      employeeSelection.onboard = employeeReferenceSelection(
+        handoff.onboardEmployee,
+        handoff.tenantId
+      )
     }
     if (entity.value === 'task') {
       const task = row as Api.Hr.RecruitmentTask
-      employeeSelection.owner = toEmployeeSelection(task.owner, task.tenantId)
+      employeeSelection.owner = employeeReferenceSelection(task.owner, task.tenantId)
     }
   }
 

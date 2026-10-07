@@ -317,30 +317,37 @@
     }
   })
 
+  let referenceRequest = 0
   const loadReferenceData = async (): Promise<void> => {
+    const request = ++referenceRequest
     const tenantId = form.model.tenantId
-    if (!tenantId) {
-      componentOptions.value = []
-      planOptions.value = []
-      employeeOptions.value = []
-      gradeOptions.value = []
-      return
-    }
+    const kind = entity.value
+    componentOptions.value = []
+    planOptions.value = []
+    employeeOptions.value = []
+    gradeOptions.value = []
+    if (!tenantId) return
     const [components, plans, employees, grades] = await Promise.all([
-      fetchCompensationOptions('component', tenantId),
-      fetchCompensationRecords<Api.Hr.CompensationPlan>('plan', {
-        tenantId,
-        status: 'enabled',
-        from: 0,
-        to: 499
-      }),
-      fetchCompensationOptions('employee', tenantId),
-      fetchCompensationOptions('grade', tenantId)
+      kind === 'plan' ? fetchCompensationOptions('component', tenantId) : undefined,
+      kind === 'employee'
+        ? fetchCompensationRecords<Api.Hr.CompensationPlan>('plan', {
+            tenantId,
+            status: 'enabled',
+            from: 0,
+            to: 499
+          })
+        : undefined,
+      kind === 'employee' ? fetchCompensationOptions('employee', tenantId) : undefined,
+      kind === 'employee' || kind === 'band'
+        ? fetchCompensationOptions('grade', tenantId)
+        : undefined
     ])
-    componentOptions.value = components.data ?? []
-    planOptions.value = plans.data ?? []
-    employeeOptions.value = employees.data ?? []
-    gradeOptions.value = grades.data ?? []
+    if (request !== referenceRequest || tenantId !== form.model.tenantId || kind !== entity.value)
+      return
+    componentOptions.value = components?.data ?? []
+    planOptions.value = plans?.data ?? []
+    employeeOptions.value = employees?.data ?? []
+    gradeOptions.value = grades?.data ?? []
   }
 
   const toEmployeeOption = (employee: Api.Hr.CompensationReference): ArtUserSelectOption => ({
@@ -380,7 +387,7 @@
 
   const handleEmployeeChange = (employeeId?: string): void => {
     const employee = employeeOptions.value.find((item) => item.id === employeeId)
-    if (employee?.gradeId) form.model.gradeId = employee.gradeId
+    form.model.gradeId = employee?.gradeId ?? null
   }
 
   const applySelectedPlan = (planId?: string, preserve = false): void => {

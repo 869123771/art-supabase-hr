@@ -122,8 +122,13 @@ export async function editPosition(position: Position) {
 }
 
 export async function deletePosition(id: string) {
-  return await responseHandle<boolean>(
+  const { data } = await responseHandle<boolean>(
     () => supabase.rpc('hr_delete_position_secure', { p_id: id }),
-    { showMessage: true, message: '岗位已删除', breakReturn: true }
+    {
+      showErrorMessage: false,
+      breakReturn: true,
+      errorMessage: '岗位删除失败，请刷新列表核对权限和关联记录后重试'
+    }
   )
+  if (data !== true) throw new Error('岗位删除结果未能确认，请刷新列表后重试')
 }

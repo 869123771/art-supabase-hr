@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:Headcount:View">
     <div class="workforce-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="locationReady" />
       <BusinessWorkspaceHeader
         eyebrow="WORKFORCE CAPACITY"
         title="人力规划与编制"
@@ -107,6 +108,7 @@
       />
 
       <WorkforcePlanningDialog ref="dialogRef" @success="handleSaveSuccess" />
+      <MasterDataDeleteGuard ref="deleteGuardRef" />
     </div>
   </ArtPermissionGuard>
 </template>
@@ -132,10 +134,14 @@
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
+  import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
   import HrEntityNavigation, {
     type HrEntityNavigationItem
   } from '../../shared/hr-entity-navigation.vue'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import type { ColumnOption, DialogType } from '@/types'
@@ -199,6 +205,15 @@
   const { confirmAction, promptReason } = useArtFeedback()
   const activeEntity = ref<Entity>('cycle')
   const activeTab = computed(() => tabs.find((tab) => tab.entity === activeEntity.value) ?? tabs[0])
+  const deleteTables: Record<Entity, string> = {
+    cycle: 'hr_workforce_plan_cycle',
+    line: 'hr_workforce_plan_line',
+    effective: 'hr_position_headcount'
+  }
+  const { deleteGuardRef, deleteRecord } = useRecordDeleteGuard(
+    () => deleteTables[activeEntity.value],
+    () => activeTab.value.label
+  )
   const navigationItems = computed<HrEntityNavigationItem[]>(() =>
     tabs.map((tab) => ({ ...tab, value: tab.entity }))
   )
@@ -209,6 +224,16 @@
   const tableState = reactive<{ searchQuery: Api.Hr.WorkforcePlanningSearchParams }>({
     searchQuery: { tenantId: '', status: '', keyword: '', planId: '' }
   })
+  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+    {
+      hr_workforce_plan_cycle: 'cycle',
+      hr_position_headcount: 'effective',
+      hr_workforce_plan_line: 'line'
+    },
+    activeEntity,
+    tableState.searchQuery,
+    () => void tableQueryRef.value?.refreshData()
+  )
   const overview = reactive<Api.Hr.WorkforcePlanningOverview>({
     activePlanCount: 0,
     pendingApprovalCount: 0,
@@ -698,11 +723,13 @@
   ])
   const fetchTableData = async (params: TableParams) => {
     const page = buildSupabasePageRange(params)
-    return await fetchWorkforcePlanningRecords(activeEntity.value, {
+    const response = await fetchWorkforcePlanningRecords(activeEntity.value, {
       ...tableState.searchQuery,
       from: page.from,
       to: page.to
     })
+    markRows(response.data)
+    return response
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (_data, response) => {
     tableOverview.total = Number(response.total ?? 0)
@@ -741,16 +768,22 @@
   }
   const handleDelete = async (row: RecordItem): Promise<void> => {
     if (!row.id) return
-    try {
-      await confirmAction(`确定删除这条${activeTab.value.label}记录吗？`, '删除确认', {
-        confirmButtonText: '删除',
-        confirmButtonType: 'danger'
-      })
-      await deleteWorkforcePlanningRecord(activeEntity.value, row.id)
-      await Promise.all([tableQueryRef.value?.refreshRemove(), loadOverview(), loadPlanFilters()])
-    } catch {
-      /* 用户取消 */
-    }
+    const entity = activeEntity.value
+    const label =
+      entity === 'cycle'
+        ? `${(row as Api.Hr.WorkforcePlanCycle).planName}（${(row as Api.Hr.WorkforcePlanCycle).planNo}）`
+        : entity === 'line'
+          ? `${(row as Api.Hr.WorkforcePlanLine).position?.name ?? '岗位'} · ${(row as Api.Hr.WorkforcePlanLine).plan?.name ?? '规划周期'}`
+          : `${(row as Api.Hr.WorkforceEffectiveHeadcount).position?.name ?? '岗位'} · ${(row as Api.Hr.WorkforceEffectiveHeadcount).effectiveFrom ?? '编制记录'}`
+    await deleteRecord({
+      resource: { id: row.id, label },
+      resourceLabel: activeTab.value.label,
+      permission: 'Hr:Headcount:Delete',
+      remove: () => deleteWorkforcePlanningRecord(entity, row.id!),
+      onDeleted: async () => {
+        await Promise.all([tableQueryRef.value?.refreshRemove(), loadOverview(), loadPlanFilters()])
+      }
+    })
   }
   const actCycle = async (
     row: Api.Hr.WorkforcePlanCycle,
@@ -779,8 +812,9 @@
       }
       await transitionWorkforcePlan(row.id, action, comment)
       await Promise.all([tableQueryRef.value?.refreshUpdate(), loadOverview(), loadPlanFilters()])
-    } catch {
-      /* 用户取消或业务层已提示 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '编制规划状态更新失败，请刷新规划后重试')
     }
   }
 
@@ -797,7 +831,11 @@
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .workforce-page {
+    @include hr-table-workspace-layout(360px);
+
     &__capacity-deck {
       display: grid;
       grid-template-columns: minmax(300px, 0.72fr) minmax(0, 2fr);

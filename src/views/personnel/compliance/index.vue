@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:Compliance:View">
     <div class="compliance-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="locationReady" />
       <BusinessWorkspaceHeader
         eyebrow="WORKFORCE COMPLIANCE CONTROL"
         title="用工合规中心"
@@ -97,11 +98,22 @@
       <ComplianceRecordDialog ref="recordDialogRef" @success="handleRecordSuccess" />
       <ComplianceActionDialog ref="actionDialogRef" @success="handleActionSuccess" />
       <ComplianceDetailDrawer ref="detailDrawerRef" />
+      <MasterDataDeleteGuard ref="contractDeleteGuardRef" />
+      <MasterDataDeleteGuard ref="qualificationDeleteGuardRef" />
     </div>
   </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
+  import { useAuth } from '@/hooks/core/useAuth'
+  import {
+    DeleteReferenceBlockedError,
+    getDeleteReferenceContext
+  } from '@/utils/supabase/delete-reference'
+  import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
   import dayjs from 'dayjs'
   import { ElTag, type TagProps } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
@@ -121,7 +133,7 @@
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
@@ -205,6 +217,16 @@
   const complianceRiskObjectOptions = useDictionaryOptions('hrComplianceRiskObject')
   const { getDictMap, isPlatformSuper } = storeToRefs(userStore)
   const { confirmAction } = useArtFeedback()
+  const { hasAuth } = useAuth()
+  const deleteBusy = ref(false)
+  const {
+    deleteGuardRef: contractDeleteGuardRef,
+    inspectDeleteReferences: inspectContractReferences
+  } = useRecordDeleteGuard('hr_employee_contract', '劳动合同')
+  const {
+    deleteGuardRef: qualificationDeleteGuardRef,
+    inspectDeleteReferences: inspectQualificationReferences
+  } = useRecordDeleteGuard('hr_employee_qualification', '员工资质')
   const activeEntity = ref<Entity>('risk')
   const activeTab = computed(() => tabs.find((tab) => tab.value === activeEntity.value) ?? tabs[0]!)
   const navigationItems: HrEntityNavigationItem[] = tabs
@@ -217,6 +239,15 @@
   const tableState = reactive<{ searchQuery: Api.Hr.ComplianceSearchParams }>({
     searchQuery: { tenantId: '', status: '', riskStatus: '', keyword: '' }
   })
+  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+    {
+      hr_employee_contract: 'contract',
+      hr_employee_qualification: 'qualification'
+    },
+    activeEntity,
+    tableState.searchQuery,
+    () => void tableQueryRef.value?.refreshData()
+  )
   const overview = reactive<Api.Hr.ComplianceOverview>({
     activeContractCount: 0,
     contractRiskCount: 0,
@@ -849,7 +880,8 @@
     const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
     return fetchComplianceRecords(activeEntity.value, { ...params, from, to })
   }
-  const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (_rows, response) => {
+  const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
+    markRows(rows)
     tableTotal.value = response.total ?? 0
   }
   const refreshOverview = async (): Promise<void> => {
@@ -867,8 +899,21 @@
     void refreshOverview()
   }
   const handleDelete = async (entity: RecordEntity, record: EditableRecord): Promise<void> => {
-    if (!record.id) return
+    if (!record.id || deleteBusy.value) return
+    if (!hasAuth('Hr:Compliance:Delete')) {
+      notifyFriendlyError(new Error('当前账号无权删除合规草稿'), '当前账号无权删除合规草稿')
+      return
+    }
+    const inspect =
+      entity === 'contract' ? inspectContractReferences : inspectQualificationReferences
+    const label =
+      entity === 'contract'
+        ? (record as Api.Hr.ComplianceContract).contractNo
+        : (record as Api.Hr.ComplianceQualification).qualificationName
+    const resources = [{ id: record.id, label: label || '未编号合规草稿' }]
+    deleteBusy.value = true
     try {
+      if (await inspect(resources)) return
       await confirmAction(
         entity === 'contract'
           ? `确定删除合同草稿“${(record as Api.Hr.ComplianceContract).contractNo}”吗？`
@@ -881,11 +926,27 @@
           confirmButtonType: 'danger'
         }
       )
-      await deleteComplianceRecord(entity, record.id)
+      try {
+        if (!hasAuth('Hr:Compliance:Delete')) {
+          notifyFriendlyError(
+            new Error('合规草稿删除权限已变化'),
+            '删除权限已变化，请刷新页面后重试'
+          )
+          return
+        }
+        await deleteComplianceRecord(entity, record.id)
+      } catch (error) {
+        if (await inspect(resources, getDeleteReferenceContext(error)?.constraint)) return
+        if (error instanceof DeleteReferenceBlockedError) return
+        throw error
+      }
       await tableQueryRef.value?.refreshRemove()
       await refreshOverview()
-    } catch {
-      /* 用户取消或服务端状态校验失败时保持当前列表。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '合规草稿删除失败，请刷新记录后重试')
+    } finally {
+      deleteBusy.value = false
     }
   }
   const handleTabChange = (): void => {
@@ -918,7 +979,11 @@
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .compliance-page {
+    @include hr-table-workspace-layout(360px);
+
     &__control {
       position: relative;
       padding: 18px;

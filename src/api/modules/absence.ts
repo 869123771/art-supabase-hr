@@ -4,12 +4,17 @@ import { omit } from 'lodash-es'
 import { useSupabase } from '@/hooks'
 import { withRequestOptions } from '@/api/providers/supabase/query'
 import type { ApiRequestOptions } from '@/types/api/request'
+import { createEmployeeReferenceSelector } from '@/api/integration/employees'
 
 type AbsenceEntity = Api.Hr.AbsenceEntity
 type AbsenceRecord = Api.Hr.AbsenceRecord
 type AbsenceSearchParams = Api.Hr.AbsenceSearchParams
 
 const { supabase, keysToSnakeDeep, responseHandle } = useSupabase()
+
+export const fetchAbsenceEmployeeSelector = createEmployeeReferenceSelector((tenantId) =>
+  fetchAbsenceOptions('employee', tenantId)
+)
 
 export async function fetchAbsenceOverview(tenantId?: string, options?: ApiRequestOptions) {
   return await responseHandle<Api.Hr.AbsenceOverview>(

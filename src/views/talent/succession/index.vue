@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:Succession:View">
     <div class="succession-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="locationReady" />
       <BusinessWorkspaceHeader
         eyebrow="SUCCESSION & CAREER"
         title="继任与发展"
@@ -99,6 +100,7 @@
       />
 
       <SuccessionDialog ref="dialogRef" @success="handleSaveSuccess" />
+      <MasterDataDeleteGuard ref="deleteGuardRef" />
     </div>
   </ArtPermissionGuard>
 </template>
@@ -122,7 +124,11 @@
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
+  import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import type { ColumnOption, DialogType } from '@/types'
@@ -180,12 +186,31 @@
   const { confirmAction, promptText } = useArtFeedback()
   const activeEntity = ref<Entity>('plan')
   const activeTab = computed(() => tabs.find((tab) => tab.entity === activeEntity.value) ?? tabs[0])
+  const deleteTables: Record<Entity, string> = {
+    plan: 'hr_succession_plan',
+    candidate: 'hr_succession_candidate',
+    action: 'hr_succession_development_action'
+  }
+  const { deleteGuardRef, deleteRecord } = useRecordDeleteGuard(
+    () => deleteTables[activeEntity.value],
+    () => activeTab.value.label
+  )
   const tableQueryRef = ref<ArtTableQueryExpose>()
   const dialogRef = ref<DialogExpose>()
   const tenantOptions = ref<Array<{ label: string; value: string }>>([])
   const tableState = reactive<{ searchQuery: Api.Hr.SuccessionSearchParams }>({
     searchQuery: { tenantId: '', status: '', keyword: '' }
   })
+  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+    {
+      hr_succession_plan: 'plan',
+      hr_succession_candidate: 'candidate',
+      hr_succession_development_action: 'action'
+    },
+    activeEntity,
+    tableState.searchQuery,
+    () => void tableQueryRef.value?.refreshData()
+  )
   const overview = reactive<Api.Hr.SuccessionOverview>({
     activePlanCount: 0,
     criticalPositionCount: 0,
@@ -707,9 +732,11 @@
       onClick: () => openDialog(activeEntity.value)
     }
   ])
-  const fetchTableData = (params: TableParams) => {
+  const fetchTableData = async (params: TableParams) => {
     const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
-    return fetchSuccessionRecords(activeEntity.value, { ...params, from, to })
+    const response = await fetchSuccessionRecords(activeEntity.value, { ...params, from, to })
+    markRows(response.data)
+    return response
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (_rows, response) => {
     tableTotal.value = response.total ?? 0
@@ -728,19 +755,23 @@
   }
   const handleDelete = async (row: RecordItem) => {
     if (!row.id) return
-    try {
-      await confirmAction(`确定删除这条${activeTab.value.label}记录吗？`, '删除确认', {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-        confirmButtonType: 'danger'
-      })
-      await deleteSuccessionRecord(activeEntity.value, row.id)
-      await tableQueryRef.value?.refreshRemove()
-      await refreshOverview()
-    } catch {
-      /* 用户取消或记录不满足删除状态时保持列表。 */
-    }
+    const entity = activeEntity.value
+    const label =
+      entity === 'plan'
+        ? `${(row as Api.Hr.SuccessionPlan).planName}（${(row as Api.Hr.SuccessionPlan).planCode}）`
+        : entity === 'candidate'
+          ? `${(row as Api.Hr.SuccessionCandidate).employee?.employeeName ?? '继任候选人'} · ${(row as Api.Hr.SuccessionCandidate).plan?.planName ?? '关键岗位计划'}`
+          : (row as Api.Hr.SuccessionDevelopmentAction).actionTitle
+    await deleteRecord({
+      resource: { id: row.id, label },
+      resourceLabel: activeTab.value.label,
+      permission: permissionFor('Delete'),
+      remove: () => deleteSuccessionRecord(entity, row.id!),
+      onDeleted: async () => {
+        await tableQueryRef.value?.refreshRemove()
+        await refreshOverview()
+      }
+    })
   }
   const handleReview = async (
     row: Api.Hr.SuccessionCandidate,
@@ -768,8 +799,9 @@
       await reviewSuccessionCandidate(row.id, action, comment)
       await tableQueryRef.value?.refreshUpdate()
       await refreshOverview()
-    } catch {
-      /* 用户取消或服务端状态校验失败。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '继任候选人处理失败，请刷新状态后重试')
     }
   }
   const handleTabChange = () => {
@@ -807,7 +839,11 @@
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .succession-page {
+    @include hr-table-workspace-layout(360px);
+
     &__command-center {
       position: relative;
       padding: 16px 18px 13px;

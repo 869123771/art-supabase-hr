@@ -48,6 +48,7 @@
 </template>
 
 <script setup lang="ts">
+  import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { replaceReactiveModel } from '@/utils/form/model'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
@@ -71,19 +72,6 @@
   }
   const selection = ref<EmployeeIntegrationItem[]>([])
 
-  const selectedAssignee = (request: Api.Hr.ServiceRequest): EmployeeIntegrationItem[] =>
-    request.assignee
-      ? [
-          {
-            id: request.assignee.id,
-            tenantId: request.tenantId || '',
-            employeeNo: request.assignee.code || '',
-            employeeName: request.assignee.name || '未命名员工',
-            employmentStatus: 'active'
-          }
-        ]
-      : []
-
   const submit = async (): Promise<boolean> => {
     if (!record.value?.id) return false
     try {
@@ -102,7 +90,7 @@
   const handleOpen = async (request: Api.Hr.ServiceRequest): Promise<void> => {
     record.value = request
     form.assigneeEmployeeId = request.assignedEmployeeId || undefined
-    selection.value = selectedAssignee(request)
+    selection.value = employeeReferenceSelection(request.assignee, request.tenantId)
     form.comment = ''
     void nextTick(() => formRef.value?.clearValidate())
     await dialogRef.value?.handleOpen(undefined, {

@@ -49,6 +49,7 @@
 </template>
 
 <script setup lang="ts">
+  import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import dayjs from 'dayjs'
@@ -459,51 +460,46 @@
     Object.keys(form.model).forEach((key) => delete form.model[key as keyof FormModel])
     Object.assign(form.model, next)
   }
-  const toEmployeeSelection = (
-    reference?: Api.Hr.LearningReference | null
-  ): EmployeeIntegrationItem[] =>
-    reference
-      ? ([
-          {
-            id: reference.id,
-            employeeNo: reference.code ?? '',
-            employeeName: reference.name ?? '未命名员工'
-          } as EmployeeIntegrationItem
-        ] as EmployeeIntegrationItem[])
-      : []
   const resetEmployeeSelections = (): void => {
     employeeSelection.owner = []
     employeeSelection.learner = []
     employeeSelection.nominator = []
   }
 
+  let referenceRequest = 0
   const loadReferences = async (): Promise<void> => {
+    const request = ++referenceRequest
     const tenantId = form.model.tenantId
+    const kind = entity.value
+    planOptions.value = []
+    courseOptions.value = []
+    draftCourseOptions.value = []
+    sessionOptions.value = []
+    competencyOptions.value = []
     if (isPlatformSuper.value && !tenantId) {
-      planOptions.value = []
-      courseOptions.value = []
-      draftCourseOptions.value = []
-      sessionOptions.value = []
-      competencyOptions.value = []
       return
     }
     const [plans, courses, sessions, competencies, draftCourses] = await Promise.all([
-      fetchLearningOptions('plan', tenantId),
-      fetchLearningOptions('course', tenantId),
-      fetchLearningOptions('session', tenantId),
-      fetchLearningOptions('competency', tenantId),
-      fetchLearningRecords<Api.Hr.LearningCourse>('course', {
-        tenantId,
-        status: 'draft',
-        from: 0,
-        to: 499
-      })
+      kind === 'session' ? fetchLearningOptions('plan', tenantId) : undefined,
+      kind === 'session' ? fetchLearningOptions('course', tenantId) : undefined,
+      kind === 'enrollment' ? fetchLearningOptions('session', tenantId) : undefined,
+      kind === 'course_competency' ? fetchLearningOptions('competency', tenantId) : undefined,
+      kind === 'course_competency'
+        ? fetchLearningRecords<Api.Hr.LearningCourse>('course', {
+            tenantId,
+            status: 'draft',
+            from: 0,
+            to: 499
+          })
+        : undefined
     ])
-    planOptions.value = plans.data ?? []
-    courseOptions.value = courses.data ?? []
-    sessionOptions.value = sessions.data ?? []
-    competencyOptions.value = competencies.data ?? []
-    draftCourseOptions.value = (draftCourses.data ?? []).map((course) => ({
+    if (request !== referenceRequest || tenantId !== form.model.tenantId || kind !== entity.value)
+      return
+    planOptions.value = plans?.data ?? []
+    courseOptions.value = courses?.data ?? []
+    sessionOptions.value = sessions?.data ?? []
+    competencyOptions.value = competencies?.data ?? []
+    draftCourseOptions.value = (draftCourses?.data ?? []).map((course) => ({
       id: course.id!,
       tenantId: course.tenantId,
       code: course.courseCode,
@@ -669,9 +665,12 @@
         ...createInitialModel(),
         ...(structuredClone(toRaw(row)) as Partial<FormModel>)
       })
-      if ('owner' in row) employeeSelection.owner = toEmployeeSelection(row.owner)
-      if ('employee' in row) employeeSelection.learner = toEmployeeSelection(row.employee)
-      if ('nominator' in row) employeeSelection.nominator = toEmployeeSelection(row.nominator)
+      if ('owner' in row)
+        employeeSelection.owner = employeeReferenceSelection(row.owner, form.model.tenantId)
+      if ('employee' in row)
+        employeeSelection.learner = employeeReferenceSelection(row.employee, form.model.tenantId)
+      if ('nominator' in row)
+        employeeSelection.nominator = employeeReferenceSelection(row.nominator, form.model.tenantId)
     }
     await nextTick()
     formRef.value?.clearValidate()

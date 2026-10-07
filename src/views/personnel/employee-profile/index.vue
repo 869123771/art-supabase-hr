@@ -7,6 +7,9 @@
     full-height
     @retry="initializePage"
   >
+    <MasterDeleteProcessingNotice
+      :location-ready="Boolean(form.id && form.id === route.query.recordId)"
+    />
     <ArtPageHeader
       :title="isEdit ? '编辑员工档案' : '新增员工档案'"
       :subtitle="pageSubtitle"
@@ -530,6 +533,7 @@
 </template>
 
 <script setup lang="ts">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import { replaceReactiveModel } from '@/utils/form/model'
   import { getScrollBehavior } from '@/utils/ui/scroll'
   import { getFriendlySupabaseErrorMessage } from '@/utils/supabase'

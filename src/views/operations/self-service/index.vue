@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:SelfService:View">
     <div class="service-delivery-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="locationReady" />
       <BusinessWorkspaceHeader
         eyebrow="EMPLOYEE SERVICE DELIVERY"
         title="员工服务交付"
@@ -79,13 +80,18 @@
       <ServiceDeliveryDialog ref="dialogRef" @success="handleSaveSuccess" />
       <ServiceAssignmentDialog ref="assignmentDialogRef" @success="refreshAfterAction" />
       <ServiceRequestDrawer ref="requestDrawerRef" />
+      <MasterDataDeleteGuard ref="deleteGuardRef" />
     </div>
   </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
+  import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
   import { ElTag } from 'element-plus'
-  import { useRouter } from 'vue-router'
+  import { useRoute, useRouter } from 'vue-router'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
     ArtTableQueryExpose,
@@ -102,7 +108,7 @@
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
@@ -168,12 +174,17 @@
     }
   ]
 
+  const route = useRoute()
   const router = useRouter()
   const userStore = useUserStore()
   const { getDictMap, isPlatformSuper } = storeToRefs(userStore)
   const { confirmAction, promptText } = useArtFeedback()
   const activeEntity = ref<Entity>('request')
   const activeTab = computed(() => tabs.find((tab) => tab.value === activeEntity.value) ?? tabs[0]!)
+  const { deleteGuardRef, deleteRecord } = useRecordDeleteGuard(
+    'hr_self_service_request',
+    '服务工单'
+  )
   const navigationItems: HrEntityNavigationItem[] = tabs
   const tableQueryRef = ref<ArtTableQueryExpose>()
   const dialogRef = ref<DeliveryDialogExpose>()
@@ -194,6 +205,16 @@
   })
 
   const managerView = computed(() => overview.managerView || isPlatformSuper.value)
+  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+    { hr_self_service_request: 'request', hr_service_catalog: 'service' },
+    activeEntity,
+    tableState.searchQuery,
+    () => void tableQueryRef.value?.refreshData(),
+    () => {
+      tableState.searchQuery.category = ''
+      tableState.searchQuery.scope = managerView.value ? 'team' : 'mine'
+    }
+  )
   const workspaceTags: BusinessWorkspaceTag[] = [
     { label: '员工可追踪', type: 'primary', effect: 'plain' },
     { label: 'SLA 自动计时', type: 'warning', effect: 'light' },
@@ -733,9 +754,11 @@
       onClick: () => openDialog(activeEntity.value)
     }
   ])
-  const fetchTableData = (params: TableParams) => {
+  const fetchTableData = async (params: TableParams) => {
     const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
-    return fetchServiceDeliveryRecords(activeEntity.value, { ...params, from, to })
+    const response = await fetchServiceDeliveryRecords(activeEntity.value, { ...params, from, to })
+    markRows(response.data)
+    return response
   }
   const refreshOverview = async () => {
     const response = await fetchServiceDeliveryOverview(tableState.searchQuery.tenantId)
@@ -772,19 +795,16 @@
   }
   const handleDelete = async (item: Api.Hr.ServiceRequest) => {
     if (!item.id) return
-    try {
-      await confirmAction('确定删除这条服务工单草稿吗？删除后无法恢复。', '删除服务工单', {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-        confirmButtonType: 'danger'
-      })
-      await deleteServiceRequest(item.id)
-      await tableQueryRef.value?.refreshRemove()
-      await refreshOverview()
-    } catch {
-      /* 用户取消或服务端门禁拒绝。 */
-    }
+    const label = `${item.title}（${item.requestNo}）`
+    await deleteRecord({
+      resource: { id: item.id, label },
+      permission: 'Hr:SelfService:Delete',
+      remove: () => deleteServiceRequest(item.id!),
+      onDeleted: async () => {
+        await tableQueryRef.value?.refreshRemove()
+        await refreshOverview()
+      }
+    })
   }
   const handleRequestAction = async (
     item: Api.Hr.ServiceRequest,
@@ -818,8 +838,9 @@
       }
       await transitionServiceRequest(item.id, action, undefined, comment)
       await refreshAfterAction()
-    } catch {
-      /* 用户取消或服务端门禁拒绝。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '服务工单处理失败，请刷新状态后重试')
     }
   }
 
@@ -831,11 +852,24 @@
         .map((tenant) => ({ label: tenant.tenantName, value: tenant.id }))
     }
     await refreshOverview()
+    if (
+      route.query.fromMasterDelete === '1' &&
+      route.query.dependencyCode === 'hr_self_service_request' &&
+      managerView.value &&
+      tableState.searchQuery.scope === 'mine'
+    ) {
+      tableState.searchQuery.scope = 'team'
+      await tableQueryRef.value?.refreshData()
+    }
   })
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .service-delivery-page {
+    @include hr-table-workspace-layout(360px);
+
     display: flex;
     flex-direction: column;
     gap: 16px;

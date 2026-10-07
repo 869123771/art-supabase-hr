@@ -37,6 +37,7 @@
 </template>
 
 <script setup lang="ts">
+  import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import dayjs from 'dayjs'
@@ -256,23 +257,6 @@
     }))
   })
 
-  const toSelection = (
-    reference?: Api.Hr.EmployeeRelationReference | null,
-    tenantId?: string
-  ): EmployeeIntegrationItem[] =>
-    reference
-      ? [
-          {
-            id: reference.id,
-            tenantId: tenantId || '',
-            employeeNo: reference.employeeNo || '',
-            employeeName: reference.employeeName || '未命名员工',
-            jobTitle: reference.jobTitle,
-            employmentStatus: 'active'
-          }
-        ]
-      : []
-
   const applyRecord = (target: Api.Hr.EmployeeRelationCase): void => {
     record.value = target
     Object.assign(formModel, {
@@ -283,7 +267,7 @@
       confidentialityLevel: target.confidentialityLevel,
       findingsSummary: target.findingsSummary || ''
     })
-    ownerSelection.value = toSelection(target.ownerEmployee, target.tenantId)
+    ownerSelection.value = employeeReferenceSelection(target.ownerEmployee, target.tenantId)
   }
 
   const submit = async (): Promise<boolean> => {

@@ -1,116 +1,128 @@
 <template>
   <ArtDrawer ref="drawerRef">
-    <div v-if="request" class="service-request-drawer">
-      <section class="service-request-drawer__hero" aria-labelledby="service-request-title">
-        <div>
-          <span>{{ request.requestNo }}</span>
-          <h3 id="service-request-title">{{ request.title }}</h3>
-          <p>{{ request.service?.name || '历史员工申请' }}</p>
-        </div>
-        <div class="service-request-drawer__hero-status">
-          <ElTag :type="statusType(request.status)" effect="light" round>
-            {{ dictLabel('hrServiceRequestStatus', request.status) }}
-          </ElTag>
-          <ElTag :type="slaType(resolvedSlaStatus(request))" effect="plain" round>
-            {{ slaLabel(resolvedSlaStatus(request)) }}
-          </ElTag>
-        </div>
-      </section>
-
-      <section class="service-request-drawer__summary" aria-label="工单交付摘要">
-        <dl>
+    <ArtAsyncState
+      :loading="loading"
+      :error="loadError"
+      :empty="missing"
+      empty-text="详情记录不可用"
+      empty-description="记录可能已删除或不在当前可见范围，请返回列表核对。"
+      :min-height="280"
+      @retry="retryLoad"
+    >
+      <div v-if="request" class="service-request-drawer">
+        <section class="service-request-drawer__hero" aria-labelledby="service-request-title">
           <div>
-            <dt>申请员工</dt>
-            <dd>{{ request.requester?.name || '--' }}</dd>
-            <small>{{ request.requester?.code || '未关联工号' }}</small>
+            <span>{{ request.requestNo }}</span>
+            <h3 id="service-request-title">{{ request.title }}</h3>
+            <p>{{ request.service?.name || '历史员工申请' }}</p>
           </div>
-          <div>
-            <dt>处理人</dt>
-            <dd>{{ request.assignee?.name || '待分派' }}</dd>
-            <small>{{ request.service?.routingGroup || 'HR 服务台' }}</small>
+          <div class="service-request-drawer__hero-status">
+            <ElTag :type="statusType(request.status)" effect="light" round>
+              {{ dictLabel('hrServiceRequestStatus', request.status) }}
+            </ElTag>
+            <ElTag :type="slaType(resolvedSlaStatus(request))" effect="plain" round>
+              {{ slaLabel(resolvedSlaStatus(request)) }}
+            </ElTag>
           </div>
-          <div>
-            <dt>解决时限</dt>
-            <dd>{{ formatDateTime(request.resolutionDueAt) }}</dd>
-            <small>{{
-              request.waitingStartedAt ? 'SLA 暂停中' : slaLabel(resolvedSlaStatus(request))
-            }}</small>
-          </div>
-          <div>
-            <dt>优先级</dt>
-            <dd>{{ dictLabel('hrServicePriority', request.priority) }}</dd>
-            <small>{{ dictLabel('hrServiceChannel', request.channel) }}</small>
-          </div>
-        </dl>
-      </section>
+        </section>
 
-      <section class="service-request-drawer__section">
-        <header>
-          <ArtSvgIcon icon="ri:file-text-line" />
-          <div><strong>问题与处理结果</strong><small>员工诉求和 HR 最终交付结论</small></div>
-        </header>
-        <div class="service-request-drawer__narrative">
-          <div
-            ><span>问题说明</span><p>{{ request.reason }}</p></div
-          >
-          <div v-if="request.waitingReason" class="is-warning">
-            <span>待补充内容</span><p>{{ request.waitingReason }}</p>
-          </div>
-          <div v-if="request.resolution" class="is-success">
-            <span>解决结果</span><p>{{ request.resolution }}</p>
-          </div>
-        </div>
-      </section>
+        <section class="service-request-drawer__summary" aria-label="工单交付摘要">
+          <dl>
+            <div>
+              <dt>申请员工</dt>
+              <dd>{{ request.requester?.name || '--' }}</dd>
+              <small>{{ request.requester?.code || '未关联工号' }}</small>
+            </div>
+            <div>
+              <dt>处理人</dt>
+              <dd>{{ request.assignee?.name || '待分派' }}</dd>
+              <small>{{ request.service?.routingGroup || 'HR 服务台' }}</small>
+            </div>
+            <div>
+              <dt>解决时限</dt>
+              <dd>{{ formatDateTime(request.resolutionDueAt) }}</dd>
+              <small>{{
+                request.waitingStartedAt ? 'SLA 暂停中' : slaLabel(resolvedSlaStatus(request))
+              }}</small>
+            </div>
+            <div>
+              <dt>优先级</dt>
+              <dd>{{ dictLabel('hrServicePriority', request.priority) }}</dd>
+              <small>{{ dictLabel('hrServiceChannel', request.channel) }}</small>
+            </div>
+          </dl>
+        </section>
 
-      <section v-if="request.attachmentUrls.length" class="service-request-drawer__section">
-        <header>
-          <ArtSvgIcon icon="ri:attachment-2" />
-          <div><strong>工单附件</strong><small>仅访问已授权的业务文件</small></div>
-        </header>
-        <ul class="service-request-drawer__attachments">
-          <li v-for="(url, index) in request.attachmentUrls" :key="url">
-            <a :href="url" target="_blank" rel="noopener noreferrer">
-              <ArtSvgIcon icon="ri:file-transfer-line" />
-              附件 {{ index + 1 }}
-              <ArtSvgIcon icon="ri:external-link-line" />
-            </a>
-          </li>
-        </ul>
-      </section>
+        <section class="service-request-drawer__section">
+          <header>
+            <ArtSvgIcon icon="ri:file-text-line" />
+            <div><strong>问题与处理结果</strong><small>员工诉求和 HR 最终交付结论</small></div>
+          </header>
+          <div class="service-request-drawer__narrative">
+            <div
+              ><span>问题说明</span><p>{{ request.reason }}</p></div
+            >
+            <div v-if="request.waitingReason" class="is-warning">
+              <span>待补充内容</span><p>{{ request.waitingReason }}</p>
+            </div>
+            <div v-if="request.resolution" class="is-success">
+              <span>解决结果</span><p>{{ request.resolution }}</p>
+            </div>
+          </div>
+        </section>
 
-      <section class="service-request-drawer__section">
-        <header>
-          <ArtSvgIcon icon="ri:history-line" />
-          <div><strong>服务交付记录</strong><small>状态、分派和沟通均不可变留痕</small></div>
-        </header>
-        <ElTimeline v-if="request.events?.length" class="service-request-drawer__timeline">
-          <ElTimelineItem
-            v-for="event in request.events"
-            :key="event.id"
-            :type="eventTone(event.eventType)"
-            :timestamp="formatDateTime(event.createTime)"
-            placement="top"
-          >
-            <article>
-              <strong>{{ eventLabel(event.eventType) }}</strong>
-              <span>{{ event.actor?.name || event.createBy || '系统' }}</span>
-              <p v-if="event.comment">{{ event.comment }}</p>
-            </article>
-          </ElTimelineItem>
-        </ElTimeline>
-        <ArtEmptyState
-          v-else
-          title="暂无服务交付记录"
-          description="服务处理后，可在此查看交付过程。"
-          size="compact"
-          :visual-size="64"
-        />
-      </section>
-    </div>
+        <section v-if="request.attachmentUrls.length" class="service-request-drawer__section">
+          <header>
+            <ArtSvgIcon icon="ri:attachment-2" />
+            <div><strong>工单附件</strong><small>仅访问已授权的业务文件</small></div>
+          </header>
+          <ul class="service-request-drawer__attachments">
+            <li v-for="(url, index) in request.attachmentUrls" :key="url">
+              <a :href="url" target="_blank" rel="noopener noreferrer">
+                <ArtSvgIcon icon="ri:file-transfer-line" />
+                附件 {{ index + 1 }}
+                <ArtSvgIcon icon="ri:external-link-line" />
+              </a>
+            </li>
+          </ul>
+        </section>
+
+        <section class="service-request-drawer__section">
+          <header>
+            <ArtSvgIcon icon="ri:history-line" />
+            <div><strong>服务交付记录</strong><small>状态、分派和沟通均不可变留痕</small></div>
+          </header>
+          <ElTimeline v-if="request.events?.length" class="service-request-drawer__timeline">
+            <ElTimelineItem
+              v-for="event in request.events"
+              :key="event.id"
+              :type="eventTone(event.eventType)"
+              :timestamp="formatDateTime(event.createTime)"
+              placement="top"
+            >
+              <article>
+                <strong>{{ eventLabel(event.eventType) }}</strong>
+                <span>{{ event.actor?.name || event.createBy || '系统' }}</span>
+                <p v-if="event.comment">{{ event.comment }}</p>
+              </article>
+            </ElTimelineItem>
+          </ElTimeline>
+          <ArtEmptyState
+            v-else
+            title="暂无服务交付记录"
+            description="服务处理后，可在此查看交付过程。"
+            size="compact"
+            :visual-size="64"
+          />
+        </section>
+      </div>
+    </ArtAsyncState>
   </ArtDrawer>
 </template>
 
 <script setup lang="ts">
+  import ArtAsyncState from '@/components/core/feedback/art-async-state/index.vue'
+  import { useDetailRecord } from '@/hooks/core/useDetailRecord'
   import type { TagProps, TimelineItemProps } from 'element-plus'
   import ArtDrawer from '@/components/core/drawers/art-drawer/index.vue'
   import type { ArtDrawerExpose } from '@/components/core/drawers/art-drawer/types'
@@ -121,7 +133,16 @@
   import { fetchServiceRequestDetail } from '@hr/api'
 
   const drawerRef = ref<ArtDrawerExpose>()
-  const request = shallowRef<Api.Hr.ServiceRequest>()
+  const {
+    detail: request,
+    loading,
+    missing,
+    loadError,
+    loadDetail,
+    openDetail,
+    retryLoad
+  } = useDetailRecord(fetchServiceRequestDetail, '服务工单暂时无法加载，请重新加载')
+  onBeforeUnmount(() => openDetail(''))
   const userStore = useUserStore()
   const { getDictMap } = storeToRefs(userStore)
 
@@ -182,22 +203,15 @@
           : 'primary'
 
   const handleOpen = async (id: string): Promise<void> => {
-    request.value = undefined
+    openDetail(id)
     await drawerRef.value?.handleOpen(undefined, {
       title: '员工服务工单',
       subtitle: '查看 SLA、解决结果与完整交付轨迹',
       size: 'lg',
       showFooter: false,
       contentHeight: 'calc(100vh - 116px)',
-      onOpen: async (_data, api) => {
-        api.setLoading(true)
-        try {
-          const response = await fetchServiceRequestDetail(id)
-          request.value = response.data ?? undefined
-        } finally {
-          api.setLoading(false)
-        }
-      }
+      onOpen: () => loadDetail(id),
+      onClose: () => openDetail('')
     })
   }
 

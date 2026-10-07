@@ -61,6 +61,7 @@
 </template>
 
 <script setup lang="ts">
+  import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import type { FormRules } from 'element-plus'
@@ -323,23 +324,6 @@
         }
   )
 
-  const toSelection = (
-    reference?: Api.Hr.ComplianceReference | null,
-    tenantId?: string
-  ): EmployeeIntegrationItem[] =>
-    reference
-      ? [
-          {
-            id: reference.id,
-            tenantId: tenantId || '',
-            employeeNo: reference.employeeNo || '',
-            employeeName: reference.employeeName || '未命名员工',
-            jobTitle: reference.jobTitle,
-            employmentStatus: 'active'
-          }
-        ]
-      : []
-
   const resetModel = (): void => {
     Object.assign(formModel, createInitialModel())
     employeeSelection.value = []
@@ -434,13 +418,13 @@
         ...record,
         monthlySalary: typeof record.monthlySalary === 'number' ? record.monthlySalary : undefined
       })
-      employeeSelection.value = toSelection(record.employee, record.tenantId)
-      ownerSelection.value = toSelection(record.renewalOwner, record.tenantId)
+      employeeSelection.value = employeeReferenceSelection(record.employee, record.tenantId)
+      ownerSelection.value = employeeReferenceSelection(record.renewalOwner, record.tenantId)
     } else {
       const record = editData as Api.Hr.ComplianceQualification
       Object.assign(formModel, record)
-      employeeSelection.value = toSelection(record.employee, record.tenantId)
-      ownerSelection.value = toSelection(record.responsibleEmployee, record.tenantId)
+      employeeSelection.value = employeeReferenceSelection(record.employee, record.tenantId)
+      ownerSelection.value = employeeReferenceSelection(record.responsibleEmployee, record.tenantId)
     }
   }
 

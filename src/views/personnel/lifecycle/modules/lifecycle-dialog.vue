@@ -24,6 +24,8 @@
             v-model="form.model.employeeId"
             v-model:selected-data="selections.employee"
             :tenant-id="form.model.tenantId"
+            :api-fn="fetchLifecycleEmployeeSelector"
+            :display-fields="[]"
             placeholder="请选择生命周期事项员工"
           />
         </template>
@@ -32,6 +34,8 @@
             v-model="form.model.ownerEmployeeId"
             v-model:selected-data="selections.owner"
             :tenant-id="form.model.tenantId"
+            :api-fn="fetchLifecycleEmployeeSelector"
+            :display-fields="[]"
             placeholder="请选择事项或任务负责人"
           />
         </template>
@@ -40,6 +44,8 @@
             v-model="form.model.buddyEmployeeId"
             v-model:selected-data="selections.buddy"
             :tenant-id="form.model.tenantId"
+            :api-fn="fetchLifecycleEmployeeSelector"
+            :display-fields="[]"
             placeholder="请选择入职伙伴（可选）"
           />
         </template>
@@ -49,6 +55,7 @@
 </template>
 
 <script setup lang="ts">
+  import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import dayjs from 'dayjs'
@@ -64,6 +71,7 @@
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
   import { fetchLifecycleOptions, saveLifecycleRecord } from '@hr/api'
+  import { fetchLifecycleEmployeeSelector } from '@hr/api/modules/lifecycle'
   import type { DialogType } from '@/types'
 
   type Entity = Api.Hr.LifecycleEntity
@@ -475,41 +483,37 @@
     }
   )
 
-  const toSelection = (reference?: Api.Hr.LifecycleReference | null): EmployeeIntegrationItem[] =>
-    reference
-      ? ([
-          {
-            id: reference.id,
-            employeeNo: reference.code ?? '',
-            employeeName: reference.name ?? '未命名员工'
-          } as EmployeeIntegrationItem
-        ] as EmployeeIntegrationItem[])
-      : []
   const resetSelections = (): void => {
     Object.assign(selections, { employee: [], owner: [], buddy: [] })
   }
 
+  let referenceRequest = 0
   const loadReferences = async (): Promise<void> => {
-    if (isPlatformSuper.value && !formModel.tenantId) {
-      caseOptions.value = []
-      templateOptions.value = []
-      organizationOptions.value = []
-      positionOptions.value = []
-      handoffOptions.value = []
-      return
-    }
+    const request = ++referenceRequest
+    const tenantId = formModel.tenantId
+    const kind = entity.value
+    caseOptions.value = []
+    templateOptions.value = []
+    organizationOptions.value = []
+    positionOptions.value = []
+    handoffOptions.value = []
+    if (isPlatformSuper.value && !tenantId) return
     const [cases, templates, organizations, positions, handoffs] = await Promise.all([
-      fetchLifecycleOptions('case', formModel.tenantId),
-      fetchLifecycleOptions('template', formModel.tenantId),
-      fetchLifecycleOptions('organization', formModel.tenantId),
-      fetchLifecycleOptions('position', formModel.tenantId),
-      fetchLifecycleOptions('handoff', formModel.tenantId)
+      kind === 'task' ? fetchLifecycleOptions('case', tenantId) : undefined,
+      kind === 'case' || kind === 'template_task'
+        ? fetchLifecycleOptions('template', tenantId)
+        : undefined,
+      kind === 'case' ? fetchLifecycleOptions('organization', tenantId) : undefined,
+      kind === 'case' ? fetchLifecycleOptions('position', tenantId) : undefined,
+      kind === 'case' ? fetchLifecycleOptions('handoff', tenantId) : undefined
     ])
-    caseOptions.value = cases.data ?? []
-    templateOptions.value = templates.data ?? []
-    organizationOptions.value = organizations.data ?? []
-    positionOptions.value = positions.data ?? []
-    handoffOptions.value = handoffs.data ?? []
+    if (request !== referenceRequest || tenantId !== formModel.tenantId || kind !== entity.value)
+      return
+    caseOptions.value = cases?.data ?? []
+    templateOptions.value = templates?.data ?? []
+    organizationOptions.value = organizations?.data ?? []
+    positionOptions.value = positions?.data ?? []
+    handoffOptions.value = handoffs?.data ?? []
     if (entity.value === 'case' && !formModel.templateId) handleCaseTypeChange()
   }
 
@@ -545,11 +549,14 @@
       positionId: handoff.positionId
     })
     if (handoff.employeeId)
-      selections.employee = toSelection({
-        id: handoff.employeeId,
-        code: handoff.code,
-        name: handoff.name
-      })
+      selections.employee = employeeReferenceSelection(
+        {
+          id: handoff.employeeId,
+          code: handoff.code,
+          name: handoff.name
+        },
+        formModel.tenantId
+      )
   }
 
   const toRecord = (): RecordItem => {
@@ -638,9 +645,12 @@
       record && entity.value === 'case' ? (record as Api.Hr.LifecycleCase) : undefined
     const taskRecord =
       record && entity.value === 'task' ? (record as Api.Hr.LifecycleTask) : undefined
-    selections.employee = toSelection(caseRecord?.employee)
-    selections.owner = toSelection(caseRecord?.owner ?? taskRecord?.owner)
-    selections.buddy = toSelection(caseRecord?.buddy)
+    selections.employee = employeeReferenceSelection(caseRecord?.employee, formModel.tenantId)
+    selections.owner = employeeReferenceSelection(
+      caseRecord?.owner ?? taskRecord?.owner,
+      formModel.tenantId
+    )
+    selections.buddy = employeeReferenceSelection(caseRecord?.buddy, formModel.tenantId)
   }
 
   const handleOpen = async (payload: OpenPayload): Promise<void> => {

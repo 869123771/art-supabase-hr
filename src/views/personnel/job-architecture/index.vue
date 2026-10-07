@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:JobProfile:View">
     <div class="job-architecture-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="locationReady" />
       <BusinessWorkspaceHeader
         eyebrow="JOB ARCHITECTURE"
         title="职务体系"
@@ -54,11 +55,13 @@
       />
 
       <JobArchitectureDialog ref="dialogRef" @success="handleSaveSuccess" />
+      <MasterDataDeleteGuard ref="deleteGuardRef" />
     </div>
   </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import { ElTag } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
@@ -74,10 +77,12 @@
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
   import HrEntityNavigation, {
     type HrEntityNavigationItem
   } from '../../shared/hr-entity-navigation.vue'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { useHrMasterDeleteLocation } from '../../shared/use-hr-master-delete-location'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
   import { useTenantScopeStore } from '@/store/modules/tenant-scope'
   import { useUserStore } from '@/store/modules/user'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
@@ -139,17 +144,34 @@
     tabs.map((tab) => ({ ...tab, value: tab.entity }))
   )
 
-  const { confirmAction } = useArtFeedback()
   const userStore = useUserStore()
   const { getDictMap, isPlatformSuper } = storeToRefs(userStore)
   const { effectiveTenantId } = storeToRefs(useTenantScopeStore())
   const activeEntity = ref<Entity>('profile')
   const activeTab = computed(() => tabs.find((tab) => tab.entity === activeEntity.value) ?? tabs[0])
+  const deleteTables: Record<Entity, string> = {
+    profile: 'mdm_job_profile',
+    family: 'mdm_job_family',
+    grade: 'mdm_grade'
+  }
+  const { deleteGuardRef, deleteRecord } = useRecordDeleteGuard(
+    () => deleteTables[activeEntity.value],
+    () => activeTab.value.label
+  )
   const tableQueryRef = ref<ArtTableQueryExpose>()
   const dialogRef = ref<JobArchitectureDialogExpose>()
   const tableState = reactive<{ searchQuery: Api.Hr.JobArchitectureSearchParams }>({
     searchQuery: { enabled: undefined, keyword: '' }
   })
+  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+    { mdm_job_profile: 'profile' },
+    activeEntity,
+    tableState.searchQuery,
+    () => void tableQueryRef.value?.refreshData(),
+    () => {
+      tableState.searchQuery.enabled = undefined
+    }
+  )
   const selectedTenantId = computed(() => effectiveTenantId.value ?? '')
   const overview = reactive({ total: 0, enabled: 0, references: 0 })
   const booleanOptions = computed(() =>
@@ -320,6 +342,7 @@
     })
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
+    markRows(rows)
     overview.total = response.total ?? rows.length
     overview.enabled = rows.filter((row) => Boolean(row.enabled)).length
     overview.references = rows.reduce(
@@ -335,18 +358,27 @@
       : tableQueryRef.value?.refreshUpdate())
   const handleDelete = async (row: RecordItem): Promise<void> => {
     if (!row.id) return
-    try {
-      await confirmAction(`确定删除这条${activeTab.value.label}记录吗？`, '删除确认', {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-        confirmButtonType: 'danger'
-      })
-      await deleteJobArchitectureRecord(activeEntity.value, row.id)
-      await tableQueryRef.value?.refreshRemove()
-    } catch {
-      /* 用户取消或服务端依赖校验失败时不追加重复提示。 */
-    }
+    const entity = activeEntity.value
+    const name =
+      entity === 'family'
+        ? (row as Api.Hr.JobFamily).familyName
+        : entity === 'grade'
+          ? (row as Api.Hr.Grade).gradeName
+          : (row as Api.Hr.JobProfile).jobName
+    const code =
+      entity === 'family'
+        ? (row as Api.Hr.JobFamily).familyCode
+        : entity === 'grade'
+          ? (row as Api.Hr.Grade).gradeCode
+          : (row as Api.Hr.JobProfile).jobCode
+    const label = `${name}（${code}）`
+    await deleteRecord({
+      resource: { id: row.id, label },
+      resourceLabel: activeTab.value.label,
+      permission: activeTab.value.deletePermission,
+      remove: () => deleteJobArchitectureRecord(entity, row.id!),
+      onDeleted: () => tableQueryRef.value?.refreshRemove() ?? Promise.resolve()
+    })
   }
   const handleTabChange = (): void => {
     Object.assign(tableState.searchQuery, { keyword: '', enabled: undefined })
@@ -361,7 +393,11 @@
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .job-architecture-page {
+    @include hr-table-workspace-layout(360px);
+
     &__domain-navigation {
       display: grid;
       gap: 12px;
@@ -417,7 +453,6 @@
 
     :deep(.art-table-query) {
       flex: 1;
-      min-height: 0;
     }
 
     @media (width <= 760px) {

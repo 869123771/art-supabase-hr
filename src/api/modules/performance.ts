@@ -4,6 +4,7 @@ import { omit } from 'lodash-es'
 import { useSupabase } from '@/hooks'
 import { withRequestOptions } from '@/api/providers/supabase/query'
 import type { ApiRequestOptions } from '@/types/api/request'
+import { createEmployeeReferenceSelector } from '@/api/integration/employees'
 
 const { supabase, keysToSnakeDeep, responseHandle } = useSupabase()
 
@@ -60,6 +61,10 @@ export async function fetchPerformanceOptions(
     { showErrorMessage: true }
   )
 }
+
+export const fetchPerformanceEmployeeSelector = createEmployeeReferenceSelector((tenantId) =>
+  fetchPerformanceOptions('employee', tenantId)
+)
 
 const normalizePayload = (record: Api.Hr.PerformanceRecord) =>
   keysToSnakeDeep(
@@ -177,6 +182,17 @@ export async function transitionPerformanceCalibration(
       }),
     { showMessage: true, breakReturn: true, message: messages[action] }
   )
+}
+
+export function getPerformanceDeleteTable(entity: Api.Hr.PerformanceEntity): string | null {
+  const tables: Partial<Record<Api.Hr.PerformanceEntity, string>> = {
+    cycle: 'hr_performance_cycle',
+    review: 'hr_performance_review',
+    goal: 'hr_performance_goal',
+    check_in: 'hr_performance_check_in',
+    calibration: 'hr_performance_calibration_session'
+  }
+  return tables[entity] ?? null
 }
 
 export async function deletePerformanceRecord(entity: Api.Hr.PerformanceEntity, id: string) {

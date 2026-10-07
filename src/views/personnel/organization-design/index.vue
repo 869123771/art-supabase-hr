@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:OrganizationDesign:View">
     <div class="org-design-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="locationReady" />
       <BusinessWorkspaceHeader
         eyebrow="ORGANIZATION DESIGN & CHANGE GOVERNANCE"
         title="组织变革方案"
@@ -131,11 +132,16 @@
         focusable
       />
       <OrganizationDesignDialog ref="dialogRef" @success="handleDialogSuccess" />
+      <MasterDataDeleteGuard ref="deleteGuardRef" />
     </div>
   </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
+  import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
   import dayjs from 'dayjs'
   import { ElButton, ElTag, type TagProps } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
@@ -153,7 +159,7 @@
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import type { ColumnOption, DialogType } from '@/types'
   import {
@@ -206,6 +212,13 @@
   const { confirmAction, promptText } = useArtFeedback()
   const activeEntity = ref<Entity>('scenario')
   const activeTab = computed(() => tabs.find((tab) => tab.value === activeEntity.value) ?? tabs[0]!)
+  const { deleteGuardRef, deleteRecord } = useRecordDeleteGuard(
+    () =>
+      activeEntity.value === 'scenario'
+        ? 'hr_organization_design_scenario'
+        : 'hr_organization_design_change',
+    () => activeTab.value.label
+  )
   const navigationItems: HrEntityNavigationItem[] = tabs
   const tableQueryRef = ref<ArtTableQueryExpose>()
   const dialogRef = ref<DialogExpose>()
@@ -214,6 +227,18 @@
   const tableState = reactive<{ searchQuery: Api.Hr.OrganizationDesignSearchParams }>({
     searchQuery: { keyword: '', status: '', tenantId: '' }
   })
+  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+    {
+      hr_organization_design_scenario: 'scenario',
+      hr_organization_design_change: 'change'
+    },
+    activeEntity,
+    tableState.searchQuery,
+    () => void tableQueryRef.value?.refreshData(),
+    () => {
+      focusedScenario.value = null
+    }
+  )
   const overview = reactive<Api.Hr.OrganizationDesignOverview>({
     draftCount: 0,
     reviewCount: 0,
@@ -604,7 +629,8 @@
       scenarioId: activeEntity.value === 'change' ? focusedScenario.value?.id : undefined
     })
   }
-  const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (_rows, response) => {
+  const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
+    markRows(rows)
     tableTotal.value = response.total ?? 0
   }
   const refreshOverview = async () => {
@@ -652,12 +678,12 @@
     if (item.key === 'edit') return openDialog('scenario', row)
     if (item.key === 'changes') return focusChanges(row)
     if (item.key === 'add_change') return openDialog('change', undefined, row)
-    if (item.key === 'delete') return handleDelete('scenario', row.id)
+    if (item.key === 'delete') return handleDelete('scenario', row)
     await handleTransition(row, String(item.key))
   }
   const handleChangeMore = async (item: ButtonMoreItem, row: Api.Hr.OrganizationDesignChange) => {
     if (item.key === 'edit') return openDialog('change', row)
-    if (item.key === 'delete') await handleDelete('change', row.id)
+    if (item.key === 'delete') await handleDelete('change', row)
   }
   const handleTransition = async (row: Api.Hr.OrganizationDesignScenario, action: string) => {
     if (!row.id) return
@@ -692,34 +718,35 @@
         )
       await transitionOrganizationDesign(row.id, action, comment)
       await refreshWorkspace()
-    } catch {
-      /* 用户取消或服务端影响、状态及权限校验失败时保留当前视图。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '组织变革方案处理失败，请刷新方案状态后重试')
     }
   }
-  const handleDelete = async (kind: Entity, id?: string) => {
-    if (!id) return
-    try {
-      await confirmAction(
-        '仅草稿或被退回且尚未移交的记录可以删除。确认继续？',
-        '删除组织变革草稿',
-        {
-          confirmButtonText: '删除',
-          cancelButtonText: '取消',
-          type: 'warning',
-          confirmButtonType: 'danger'
-        }
-      )
-      await deleteOrganizationDesignRecord(kind, id)
-      await refreshWorkspace()
-    } catch {
-      /* 用户取消或服务端依赖校验失败时不重复提示。 */
-    }
+  const handleDelete = async (kind: Entity, row: RecordItem) => {
+    if (!row.id) return
+    const label =
+      kind === 'scenario'
+        ? `${(row as Api.Hr.OrganizationDesignScenario).scenarioName}（${(row as Api.Hr.OrganizationDesignScenario).scenarioCode}）`
+        : `${(row as Api.Hr.OrganizationDesignChange).proposedName ?? (row as Api.Hr.OrganizationDesignChange).currentName ?? '组织变更'} · ${(row as Api.Hr.OrganizationDesignChange).scenarioName ?? '变革方案'}`
+    await deleteRecord({
+      resource: { id: row.id, label },
+      resourceLabel: activeTab.value.label,
+      permission: 'Hr:OrganizationDesign:Scenario:Manage',
+      confirmMessage: `确认删除“${label}”？仅草稿或被退回且尚未移交的记录可删除。`,
+      remove: () => deleteOrganizationDesignRecord(kind, row.id!),
+      onDeleted: refreshWorkspace
+    })
   }
   onMounted(() => void refreshOverview())
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .org-design-page {
+    @include hr-table-workspace-layout(420px);
+
     --org-border: color-mix(in srgb, var(--art-card-border) 84%, transparent);
 
     display: flex;
@@ -729,6 +756,7 @@
 
     &__command,
     &__workspace {
+      flex: 0 0 auto;
       min-width: 0;
       padding: 18px;
       background: var(--art-bg-color);
@@ -797,10 +825,16 @@
       white-space: nowrap;
     }
 
+    &__lifecycle-scroll {
+      min-width: 0;
+      height: auto;
+    }
+
     &__lifecycle {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(200px, 1fr));
       gap: 1px;
+      min-width: 1006px;
       padding: 0;
       margin: 18px 0 0;
       list-style: none;

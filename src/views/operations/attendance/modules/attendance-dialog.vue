@@ -24,6 +24,8 @@
             v-model="form.model.employeeId"
             v-model:selected-data="employeeSelection"
             :tenant-id="form.model.tenantId"
+            :api-fn="fetchAttendanceEmployeeSelector"
+            :display-fields="[]"
             placeholder="请选择排班或考勤员工"
           />
         </template>
@@ -33,6 +35,7 @@
 </template>
 
 <script setup lang="ts">
+  import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import dayjs from 'dayjs'
@@ -48,6 +51,7 @@
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
   import { fetchTimeAttendanceOptions, saveTimeAttendanceRecord } from '@hr/api'
+  import { fetchAttendanceEmployeeSelector } from '@hr/api/modules/attendance'
   import type { DialogType } from '@/types'
 
   type Entity = Api.Hr.TimeAttendanceEntity
@@ -464,18 +468,24 @@
     return notes[entity.value]
   })
 
+  let referenceRequest = 0
   const loadReferences = async (): Promise<void> => {
-    if (isPlatformSuper.value && !formModel.tenantId) {
-      shiftOptions.value = []
-      recordOptions.value = []
-      return
-    }
+    const request = ++referenceRequest
+    const tenantId = formModel.tenantId
+    const kind = entity.value
+    shiftOptions.value = []
+    recordOptions.value = []
+    if (isPlatformSuper.value && !tenantId) return
     const [shifts, records] = await Promise.all([
-      fetchTimeAttendanceOptions('shift', formModel.tenantId),
-      fetchTimeAttendanceOptions('record', formModel.tenantId)
+      kind === 'assignment' || kind === 'record'
+        ? fetchTimeAttendanceOptions('shift', tenantId)
+        : undefined,
+      kind === 'correction' ? fetchTimeAttendanceOptions('record', tenantId) : undefined
     ])
-    shiftOptions.value = shifts.data ?? []
-    recordOptions.value = records.data ?? []
+    if (request !== referenceRequest || tenantId !== formModel.tenantId || kind !== entity.value)
+      return
+    shiftOptions.value = shifts?.data ?? []
+    recordOptions.value = records?.data ?? []
   }
 
   const handleTenantChange = async (): Promise<void> => {
@@ -487,19 +497,6 @@
     employeeSelection.value = []
     await loadReferences()
   }
-
-  const toEmployeeSelection = (
-    reference?: Api.Hr.TimeAttendanceReference | null
-  ): EmployeeIntegrationItem[] =>
-    reference
-      ? ([
-          {
-            id: reference.id,
-            employeeNo: reference.code ?? '',
-            employeeName: reference.name ?? '未命名员工'
-          } as EmployeeIntegrationItem
-        ] as EmployeeIntegrationItem[])
-      : []
 
   const toRecord = (): RecordItem => {
     if (entity.value === 'shift')
@@ -601,7 +598,10 @@
       record && (entity.value === 'assignment' || entity.value === 'record')
         ? (record as Api.Hr.TimeAttendanceAssignment | Api.Hr.TimeAttendanceDailyRecord)
         : undefined
-    employeeSelection.value = toEmployeeSelection(employeeRecord?.employee)
+    employeeSelection.value = employeeReferenceSelection(
+      employeeRecord?.employee,
+      formModel.tenantId
+    )
   }
 
   const handleOpen = async (payload: OpenPayload): Promise<void> => {

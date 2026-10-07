@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:ContingentWorkforce:View">
     <div class="contingent-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="locationReady" />
       <BusinessWorkspaceHeader
         eyebrow="CONTINGENT WORKFORCE & ACCESS GOVERNANCE"
         title="外部用工"
@@ -134,6 +135,7 @@
       />
 
       <ContingentWorkforceDialog ref="dialogRef" @success="handleDialogSuccess" />
+      <MasterDataDeleteGuard ref="deleteGuardRef" />
     </div>
   </ArtPermissionGuard>
 </template>
@@ -158,8 +160,12 @@
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
+  import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
   import { useAuth } from '@/hooks/core/useAuth'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import type { ColumnOption, DialogType } from '@/types'
   import {
@@ -234,6 +240,16 @@
   const { confirmAction, promptText } = useArtFeedback()
   const activeEntity = ref<Entity>('engagement')
   const activeTab = computed(() => tabs.find((tab) => tab.value === activeEntity.value) ?? tabs[0]!)
+  const deleteTables: Record<Entity, string> = {
+    engagement: 'hr_external_engagement',
+    worker: 'hr_external_worker',
+    vendor: 'mdm_external_vendor',
+    control: 'hr_external_engagement_control'
+  }
+  const { deleteGuardRef, deleteRecord } = useRecordDeleteGuard(
+    () => deleteTables[activeEntity.value],
+    () => activeTab.value.label
+  )
   const navigationItems: HrEntityNavigationItem[] = tabs
   const tableQueryRef = ref<ArtTableQueryExpose>()
   const dialogRef = ref<DialogExpose>()
@@ -242,6 +258,20 @@
   const tableState = reactive<{ searchQuery: Api.Hr.ContingentWorkforceSearchParams }>({
     searchQuery: { keyword: '', status: '', tenantId: '' }
   })
+  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+    {
+      hr_external_engagement: 'engagement',
+      hr_external_worker: 'worker',
+      mdm_external_vendor: 'vendor',
+      hr_external_engagement_control: 'control'
+    },
+    activeEntity,
+    tableState.searchQuery,
+    () => void tableQueryRef.value?.refreshData(),
+    () => {
+      focusedEngagement.value = null
+    }
+  )
   const overview = reactive<Api.Hr.ContingentWorkforceOverview>({
     piiAccess: false,
     costAccess: false,
@@ -970,14 +1000,16 @@
     </ElTag>
   )
 
-  const fetchTableData = (params: TableParams) => {
+  const fetchTableData = async (params: TableParams) => {
     const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
-    return fetchContingentWorkforceRecords(activeEntity.value, {
+    const response = await fetchContingentWorkforceRecords(activeEntity.value, {
       ...params,
       from,
       to,
       engagementId: activeEntity.value === 'control' ? focusedEngagement.value?.id : undefined
     })
+    markRows(response.data)
+    return response
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (_rows, response) => {
     tableTotal.value = response.total ?? 0
@@ -1023,7 +1055,7 @@
     row: Api.Hr.ExternalEngagement
   ): Promise<void> => {
     if (item.key === 'edit') return openDialog('engagement', row)
-    if (item.key === 'delete') return handleDelete('engagement', row.id)
+    if (item.key === 'delete') return handleDelete('engagement', row)
     await handleTransition('engagement', row.id, String(item.key))
   }
   const handleWorkerMore = async (
@@ -1031,7 +1063,7 @@
     row: Api.Hr.ExternalWorker
   ): Promise<void> => {
     if (item.key === 'edit') return openDialog('worker', row)
-    if (item.key === 'delete') return handleDelete('worker', row.id)
+    if (item.key === 'delete') return handleDelete('worker', row)
     await handleTransition('worker', row.id, String(item.key))
   }
   const handleVendorMore = async (
@@ -1039,7 +1071,7 @@
     row: Api.Hr.ExternalVendor
   ): Promise<void> => {
     if (item.key === 'edit') return openDialog('vendor', row)
-    if (item.key === 'delete') return handleDelete('vendor', row.id)
+    if (item.key === 'delete') return handleDelete('vendor', row)
     await handleTransition('vendor', row.id, String(item.key))
   }
 
@@ -1103,36 +1135,39 @@
       }
       await transitionContingentWorkforceRecord(kind, id, action, comment)
       await refreshWorkspace()
-    } catch {
-      /* 用户取消或服务端状态、合同、准入及并发校验失败时保留当前视图。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '外部用工记录处理失败，请刷新准入与合同状态后重试')
     }
   }
 
-  const handleDelete = async (entity: Entity, id?: string): Promise<void> => {
-    if (!id) return
-    try {
-      await confirmAction(
-        '只有未进入流程且没有下游依赖的草稿记录可以删除。确认继续？',
-        '删除外部用工记录',
-        {
-          confirmButtonText: '删除',
-          cancelButtonText: '取消',
-          type: 'warning',
-          confirmButtonType: 'danger'
-        }
-      )
-      await deleteContingentWorkforceRecord(entity, id)
-      await refreshWorkspace()
-    } catch {
-      /* 用户取消或服务端依赖校验失败时不重复提示。 */
-    }
+  const handleDelete = async (entity: Entity, row: RecordItem): Promise<void> => {
+    if (!row.id) return
+    const label =
+      entity === 'engagement'
+        ? `${(row as Api.Hr.ExternalEngagement).serviceTitle}（${(row as Api.Hr.ExternalEngagement).engagementNo}）`
+        : entity === 'worker'
+          ? `${(row as Api.Hr.ExternalWorker).workerName}（${(row as Api.Hr.ExternalWorker).workerNo}）`
+          : `${(row as Api.Hr.ExternalVendor).vendorName}（${(row as Api.Hr.ExternalVendor).vendorCode}）`
+    await deleteRecord({
+      resource: { id: row.id, label },
+      resourceLabel: activeTab.value.label,
+      permission: permissionByEntity[entity],
+      confirmMessage: `确认删除“${label}”？仅未进入流程且没有下游依赖的草稿可删除。`,
+      remove: () => deleteContingentWorkforceRecord(entity, row.id!),
+      onDeleted: refreshWorkspace
+    })
   }
 
   onMounted(() => void refreshOverview())
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .contingent-page {
+    @include hr-table-workspace-layout(420px);
+
     --contingent-border: color-mix(in srgb, var(--art-card-border) 84%, transparent);
 
     display: flex;
@@ -1142,6 +1177,7 @@
 
     &__command,
     &__workspace {
+      flex: 0 0 auto;
       min-width: 0;
       padding: 18px;
       background: var(--art-bg-color);
@@ -1199,6 +1235,11 @@
       color: var(--art-text-gray-900);
     }
 
+    &__lifecycle-scroll {
+      min-width: 0;
+      height: auto;
+    }
+
     &__command em,
     &__workspace header span {
       margin-top: 2px;
@@ -1212,8 +1253,9 @@
 
     &__lifecycle {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(200px, 1fr));
       gap: 1px;
+      min-width: 1006px;
       padding: 0;
       margin: 18px 0 0;
       list-style: none;

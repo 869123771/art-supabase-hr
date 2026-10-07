@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:Experience:View">
     <div class="employee-experience-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="false" />
       <BusinessWorkspaceHeader
         eyebrow="EMPLOYEE LISTENING & ACTION"
         title="员工体验与敬业度"
@@ -126,6 +127,7 @@
 </template>
 
 <script setup lang="tsx">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import dayjs from 'dayjs'
   import { ElProgress, ElTag, type TagProps } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
@@ -147,7 +149,7 @@
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
   import { useAuth } from '@/hooks/core/useAuth'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import { fetchEnabledTenantList } from '@/api/system-manage'
@@ -1008,8 +1010,9 @@
         await transitionEmployeeExperienceRecord('survey', row.id, 'cancel', reason)
       }
       await refreshAfterAction()
-    } catch {
-      /* 用户取消确认时保持当前工作台。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '员工体验调查处理失败，请刷新状态后重试')
     }
   }
   const handleActionRowAction = async (
@@ -1051,8 +1054,9 @@
         await transitionEmployeeExperienceRecord('action', row.id, 'cancel', reason)
       }
       await refreshAfterAction()
-    } catch {
-      /* 用户取消确认时保持当前工作台。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '改善行动处理失败，请刷新状态后重试')
     }
   }
   const handleTabChange = (): void => {
@@ -1088,7 +1092,11 @@
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .employee-experience-page {
+    @include hr-table-workspace-layout(360px);
+
     &__control {
       position: relative;
       padding: 17px 18px;

@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:Performance:View">
     <div class="performance-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="locationReady" />
       <BusinessWorkspaceHeader
         eyebrow="PERFORMANCE MANAGEMENT"
         title="绩效管理"
@@ -33,8 +34,9 @@
             <span>当前主周期</span>
             <strong>{{ overview.featuredCycle.cycleName }}</strong>
             <small>
-              {{ overview.featuredCycle.cycleCode }} · {{ overview.featuredCycle.startDate }} →
-              {{ overview.featuredCycle.endDate }}
+              {{ overview.featuredCycle.cycleCode || '--' }} ·
+              {{ formatDate(overview.featuredCycle.startDate) }} →
+              {{ formatDate(overview.featuredCycle.endDate) }}
             </small>
           </div>
           <ol class="performance-page__rail" aria-label="绩效周期进度">
@@ -103,11 +105,14 @@
       />
 
       <PerformanceDialog ref="dialogRef" @success="handleSaveSuccess" />
+      <MasterDataDeleteGuard ref="deleteGuardRef" />
     </div>
   </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
+  import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
   import dayjs from 'dayjs'
   import { ElButton, ElProgress, ElTag } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
@@ -127,14 +132,22 @@
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
+  import {
+    DeleteReferenceBlockedError,
+    getDeleteReferenceContext
+  } from '@/utils/supabase/delete-reference'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
   import { useAuth } from '@/hooks/core/useAuth'
   import { useUserStore } from '@/store/modules/user'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
+  import { createDateTimeFormatter } from '@/utils/ui/format'
   import type { ColumnOption, DialogType } from '@/types'
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import {
     deletePerformanceRecord,
+    getPerformanceDeleteTable,
     fetchPerformanceOptions,
     fetchPerformanceOverview,
     fetchPerformanceRecords,
@@ -221,6 +234,12 @@
   const { hasAuth } = useAuth()
   const { confirmAction, promptText } = useArtFeedback()
   const activeEntity = ref<Entity>('cycle')
+  const formatDate = createDateTimeFormatter({ format: 'YYYY-MM-DD', invalidText: '--' })
+  const deleteContext = ref<{ entity: Entity; table: string; label: string }>()
+  const { deleteGuardRef, inspectDeleteReferences } = useRecordDeleteGuard(
+    () => deleteContext.value?.table ?? '',
+    () => deleteContext.value?.label ?? '绩效记录'
+  )
   const activeTab = computed<Tab>(
     () => tabs.find((tab) => tab.value === activeEntity.value) ?? tabs[0]!
   )
@@ -233,6 +252,19 @@
   const tableState = reactive<{ searchQuery: Api.Hr.PerformanceSearchParams }>({
     searchQuery: { tenantId: '', status: '', keyword: '', cycleId: '', sessionId: '' }
   })
+  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+    {
+      hr_performance_cycle: 'cycle',
+      hr_performance_review: 'review',
+      hr_performance_goal: 'goal',
+      hr_performance_check_in: 'check_in',
+      hr_performance_calibration_session: 'calibration'
+    },
+    activeEntity,
+    tableState.searchQuery,
+    () => void tableQueryRef.value?.refreshData(),
+    () => Object.assign(tableState.searchQuery, { cycleId: '', sessionId: '' })
+  )
   const overview = reactive<Api.Hr.PerformanceOverview>({
     activeCycleCount: 0,
     inScopeEmployeeCount: 0,
@@ -448,8 +480,8 @@
       formatter: (row) => {
         const item = row as Api.Hr.PerformanceCycle
         return identity(
-          `${item.startDate} → ${item.endDate}`,
-          `自评 ${item.selfReviewDueDate ?? '--'} · 校准 ${item.calibrationDueDate ?? '--'}`
+          `${formatDate(item.startDate)} → ${formatDate(item.endDate)}`,
+          `自评 ${formatDate(item.selfReviewDueDate)} · 校准 ${formatDate(item.calibrationDueDate)}`
         )
       }
     },
@@ -461,7 +493,9 @@
         const item = row as Api.Hr.PerformanceCycle
         return identity(
           item.owner?.name ?? '未指定负责人',
-          `每 ${item.checkInFrequencyDays} 天沟通`
+          Number.isFinite(item.checkInFrequencyDays) && item.checkInFrequencyDays > 0
+            ? `每 ${item.checkInFrequencyDays} 天沟通`
+            : '未设置沟通节奏'
         )
       }
     },
@@ -949,9 +983,11 @@
           }
         ]
   )
-  const fetchTableData = (params: TableParams) => {
+  const fetchTableData = async (params: TableParams) => {
     const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
-    return fetchPerformanceRecords(activeEntity.value, { ...params, from, to })
+    const response = await fetchPerformanceRecords(activeEntity.value, { ...params, from, to })
+    markRows(response.data)
+    return response
   }
   const loadReferences = async (): Promise<void> => {
     const tenantId = tableState.searchQuery.tenantId
@@ -997,19 +1033,40 @@
     })
   }
   const handleDelete = async (row: RecordItem): Promise<void> => {
-    if (!row.id) return
+    if (!row.id || deleteContext.value) return
+    const entity = activeEntity.value
+    const table = getPerformanceDeleteTable(entity)
+    if (!table || !canDelete(row) || !hasAuth('Hr:Performance:Delete')) {
+      notifyFriendlyError(new Error('当前账号或记录阶段不允许删除'), '当前账号或记录阶段不允许删除')
+      return
+    }
+    const label = activeTab.value.label
+    const name = 'cycleName' in row ? row.cycleName : label
+    const resources = [{ id: row.id, label: name || label }]
+    deleteContext.value = { entity, table, label }
     try {
-      await confirmAction(`确定删除这条${activeTab.value.label}记录吗？`, '删除确认', {
+      if (await inspectDeleteReferences(resources)) return
+      await confirmAction(`确定删除“${resources[0]!.label}”吗？`, '删除确认', {
         confirmButtonText: '删除',
         cancelButtonText: '取消',
         type: 'warning',
         confirmButtonType: 'danger'
       })
-      await deletePerformanceRecord(activeEntity.value, row.id)
+      try {
+        await deletePerformanceRecord(entity, row.id)
+      } catch (error) {
+        if (await inspectDeleteReferences(resources, getDeleteReferenceContext(error)?.constraint))
+          return
+        if (error instanceof DeleteReferenceBlockedError) return
+        throw error
+      }
       await tableQueryRef.value?.refreshRemove()
       await Promise.all([refreshOverview(), loadReferences()])
-    } catch {
-      /* 用户取消或服务端状态拒绝时保持列表。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '绩效记录删除失败，请刷新后重试')
+    } finally {
+      deleteContext.value = undefined
     }
   }
   const handleCycleTransition = async (
@@ -1039,8 +1096,9 @@
       await transitionPerformanceCycle(row.id, action, comment)
       await tableQueryRef.value?.refreshUpdate()
       await refreshOverview()
-    } catch {
-      /* 用户取消或状态校验失败。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '绩效周期处理失败，请刷新状态后重试')
     }
   }
   const handleReviewTransition = async (
@@ -1072,8 +1130,9 @@
       await transitionPerformanceReview(row.id, action, comment)
       await tableQueryRef.value?.refreshUpdate()
       await refreshOverview()
-    } catch {
-      /* 用户取消或业务校验失败。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '绩效评估处理失败，请刷新记录后重试')
     }
   }
   const handleCalibrationTransition = async (
@@ -1099,8 +1158,9 @@
       await transitionPerformanceCalibration(row.id, action, comment)
       await tableQueryRef.value?.refreshUpdate()
       await Promise.all([refreshOverview(), loadReferences()])
-    } catch {
-      /* 用户取消或业务校验失败。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '绩效校准处理失败，请刷新记录后重试')
     }
   }
 
@@ -1128,7 +1188,11 @@
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .performance-page {
+    @include hr-table-workspace-layout(360px);
+
     &__control-deck {
       display: grid;
       gap: 14px;

@@ -1,5 +1,6 @@
 <template>
   <div class="hr-workspace-page business-workspace-page art-full-height">
+    <MasterDeleteProcessingNotice :location-ready="locationReady" />
     <BusinessWorkspaceHeader
       class="hr-workspace-page__overview"
       :eyebrow="workspace.eyebrow"
@@ -61,6 +62,7 @@
       @success="handleDialogSuccess"
     />
     <WorkspaceRecordDialog v-else ref="dialogRef" @success="handleDialogSuccess" />
+    <MasterDataDeleteGuard ref="deleteGuardRef" />
   </div>
 </template>
 
@@ -79,16 +81,26 @@
   import ArtDictDisplay from '@/components/core/base/art-dict-display/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
+  import { useHrMasterDeleteLocation } from './use-hr-master-delete-location'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import { formatWithDayjs } from '@/utils/time'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { useAuth } from '@/hooks/core/useAuth'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
+  import {
+    DeleteReferenceBlockedError,
+    getDeleteReferenceContext
+  } from '@/utils/supabase/delete-reference'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
   import { useUserStore } from '@/store/modules/user'
   import {
     deleteHrWorkspaceRecord,
+    getHrWorkspaceRecordTable,
     effectPersonnelChange,
     effectRecruitmentRequisition,
     fetchHrWorkspaceRecords,
@@ -129,6 +141,8 @@
   const userStore = useUserStore()
   const { getDictMap } = storeToRefs(userStore)
   const { confirmAction } = useArtFeedback()
+  const { hasAuth } = useAuth()
+  const deleteContext = ref<{ entity: Api.Hr.WorkspaceEntity; label: string }>()
   const tableQueryRef = ref<ArtTableQueryExpose>()
   const dialogRef = ref<WorkspaceRecordDialogExpose>()
   const personnelChangeDialogRef = ref<WorkspaceRecordDialogExpose>()
@@ -137,6 +151,10 @@
   const activeTab = computed(
     () =>
       workspace.value.tabs.find((tab) => tab.key === activeTabKey.value) ?? workspace.value.tabs[0]
+  )
+  const { deleteGuardRef, inspectDeleteReferences } = useRecordDeleteGuard(
+    () => getHrWorkspaceRecordTable(deleteContext.value?.entity ?? activeTab.value.entity),
+    () => deleteContext.value?.label ?? activeTab.value.label
   )
   const tableKey = computed(() => `${props.workspaceKey}-${activeTabKey.value}`)
   const hasDetailedTabs = computed(() => workspace.value.tabs.some((tab) => tab.description))
@@ -169,6 +187,12 @@
         : [])
     ])
   })
+  const { locationReady, markRows } = useHrMasterDeleteLocation<string>(
+    { hr_personnel_change: 'changes' },
+    activeTabKey,
+    search.model,
+    () => void tableQueryRef.value?.refreshData()
+  )
 
   const workspaceTags = computed<BusinessWorkspaceTag[]>(() =>
     workspace.value.tags.map((label, index) => ({
@@ -245,11 +269,22 @@
   }
 
   const handleDelete = async (row: Api.Hr.WorkspaceRecord): Promise<void> => {
-    if (!row.id) return
+    if (!row.id || deleteContext.value) return
+    if (!hasAuth(props.permissions.delete)) {
+      notifyFriendlyError(new Error('当前账号无权删除此记录'), '当前账号无权删除此记录')
+      return
+    }
+    const tab = activeTab.value
+    const identity = get(row, tab.columns[0]?.key ?? '')
+    const resources = [
+      { id: row.id, label: typeof identity === 'string' && identity ? identity : tab.label }
+    ]
+    deleteContext.value = { entity: tab.entity, label: tab.label }
     try {
+      if (await inspectDeleteReferences(resources)) return
       await confirmAction(
-        `确定删除这条${activeTab.value.label}记录吗？删除后无法恢复。`,
-        `删除${activeTab.value.label}`,
+        `确定删除“${resources[0]!.label}”吗？删除后无法恢复。`,
+        `删除${tab.label}`,
         {
           confirmButtonText: '确认删除',
           cancelButtonText: '取消',
@@ -257,10 +292,20 @@
           confirmButtonType: 'danger'
         }
       )
-      await deleteHrWorkspaceRecord(activeTab.value.entity, row.id)
+      try {
+        await deleteHrWorkspaceRecord(tab.entity, row.id)
+      } catch (error) {
+        if (await inspectDeleteReferences(resources, getDeleteReferenceContext(error)?.constraint))
+          return
+        if (error instanceof DeleteReferenceBlockedError) return
+        throw error
+      }
       void tableQueryRef.value?.refreshRemove()
-    } catch {
-      // 用户取消时不需要额外反馈。
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '记录删除失败，请刷新资料后重试')
+    } finally {
+      deleteContext.value = undefined
     }
   }
 
@@ -375,6 +420,7 @@
     const { from, to } = buildSupabasePageRange(params as TableParams)
     const result = await fetchHrWorkspaceRecords(activeTab.value.entity, { ...params, from, to })
     if (result.error) throw result.error
+    markRows(result.data)
     return result
   }
 
@@ -409,7 +455,11 @@
 </script>
 
 <style scoped lang="scss">
+  @use './hr-table-workspace-layout' as *;
+
   .hr-workspace-page {
+    @include hr-table-workspace-layout(360px);
+
     &__tabs {
       min-width: 0;
       padding-inline: 8px;
@@ -514,7 +564,6 @@
 
     :deep(.art-table-query) {
       flex: 1;
-      min-height: 0;
     }
 
     @media (width <= 860px) {

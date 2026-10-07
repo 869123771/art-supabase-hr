@@ -24,15 +24,38 @@
         label-position="top"
         :show-reset="false"
         :show-submit="false"
-      />
+      >
+        <template #ownerEmployeeId>
+          <ArtEmployeeSelect
+            v-model="form.model.ownerEmployeeId"
+            v-model:selected-data="employeeSelection.owner"
+            :tenant-id="form.model.tenantId"
+            :api-fn="fetchSuccessionEmployeeSelector"
+            :display-fields="['jobTitle']"
+            placeholder="可选：请选择负责人"
+          />
+        </template>
+        <template #employeeId>
+          <ArtEmployeeSelect
+            v-model="form.model.employeeId"
+            v-model:selected-data="employeeSelection.candidate"
+            :tenant-id="form.model.tenantId"
+            :api-fn="fetchSuccessionEmployeeSelector"
+            :display-fields="['jobTitle']"
+            placeholder="请选择候选员工"
+          />
+        </template>
+      </ArtForm>
     </div>
   </ArtDialog>
 </template>
 
 <script setup lang="ts">
+  import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import dayjs from 'dayjs'
+  import { uniqBy } from 'lodash-es'
   import type { FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
@@ -41,10 +64,13 @@
     type FormItemOption
   } from '@/components/core/forms/art-form/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
+  import ArtEmployeeSelect from '@/components/business/art-employee-select/index.vue'
+  import type { EmployeeIntegrationItem } from '@/api/integration/employees'
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
   import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import { fetchSuccessionOptions, saveSuccessionRecord } from '@hr/api'
+  import { fetchSuccessionEmployeeSelector } from '@hr/api/modules/succession'
   import type { DialogType } from '@/types'
 
   type Entity = Api.Hr.SuccessionEntity
@@ -61,7 +87,7 @@
     targetSuccessors: number
     reviewCycleMonths: number
     nextReviewDate: string
-    ownerEmployeeId?: string | null
+    ownerEmployeeId?: string
     status: string
     notes?: string | null
     planId?: string
@@ -102,7 +128,10 @@
   const entity = ref<Entity>('plan')
   const tenantOptions = ref<FormItemOption[]>([])
   const positionOptions = shallowRef<Api.Hr.SuccessionReference[]>([])
-  const employeeOptions = shallowRef<Api.Hr.SuccessionReference[]>([])
+  const employeeSelection = reactive<{
+    owner: EmployeeIntegrationItem[]
+    candidate: EmployeeIntegrationItem[]
+  }>({ owner: [], candidate: [] })
   const planOptions = shallowRef<Api.Hr.SuccessionReference[]>([])
   const candidateOptions = shallowRef<Api.Hr.SuccessionReference[]>([])
 
@@ -117,7 +146,7 @@
     targetSuccessors: 2,
     reviewCycleMonths: 6,
     nextReviewDate: dayjs().add(6, 'month').format('YYYY-MM-DD'),
-    ownerEmployeeId: null,
+    ownerEmployeeId: undefined,
     status: 'draft',
     notes: null,
     planId: undefined,
@@ -173,13 +202,7 @@
           input('planCode', '计划编码', '如 SUCCESSION_OPS_01'),
           input('planName', '计划名称', '如 运输调度负责人继任计划'),
           select('positionId', '关键岗位', positionOptions.value, '请选择关键岗位'),
-          select(
-            'ownerEmployeeId',
-            '计划负责人',
-            employeeOptions.value,
-            '可选：请选择负责人',
-            true
-          ),
+          { label: '计划负责人', key: 'ownerEmployeeId', type: 'input' },
           dict('criticality', '岗位关键度', 'hrSuccessionCriticality'),
           dict('vacancyRisk', '空缺风险', 'commonRiskLevel'),
           dict('businessImpact', '业务影响', 'hrSuccessionCriticality'),
@@ -193,7 +216,7 @@
         return [
           ...common,
           select('planId', '继任计划', planOptions.value, '请选择目标计划'),
-          select('employeeId', '候选人', employeeOptions.value, '请选择候选员工'),
+          { label: '候选人', key: 'employeeId', type: 'input' },
           dict('readiness', '继任准备度', 'hrSuccessionReadiness'),
           dict('potentialLevel', '人才潜力', 'hrSuccessionPotential'),
           dict('retentionRisk', '留任风险', 'commonRiskLevel'),
@@ -211,7 +234,7 @@
         select('candidateId', '继任候选人', candidateOptions.value, '请选择候选人'),
         dict('actionType', '行动类型', 'hrSuccessionActionType'),
         input('actionTitle', '行动名称', '如 主持季度运营复盘'),
-        select('ownerEmployeeId', '行动负责人', employeeOptions.value, '可选：请选择负责人', true),
+        { label: '行动负责人', key: 'ownerEmployeeId', type: 'input' },
         date('startDate', '开始日期'),
         date('dueDate', '截止日期'),
         dict('status', '行动状态', 'hrSuccessionActionStatus'),
@@ -355,40 +378,62 @@
     Object.assign(form.model, next)
   }
 
-  const loadReferences = async () => {
+  const selectedReferences = shallowRef<
+    Partial<Record<'position' | 'plan' | 'candidate', Api.Hr.SuccessionReference>>
+  >({})
+  let referenceRequest = 0
+  const loadReferences = async (): Promise<void> => {
+    const request = ++referenceRequest
     const tenantId = form.model.tenantId
+    const kind = entity.value
+    positionOptions.value = []
+    planOptions.value = []
+    candidateOptions.value = []
     if (isPlatformSuper.value && !tenantId) {
-      positionOptions.value = []
-      employeeOptions.value = []
-      planOptions.value = []
-      candidateOptions.value = []
       return
     }
-    const [positions, employees, plans, candidates] = await Promise.all([
-      fetchSuccessionOptions('position', tenantId),
-      fetchSuccessionOptions('employee', tenantId),
-      fetchSuccessionOptions('plan', tenantId),
-      fetchSuccessionOptions('candidate', tenantId)
+    const [positions, plans, candidates] = await Promise.all([
+      kind === 'plan' ? fetchSuccessionOptions('position', tenantId) : undefined,
+      kind === 'candidate' ? fetchSuccessionOptions('plan', tenantId) : undefined,
+      kind === 'action' ? fetchSuccessionOptions('candidate', tenantId) : undefined
     ])
-    positionOptions.value = positions.data ?? []
-    employeeOptions.value = employees.data ?? []
-    planOptions.value = plans.data ?? []
-    candidateOptions.value = candidates.data ?? []
+    if (request !== referenceRequest || tenantId !== form.model.tenantId || kind !== entity.value)
+      return
+    const preserved = (
+      key: 'position' | 'plan' | 'candidate',
+      id?: string
+    ): Api.Hr.SuccessionReference[] => {
+      const reference = selectedReferences.value[key]
+      return reference && reference.id === id && reference.tenantId === tenantId ? [reference] : []
+    }
+    positionOptions.value = uniqBy(
+      [...(positions?.data ?? []), ...preserved('position', form.model.positionId)],
+      'id'
+    )
+    planOptions.value = uniqBy(
+      [...(plans?.data ?? []), ...preserved('plan', form.model.planId)],
+      'id'
+    )
+    candidateOptions.value = uniqBy(
+      [...(candidates?.data ?? []), ...preserved('candidate', form.model.candidateId)],
+      'id'
+    )
   }
   const reloadReferences = async () => {
     await nextTick()
     await Promise.all(
-      ['positionId', 'ownerEmployeeId', 'planId', 'employeeId', 'candidateId'].map((key) =>
-        formRef.value?.reloadOptions(key)
-      )
+      ['positionId', 'planId', 'candidateId'].map((key) => formRef.value?.reloadOptions(key))
     )
   }
   const handleTenantChange = async () => {
+    selectedReferences.value = {}
     form.model.positionId = undefined
-    form.model.ownerEmployeeId = null
+    form.model.ownerEmployeeId = undefined
     form.model.planId = undefined
     form.model.employeeId = undefined
     form.model.candidateId = undefined
+    employeeSelection.owner = []
+    employeeSelection.candidate = []
     await loadReferences()
     await reloadReferences()
   }
@@ -416,7 +461,7 @@
         targetSuccessors: Number(form.model.targetSuccessors),
         reviewCycleMonths: Number(form.model.reviewCycleMonths),
         nextReviewDate: form.model.nextReviewDate,
-        ownerEmployeeId: form.model.ownerEmployeeId,
+        ownerEmployeeId: form.model.ownerEmployeeId ?? null,
         status: form.model.status as Api.Hr.SuccessionPlanStatus,
         notes: form.model.notes
       }
@@ -445,7 +490,7 @@
       actionType: form.model.actionType,
       actionTitle: form.model.actionTitle,
       actionDescription: form.model.actionDescription,
-      ownerEmployeeId: form.model.ownerEmployeeId,
+      ownerEmployeeId: form.model.ownerEmployeeId ?? null,
       startDate: form.model.startDate,
       dueDate: form.model.dueDate,
       status: form.model.status as Api.Hr.SuccessionActionStatus,
@@ -468,12 +513,22 @@
   }
   const handleOpen = async (nextEntity: Entity, row?: RecordItem) => {
     entity.value = nextEntity
+    selectedReferences.value = {
+      position: row && 'position' in row ? row.position : undefined,
+      plan: row && 'plan' in row ? row.plan : undefined,
+      candidate: row && 'candidate' in row ? row.candidate : undefined
+    }
     replaceModel(createInitialModel())
     if (row)
       replaceModel({
         ...createInitialModel(),
-        ...(structuredClone(toRaw(row)) as Partial<FormModel>)
+        ...(structuredClone(toRaw(row)) as Partial<FormModel>),
+        ownerEmployeeId: 'ownerEmployeeId' in row ? (row.ownerEmployeeId ?? undefined) : undefined
       })
+    employeeSelection.owner =
+      row && 'owner' in row ? employeeReferenceSelection(row.owner, form.model.tenantId) : []
+    employeeSelection.candidate =
+      row && 'employee' in row ? employeeReferenceSelection(row.employee, form.model.tenantId) : []
     if (nextEntity === 'candidate' && !row) form.model.status = 'nominated'
     if (nextEntity === 'action' && !row) form.model.status = 'planned'
     await nextTick()

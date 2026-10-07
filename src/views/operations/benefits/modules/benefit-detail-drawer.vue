@@ -1,196 +1,208 @@
 <template>
   <ArtDrawer ref="drawerRef">
-    <div v-if="record" class="benefit-detail">
-      <section class="benefit-detail__hero" aria-labelledby="benefit-detail-title">
-        <div class="benefit-detail__identity">
-          <span aria-hidden="true"><ArtSvgIcon :icon="hero.icon" /></span>
-          <div>
-            <small>{{ hero.eyebrow }}</small>
-            <h3 id="benefit-detail-title">{{ hero.title }}</h3>
-            <p>{{ hero.subtitle }}</p>
-          </div>
-        </div>
-        <ElTag type="primary" effect="plain" round>{{ hero.status }}</ElTag>
-      </section>
-
-      <div v-if="restrictedMessage" class="benefit-detail__restricted" role="status">
-        <ArtSvgIcon icon="ri:lock-2-line" />
-        <div
-          ><strong>敏感福利信息已隐藏</strong><p>{{ restrictedMessage }}</p></div
-        >
-      </div>
-
-      <section class="benefit-detail__summary" aria-label="福利记录摘要">
-        <dl>
-          <div v-for="item in summaryItems" :key="item.label">
-            <dt>{{ item.label }}</dt>
-            <dd>{{ item.value }}</dd>
-            <small>{{ item.hint }}</small>
-          </div>
-        </dl>
-      </section>
-
-      <section v-if="isPlan" class="benefit-detail__section">
-        <header>
-          <ArtSvgIcon icon="ri:stack-line" />
-          <div
-            ><strong>覆盖方案与缴费规则</strong
-            ><small>员工参保时复制当前规则形成历史快照</small></div
-          >
-          <ArtButtonTable
-            v-auth="'Hr:Benefits:Amount:Edit'"
-            type="add"
-            button-text="新增方案"
-            permission="Hr:Benefits:Plan:Manage"
-            @click="emitAddOption"
-          />
-        </header>
-        <div v-if="planRecord.options?.length" class="benefit-detail__options">
-          <article v-for="option in planRecord.options" :key="option.id">
-            <span><ArtSvgIcon icon="ri:shield-check-line" /></span>
+    <ArtAsyncState
+      :loading="loading"
+      :error="loadError"
+      :empty="missing"
+      empty-text="详情记录不可用"
+      empty-description="记录可能已删除或不在当前可见范围，请返回列表核对。"
+      :min-height="280"
+      @retry="retryLoad"
+    >
+      <div v-if="record" class="benefit-detail">
+        <section class="benefit-detail__hero" aria-labelledby="benefit-detail-title">
+          <div class="benefit-detail__identity">
+            <span aria-hidden="true"><ArtSvgIcon :icon="hero.icon" /></span>
             <div>
-              <div
-                ><strong>{{ option.optionName }}</strong
-                ><ElTag size="small" effect="plain">{{ option.optionCode }}</ElTag></div
-              >
-              <p
-                >{{ dictLabel('hrBenefitCoverageLevel', option.coverageLevel) }} ·
-                {{ contributionText(option) }}</p
-              >
-              <small>{{ option.description || '未填写方案说明' }}</small>
+              <small>{{ hero.eyebrow }}</small>
+              <h3 id="benefit-detail-title">{{ hero.title }}</h3>
+              <p>{{ hero.subtitle }}</p>
             </div>
+          </div>
+          <ElTag type="primary" effect="plain" round>{{ hero.status }}</ElTag>
+        </section>
+
+        <div v-if="restrictedMessage" class="benefit-detail__restricted" role="status">
+          <ArtSvgIcon icon="ri:lock-2-line" />
+          <div
+            ><strong>敏感福利信息已隐藏</strong><p>{{ restrictedMessage }}</p></div
+          >
+        </div>
+
+        <section class="benefit-detail__summary" aria-label="福利记录摘要">
+          <dl>
+            <div v-for="item in summaryItems" :key="item.label">
+              <dt>{{ item.label }}</dt>
+              <dd>{{ item.value }}</dd>
+              <small>{{ item.hint }}</small>
+            </div>
+          </dl>
+        </section>
+
+        <section v-if="isPlan" class="benefit-detail__section">
+          <header>
+            <ArtSvgIcon icon="ri:stack-line" />
+            <div
+              ><strong>覆盖方案与缴费规则</strong
+              ><small>员工参保时复制当前规则形成历史快照</small></div
+            >
             <ArtButtonTable
               v-auth="'Hr:Benefits:Amount:Edit'"
-              type="edit"
+              type="add"
+              button-text="新增方案"
               permission="Hr:Benefits:Plan:Manage"
-              @click="$emit('edit-option', planRecord, option)"
+              @click="emitAddOption"
             />
-          </article>
-        </div>
-        <ArtEmptyState
-          v-else
-          title="尚未配置覆盖方案"
-          description="配置方案后，计划才能生效。"
-          size="compact"
-          :visual-size="64"
-        />
-      </section>
-
-      <section v-if="isEnrollment" class="benefit-detail__section">
-        <header>
-          <ArtSvgIcon icon="ri:money-cny-circle-line" />
-          <div
-            ><strong>参保与薪资边界</strong><small>审核后的缴费快照仅作为薪资受控输入</small></div
-          >
-        </header>
-        <dl class="benefit-detail__narrative">
-          <div
-            ><dt>保障方案</dt><dd>{{ enrollmentRecord.option?.optionName || '--' }}</dd></div
-          >
-          <div
-            ><dt>人生事件</dt><dd>{{ lifeEventText }}</dd></div
-          >
-          <div
-            ><dt>薪资同步</dt
-            ><dd>{{
-              dictLabel('hrBenefitPayrollSyncStatus', enrollmentRecord.payrollSyncStatus)
-            }}</dd></div
-          >
-          <div
-            ><dt>审核信息</dt
-            ><dd
-              >{{ enrollmentRecord.approvedBy || '尚未审核' }} ·
-              {{ formatDateTime(enrollmentRecord.approvedAt) }}</dd
-            ></div
-          >
-        </dl>
-      </section>
-
-      <section v-if="isLifeEvent" class="benefit-detail__section">
-        <header>
-          <ArtSvgIcon icon="ri:file-shield-2-line" />
-          <div
-            ><strong>证明材料与关联参保</strong
-            ><small>材料查看独立授权，避免普通福利经办权限扩大</small></div
-          >
-        </header>
-        <div v-if="lifeEventRecord.evidenceUrls?.length" class="benefit-detail__attachments">
-          <a
-            v-for="(url, index) in lifeEventRecord.evidenceUrls"
-            :key="url"
-            :href="url"
-            target="_blank"
-            rel="noopener noreferrer"
-            ><ArtSvgIcon icon="ri:attachment-2" />证明材料 {{ index + 1
-            }}<ArtSvgIcon icon="ri:external-link-line"
-          /></a>
-        </div>
-        <ArtEmptyState
-          v-else
-          :title="
-            lifeEventRecord.evidenceRestricted ? '当前权限不可查看证明材料' : '未上传证明材料'
-          "
-          :description="
-            lifeEventRecord.evidenceRestricted
-              ? '请联系具备证明材料查看权限的管理员。'
-              : '补充证明材料后可在此查看。'
-          "
-          size="compact"
-          :visual-size="64"
-        />
-        <div v-if="lifeEventRecord.enrollments?.length" class="benefit-detail__linked">
-          <article v-for="item in lifeEventRecord.enrollments" :key="item.id">
-            <strong>{{ item.planName }}</strong
-            ><span>{{ item.optionName }}</span>
-            <ElTag size="small" effect="plain">{{
-              dictLabel('hrBenefitEnrollmentStatus', item.status)
-            }}</ElTag>
-          </article>
-        </div>
-      </section>
-
-      <section class="benefit-detail__section">
-        <header>
-          <ArtSvgIcon icon="ri:history-line" />
-          <div
-            ><strong>不可变福利轨迹</strong
-            ><small>计划、参保与人生事件的关键动作均保留审计记录</small></div
-          >
-        </header>
-        <ElTimeline v-if="auditEvents.length" class="benefit-detail__timeline">
-          <ElTimelineItem
-            v-for="event in auditEvents"
-            :key="event.id"
-            :type="eventTone(event.eventType)"
-            :timestamp="formatDateTime(event.createTime)"
-            placement="top"
-          >
-            <article>
-              <div
-                ><strong>{{ event.summary }}</strong
-                ><span>{{ event.actorName || '系统自动处理' }}</span></div
-              >
-              <small v-if="event.fromStatus || event.toStatus">
-                {{ event.fromStatus || '初始状态' }}<ArtSvgIcon icon="ri:arrow-right-line" />{{
-                  event.toStatus || '状态未变更'
-                }}
-              </small>
+          </header>
+          <div v-if="planRecord.options?.length" class="benefit-detail__options">
+            <article v-for="option in planRecord.options" :key="option.id">
+              <span><ArtSvgIcon icon="ri:shield-check-line" /></span>
+              <div>
+                <div
+                  ><strong>{{ option.optionName }}</strong
+                  ><ElTag size="small" effect="plain">{{ option.optionCode }}</ElTag></div
+                >
+                <p
+                  >{{ dictLabel('hrBenefitCoverageLevel', option.coverageLevel) }} ·
+                  {{ contributionText(option) }}</p
+                >
+                <small>{{ option.description || '未填写方案说明' }}</small>
+              </div>
+              <ArtButtonTable
+                v-auth="'Hr:Benefits:Amount:Edit'"
+                type="edit"
+                permission="Hr:Benefits:Plan:Manage"
+                @click="$emit('edit-option', planRecord, option)"
+              />
             </article>
-          </ElTimelineItem>
-        </ElTimeline>
-        <ArtEmptyState
-          v-else
-          title="暂无审计记录"
-          description="操作记录产生后会显示在此。"
-          size="compact"
-          :visual-size="64"
-        />
-      </section>
-    </div>
+          </div>
+          <ArtEmptyState
+            v-else
+            title="尚未配置覆盖方案"
+            description="配置方案后，计划才能生效。"
+            size="compact"
+            :visual-size="64"
+          />
+        </section>
+
+        <section v-if="isEnrollment" class="benefit-detail__section">
+          <header>
+            <ArtSvgIcon icon="ri:money-cny-circle-line" />
+            <div
+              ><strong>参保与薪资边界</strong><small>审核后的缴费快照仅作为薪资受控输入</small></div
+            >
+          </header>
+          <dl class="benefit-detail__narrative">
+            <div
+              ><dt>保障方案</dt><dd>{{ enrollmentRecord.option?.optionName || '--' }}</dd></div
+            >
+            <div
+              ><dt>人生事件</dt><dd>{{ lifeEventText }}</dd></div
+            >
+            <div
+              ><dt>薪资同步</dt
+              ><dd>{{
+                dictLabel('hrBenefitPayrollSyncStatus', enrollmentRecord.payrollSyncStatus)
+              }}</dd></div
+            >
+            <div
+              ><dt>审核信息</dt
+              ><dd
+                >{{ enrollmentRecord.approvedBy || '尚未审核' }} ·
+                {{ formatDateTime(enrollmentRecord.approvedAt) }}</dd
+              ></div
+            >
+          </dl>
+        </section>
+
+        <section v-if="isLifeEvent" class="benefit-detail__section">
+          <header>
+            <ArtSvgIcon icon="ri:file-shield-2-line" />
+            <div
+              ><strong>证明材料与关联参保</strong
+              ><small>材料查看独立授权，避免普通福利经办权限扩大</small></div
+            >
+          </header>
+          <div v-if="lifeEventRecord.evidenceUrls?.length" class="benefit-detail__attachments">
+            <a
+              v-for="(url, index) in lifeEventRecord.evidenceUrls"
+              :key="url"
+              :href="url"
+              target="_blank"
+              rel="noopener noreferrer"
+              ><ArtSvgIcon icon="ri:attachment-2" />证明材料 {{ index + 1
+              }}<ArtSvgIcon icon="ri:external-link-line"
+            /></a>
+          </div>
+          <ArtEmptyState
+            v-else
+            :title="
+              lifeEventRecord.evidenceRestricted ? '当前权限不可查看证明材料' : '未上传证明材料'
+            "
+            :description="
+              lifeEventRecord.evidenceRestricted
+                ? '请联系具备证明材料查看权限的管理员。'
+                : '补充证明材料后可在此查看。'
+            "
+            size="compact"
+            :visual-size="64"
+          />
+          <div v-if="lifeEventRecord.enrollments?.length" class="benefit-detail__linked">
+            <article v-for="item in lifeEventRecord.enrollments" :key="item.id">
+              <strong>{{ item.planName }}</strong
+              ><span>{{ item.optionName }}</span>
+              <ElTag size="small" effect="plain">{{
+                dictLabel('hrBenefitEnrollmentStatus', item.status)
+              }}</ElTag>
+            </article>
+          </div>
+        </section>
+
+        <section class="benefit-detail__section">
+          <header>
+            <ArtSvgIcon icon="ri:history-line" />
+            <div
+              ><strong>不可变福利轨迹</strong
+              ><small>计划、参保与人生事件的关键动作均保留审计记录</small></div
+            >
+          </header>
+          <ElTimeline v-if="auditEvents.length" class="benefit-detail__timeline">
+            <ElTimelineItem
+              v-for="event in auditEvents"
+              :key="event.id"
+              :type="eventTone(event.eventType)"
+              :timestamp="formatDateTime(event.createTime)"
+              placement="top"
+            >
+              <article>
+                <div
+                  ><strong>{{ event.summary }}</strong
+                  ><span>{{ event.actorName || '系统自动处理' }}</span></div
+                >
+                <small v-if="event.fromStatus || event.toStatus">
+                  {{ event.fromStatus || '初始状态' }}<ArtSvgIcon icon="ri:arrow-right-line" />{{
+                    event.toStatus || '状态未变更'
+                  }}
+                </small>
+              </article>
+            </ElTimelineItem>
+          </ElTimeline>
+          <ArtEmptyState
+            v-else
+            title="暂无审计记录"
+            description="操作记录产生后会显示在此。"
+            size="compact"
+            :visual-size="64"
+          />
+        </section>
+      </div>
+    </ArtAsyncState>
   </ArtDrawer>
 </template>
 
 <script setup lang="ts">
+  import ArtAsyncState from '@/components/core/feedback/art-async-state/index.vue'
+  import { useDetailRecord } from '@/hooks/core/useDetailRecord'
   import type { TimelineItemProps } from 'element-plus'
   import ArtDrawer from '@/components/core/drawers/art-drawer/index.vue'
   import type { ArtDrawerExpose } from '@/components/core/drawers/art-drawer/types'
@@ -212,9 +224,20 @@
     'edit-option': [plan: Api.Hr.BenefitPlan, option: Api.Hr.BenefitOption]
   }>()
   const drawerRef = ref<ArtDrawerExpose>()
-  const record = shallowRef<Api.Hr.BenefitRecord>()
+  const {
+    detail: record,
+    loading,
+    missing,
+    loadError,
+    loadDetail,
+    openDetail,
+    retryLoad
+  } = useDetailRecord<Api.Hr.BenefitRecord>(
+    (id) => fetchBenefitDetail(activeEntity.value, id),
+    '福利详情暂时无法加载，请重新加载'
+  )
+  onBeforeUnmount(() => openDetail(''))
   const activeEntity = ref<Api.Hr.BenefitEntity>('plan')
-  const activeId = ref('')
   const userStore = useUserStore()
   const { getDictMap } = storeToRefs(userStore)
 
@@ -370,32 +393,18 @@
         : 'primary'
 
   const emitAddOption = (): void => emit('add-option', planRecord.value)
-  const loadDetail = async (): Promise<void> => {
-    const response = await fetchBenefitDetail(activeEntity.value, activeId.value)
-    record.value = response.data ?? undefined
-  }
-  const refresh = async (): Promise<void> => {
-    if (!activeId.value) return
-    await loadDetail()
-  }
+  const refresh = retryLoad
   const handleOpen = async (entity: Api.Hr.BenefitEntity, id: string): Promise<void> => {
     activeEntity.value = entity
-    activeId.value = id
-    record.value = undefined
+    openDetail(id)
     await drawerRef.value?.handleOpen(undefined, {
       title: '福利与参保详情',
       subtitle: '查看计划、员工保障、人生事件与审计轨迹',
       size: 'lg',
       showFooter: false,
       contentHeight: 'calc(100vh - 116px)',
-      onOpen: async (_data, api) => {
-        api.setLoading(true)
-        try {
-          await loadDetail()
-        } finally {
-          api.setLoading(false)
-        }
-      }
+      onOpen: () => loadDetail(id),
+      onClose: () => openDetail('')
     })
   }
 

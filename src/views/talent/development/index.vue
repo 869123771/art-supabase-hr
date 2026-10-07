@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:Talent:View">
     <div class="learning-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="locationReady" />
       <BusinessWorkspaceHeader
         eyebrow="LEARNING OPERATIONS"
         title="培训与能力"
@@ -78,11 +79,13 @@
       />
 
       <LearningDialog ref="dialogRef" @success="handleSaveSuccess" />
+      <MasterDataDeleteGuard ref="deleteGuardRef" />
     </div>
   </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import dayjs from 'dayjs'
   import { ElProgress, ElTag } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
@@ -102,6 +105,8 @@
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
   import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
@@ -116,6 +121,7 @@
   import HrEntityNavigation, {
     type HrEntityNavigationItem
   } from '@hr/views/shared/hr-entity-navigation.vue'
+  import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
   import LearningDialog from './modules/learning-dialog.vue'
 
   defineOptions({ name: 'HrTalentDevelopment' })
@@ -195,6 +201,18 @@
   const activeTab = computed<Tab>(
     () => tabs.find((tab) => tab.value === activeEntity.value) ?? tabs[0]!
   )
+  const deleteTables: Record<Entity, string> = {
+    plan: 'hr_training_plan',
+    course: 'hr_learning_course',
+    course_competency: 'hr_learning_course_competency',
+    session: 'hr_learning_session',
+    enrollment: 'hr_training_enrollment',
+    certificate: 'hr_learning_certificate'
+  }
+  const { deleteGuardRef, deleteRecord } = useRecordDeleteGuard(
+    () => deleteTables[activeEntity.value],
+    () => activeTab.value.label
+  )
   const navigationItems: HrEntityNavigationItem[] = tabs
   const tableQueryRef = ref<ArtTableQueryExpose>()
   const dialogRef = ref<DialogExpose>()
@@ -202,6 +220,19 @@
   const tableState = reactive<{ searchQuery: Api.Hr.LearningSearchParams }>({
     searchQuery: { tenantId: '', status: '', keyword: '' }
   })
+  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+    {
+      hr_training_plan: 'plan',
+      hr_learning_course: 'course',
+      hr_learning_course_competency: 'course_competency',
+      hr_learning_session: 'session',
+      hr_training_enrollment: 'enrollment',
+      hr_learning_certificate: 'certificate'
+    },
+    activeEntity,
+    tableState.searchQuery,
+    () => void tableQueryRef.value?.refreshData()
+  )
   const overview = reactive<Api.Hr.LearningOverview>({
     publishedCourseCount: 0,
     openSessionCount: 0,
@@ -945,7 +976,8 @@
     const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
     return fetchLearningRecords(activeEntity.value, { ...params, from, to })
   }
-  const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (_rows, response) => {
+  const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
+    markRows(rows)
     tableTotal.value = response.total ?? 0
   }
   const refreshOverview = async (): Promise<void> => {
@@ -967,19 +999,27 @@
   }
   const handleDelete = async (row: RecordItem): Promise<void> => {
     if (!row.id) return
-    try {
-      await confirmAction(`确定删除这条${activeTab.value.label}记录吗？`, '删除确认', {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-        confirmButtonType: 'danger'
-      })
-      await deleteLearningRecord(activeEntity.value, row.id)
-      await tableQueryRef.value?.refreshRemove()
-      await refreshOverview()
-    } catch {
-      /* 用户取消或服务端状态拒绝时保持列表。 */
-    }
+    const entity = activeEntity.value
+    const label =
+      entity === 'plan'
+        ? `${(row as Api.Hr.LearningPlan).planName}（${(row as Api.Hr.LearningPlan).planCode}）`
+        : entity === 'course'
+          ? `${(row as Api.Hr.LearningCourse).courseName}（${(row as Api.Hr.LearningCourse).courseCode}）`
+          : entity === 'session'
+            ? (row as Api.Hr.LearningSession).sessionCode
+            : entity === 'enrollment'
+              ? `${(row as Api.Hr.LearningEnrollment).employee?.name ?? '员工'} · ${(row as Api.Hr.LearningEnrollment).session?.code ?? '培训班次'}`
+              : `${(row as Api.Hr.LearningCourseCompetency).course?.name ?? '课程'} · ${(row as Api.Hr.LearningCourseCompetency).competency?.name ?? '能力映射'}`
+    await deleteRecord({
+      resource: { id: row.id, label },
+      resourceLabel: activeTab.value.label,
+      permission: permissionFor('delete'),
+      remove: () => deleteLearningRecord(entity, row.id!),
+      onDeleted: async () => {
+        await tableQueryRef.value?.refreshRemove()
+        await refreshOverview()
+      }
+    })
   }
   const handleLearningResult = async (row: Api.Hr.LearningEnrollment): Promise<void> => {
     if (!row.id) return
@@ -1088,7 +1128,11 @@
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .learning-page {
+    @include hr-table-workspace-layout(360px);
+
     &__control-deck {
       display: grid;
       gap: 14px;

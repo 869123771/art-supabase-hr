@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:SkillMatrix:View">
     <div class="skill-matrix-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="false" />
       <BusinessWorkspaceHeader
         eyebrow="WORKFORCE SKILL MATRIX"
         title="技能矩阵"
@@ -194,13 +195,14 @@
 
       <ArtSectionCard
         v-if="overview"
-        class="skill-matrix-page__employees"
+        class="skill-matrix-page__employees business-workspace-content"
+        :show-scrollbar="false"
         title="员工岗位准备度"
         subtitle="集中查看岗位建模、评估覆盖与实际达标情况，能力缺口同时包含未评估项。"
         :empty="!filteredRecords.length"
         empty-title="暂无准备度员工"
         empty-description="当前筛选范围暂无匹配员工，可调整关键词或准备度范围。"
-        :min-height="320"
+        min-height="100%"
       >
         <template #actions>
           <div class="skill-matrix-page__filters">
@@ -318,6 +320,7 @@
 </template>
 
 <script setup lang="ts">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import type { ColumnOption } from '@/types'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric
@@ -512,6 +515,44 @@
 
 <style scoped lang="scss">
   .skill-matrix-page {
+    height: max(var(--art-full-height), 960px);
+    min-height: var(--art-full-height);
+
+    &__analysis {
+      flex: 0 0 auto;
+    }
+
+    &__employees {
+      display: flex;
+      flex-direction: column;
+      min-height: 420px;
+      overflow: hidden;
+
+      :deep(.art-section-card__header) {
+        flex: 0 0 auto;
+      }
+
+      :deep(.art-section-card__identity) {
+        flex-basis: 320px;
+      }
+
+      :deep(.art-section-card__actions) {
+        flex: 1 1 auto;
+      }
+
+      :deep(.art-section-card__body) {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      :deep(.art-table) {
+        flex: 1 1 0;
+        min-height: 0;
+      }
+    }
+
     &__analysis,
     &__employees {
       min-width: 0;
@@ -1060,6 +1101,12 @@
 
   @media only screen and (width <= 767px) {
     .skill-matrix-page {
+      &__employees {
+        .skill-matrix-page__filters {
+          width: 100%;
+        }
+      }
+
       &__priority > header,
       &__filters {
         flex-direction: column;

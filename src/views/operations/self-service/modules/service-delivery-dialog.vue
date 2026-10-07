@@ -32,6 +32,8 @@
 </template>
 
 <script setup lang="ts">
+  import { uniqBy } from 'lodash-es'
+  import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import type { FormRules } from 'element-plus'
@@ -101,6 +103,11 @@
   const editing = ref(false)
   const tenantOptions = ref<FormItemOption[]>([])
   const serviceOptions = ref<FormItemOption[]>([])
+  const selectedService = shallowRef<Api.Hr.ServiceDeliveryReference>()
+  let serviceRequest = 0
+  onBeforeUnmount(() => {
+    serviceRequest++
+  })
   const employeeSelection = ref<EmployeeIntegrationItem[]>([])
 
   const createInitialModel = (): FormModel => ({
@@ -321,49 +328,51 @@
   )
 
   const resetModel = (): void => {
+    serviceRequest++
+    selectedService.value = undefined
+    serviceOptions.value = []
     Object.assign(formModel, createInitialModel())
     employeeSelection.value = []
   }
 
   const loadServices = async (): Promise<void> => {
-    if (isPlatformSuper.value && !formModel.tenantId) {
-      serviceOptions.value = []
+    const request = ++serviceRequest
+    const tenantId = formModel.tenantId
+    serviceOptions.value = []
+    if (!tenantId) {
       return
     }
     const response = await fetchServiceDeliveryRecords<Api.Hr.ServiceCatalog>('service', {
       from: 0,
       to: 499,
-      tenantId: formModel.tenantId,
+      tenantId,
       status: 'enabled'
     })
-    serviceOptions.value = response.data
+    if (request !== serviceRequest || tenantId !== formModel.tenantId) return
+    if (response.error) throw response.error
+    const options = response.data
       .filter((service) => service.serviceMode === 'case')
       .map((service) => ({
         label: `${service.serviceName} · ${service.routingGroup || 'HR 服务台'}`,
         value: service.id!
       }))
+    const current = selectedService.value
+    if (current && current.id === formModel.serviceId && current.tenantId === tenantId) {
+      options.push({
+        label: `${current.name ?? '未命名服务'} · ${current.routingGroup || 'HR 服务台'}`,
+        value: current.id
+      })
+    }
+    serviceOptions.value = uniqBy(options, 'value')
   }
 
   const handleTenantChange = async (): Promise<void> => {
+    selectedService.value = undefined
     formModel.employeeId = undefined
     formModel.serviceId = undefined
     employeeSelection.value = []
     await Promise.all([loadServices(), numberRule.loadRule()])
   }
-
-  const createEmployeeSelection = (record?: Api.Hr.ServiceRequest): EmployeeIntegrationItem[] =>
-    record?.requester
-      ? [
-          {
-            id: record.requester.id,
-            tenantId: record.tenantId || formModel.tenantId || '',
-            employeeNo: record.requester.code || '',
-            employeeName: record.requester.name || '未命名员工',
-            jobTitle: record.requester.jobTitle,
-            employmentStatus: 'active'
-          }
-        ]
-      : []
 
   const validateBusiness = (): void => {
     if (
@@ -444,6 +453,9 @@
 
     if (payload.entity === 'request' && payload.editData) {
       const record = payload.editData as Api.Hr.ServiceRequest
+      selectedService.value = record.service
+        ? { ...record.service, tenantId: record.service.tenantId ?? record.tenantId }
+        : undefined
       Object.assign(formModel, {
         id: record.id,
         tenantId: record.tenantId,
@@ -456,7 +468,7 @@
         channel: record.channel,
         attachmentLinks: record.attachmentUrls.join('\n')
       })
-      employeeSelection.value = createEmployeeSelection(record)
+      employeeSelection.value = employeeReferenceSelection(record.requester, formModel.tenantId)
     }
     if (payload.entity === 'service' && payload.editData) {
       const record = payload.editData as Api.Hr.ServiceCatalog

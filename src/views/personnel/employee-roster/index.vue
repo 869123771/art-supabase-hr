@@ -1,5 +1,9 @@
 <template>
   <div class="hr-roster-page business-workspace-page art-full-height">
+    <MasterDeleteProcessingNotice
+      :location-ready="locationReady"
+      action-hint="当前花名册已定位到关联员工；请核对任职记录，处理完成后返回原页面重新检查。"
+    />
     <BusinessWorkspaceHeader
       class="hr-roster-page__overview"
       eyebrow="PEOPLE DIRECTORY"
@@ -81,6 +85,7 @@
         @update:include-descendants="handleIncludeDescendantsChange"
       />
     </ArtDrawer>
+    <MasterDataDeleteGuard ref="deleteGuardRef" />
   </div>
 </template>
 
@@ -98,6 +103,7 @@
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
     type BusinessWorkspaceTag
@@ -106,7 +112,14 @@
   import ArtWorkspaceSplitter from '@/components/core/layouts/art-workspace-splitter/index.vue'
   import type { ArtDrawerExpose } from '@/components/core/drawers/art-drawer/types'
   import OrganizationScopeFilter from '@/views/system/shared/organization-scope-filter.vue'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { useAuth } from '@/hooks/core/useAuth'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
+  import {
+    DeleteReferenceBlockedError,
+    getDeleteReferenceContext
+  } from '@/utils/supabase/delete-reference'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
   import { formatWithDayjs } from '@/utils/time'
   import { canViewField, getFieldAccess } from '@/utils/field-permission'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
@@ -138,6 +151,12 @@
   const { getDictMap } = storeToRefs(userStore)
   const { effectiveTenantId, isAllTenants } = storeToRefs(useTenantScopeStore())
   const { confirmAction } = useArtFeedback()
+  const { hasAuth } = useAuth()
+  const deleteBusy = ref(false)
+  const { deleteGuardRef, inspectDeleteReferences } = useRecordDeleteGuard(
+    'mdm_employee',
+    '员工档案'
+  )
   const organizationTreeUtils = new TreeUtils({
     idKey: 'id',
     parentKey: 'parentId',
@@ -161,6 +180,16 @@
     hireDateRange: [],
     keyword: ''
   })
+  const locationReady = ref(false)
+  watch(
+    () => route.query.recordId,
+    (recordId) => {
+      locationReady.value = false
+      searchForm.value.recordId = typeof recordId === 'string' ? recordId : undefined
+      selectedOrganizationKey.value = ALL_ORGANIZATIONS_KEY
+      void tableQueryRef.value?.refreshData()
+    }
+  )
   const activeCount = computed(
     () =>
       overview.rows.filter((row) => ['probation', 'active'].includes(String(row.employmentStatus)))
@@ -403,6 +432,9 @@
     return result
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
+    locationReady.value = Boolean(
+      searchForm.value.recordId && rows.some((row) => row.id === searchForm.value.recordId)
+    )
     overview.rows = rows.map((row) => ({
       employmentStatus: row.employmentStatus,
       account:
@@ -471,10 +503,20 @@
     if (item.key === 'delete') void handleDelete(row)
   }
   const handleDelete = async (row: Employee): Promise<void> => {
-    if (!row.id) return
+    if (deleteBusy.value) return
+    if (!row.id || !hasAuth('Hr:Employee:Delete')) {
+      notifyFriendlyError(
+        new Error('当前账号无权删除此员工，或员工记录已变化，请刷新后重试'),
+        '员工档案不可删除，请核对权限并刷新后重试'
+      )
+      return
+    }
+    const resources = [{ id: row.id, label: `${row.employeeName}（${row.employeeNo}）` }]
+    deleteBusy.value = true
     try {
+      if (await inspectDeleteReferences(resources)) return
       await confirmAction(
-        `确定删除“${row.employeeName}（${row.employeeNo}）”吗？相关履历将一并删除。`,
+        `确定删除“${row.employeeName}（${row.employeeNo}）”吗？此操作不可恢复。`,
         '删除员工档案',
         {
           confirmButtonText: '确认删除',
@@ -483,11 +525,21 @@
           confirmButtonType: 'danger'
         }
       )
-      await deleteEmployee(row.id)
+      try {
+        await deleteEmployee(row.id)
+      } catch (error) {
+        if (await inspectDeleteReferences(resources, getDeleteReferenceContext(error)?.constraint))
+          return
+        if (error instanceof DeleteReferenceBlockedError) return
+        throw error
+      }
       await loadOrganizationTree()
       void tableQueryRef.value?.refreshRemove()
-    } catch {
-      // 用户取消时无需额外提示。
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '员工档案删除失败，请检查网络后重试')
+    } finally {
+      deleteBusy.value = false
     }
   }
   onMounted(async () => {

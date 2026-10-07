@@ -41,6 +41,7 @@
 </template>
 
 <script setup lang="ts">
+  import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import { normalizeNullableText } from '@/utils/form/normalize'
@@ -439,27 +440,10 @@
     }
   })
 
-  const toSelection = (
-    reference?: Api.Hr.BenefitReference | null,
-    tenantId?: string
-  ): EmployeeIntegrationItem[] =>
-    reference
-      ? [
-          {
-            id: reference.id,
-            tenantId: tenantId || '',
-            employeeNo: reference.employeeNo || '',
-            employeeName: reference.employeeName || '未命名员工',
-            jobTitle: reference.jobTitle,
-            employmentStatus: 'active'
-          }
-        ]
-      : []
-
   const setFromRecord = (record: RecordItem): void => {
     Object.assign(formModel, createInitialModel(), record)
     if ('employeeId' in record)
-      employeeSelection.value = toSelection(record.employee, record.tenantId)
+      employeeSelection.value = employeeReferenceSelection(record.employee, record.tenantId)
     if ('evidenceUrls' in record) formModel.evidenceText = (record.evidenceUrls ?? []).join('\n')
   }
 

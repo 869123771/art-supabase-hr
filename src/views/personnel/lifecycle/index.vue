@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:Lifecycle:View">
     <div class="lifecycle-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="locationReady" />
       <BusinessWorkspaceHeader
         eyebrow="EMPLOYEE JOURNEY OPERATIONS"
         title="入转调离"
@@ -70,6 +71,7 @@
         focusable
       />
       <LifecycleDialog ref="dialogRef" @success="handleSaveSuccess" />
+      <MasterDataDeleteGuard ref="deleteGuardRef" />
     </div>
   </ArtPermissionGuard>
 </template>
@@ -93,7 +95,11 @@
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
+  import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import type { ColumnOption, DialogType } from '@/types'
@@ -171,6 +177,16 @@
   const { confirmAction, promptText } = useArtFeedback()
   const activeEntity = ref<Entity>('case')
   const activeTab = computed(() => tabs.find((tab) => tab.value === activeEntity.value) ?? tabs[0]!)
+  const deleteTables: Record<Entity, string> = {
+    case: 'hr_lifecycle_case',
+    task: 'hr_lifecycle_task',
+    template: 'hr_lifecycle_template',
+    template_task: 'hr_lifecycle_template_task'
+  }
+  const { deleteGuardRef, deleteRecord } = useRecordDeleteGuard(
+    () => deleteTables[activeEntity.value],
+    () => activeTab.value.label
+  )
   const navigationItems: HrEntityNavigationItem[] = tabs
   const tableQueryRef = ref<ArtTableQueryExpose>()
   const dialogRef = ref<DialogExpose>()
@@ -180,6 +196,17 @@
   const tableState = reactive<{ searchQuery: Api.Hr.LifecycleSearchParams }>({
     searchQuery: { tenantId: '', status: '', keyword: '', caseId: '', templateId: '' }
   })
+  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+    {
+      hr_lifecycle_case: 'case',
+      hr_lifecycle_task: 'task',
+      hr_lifecycle_template: 'template',
+      hr_lifecycle_template_task: 'template_task'
+    },
+    activeEntity,
+    tableState.searchQuery,
+    () => void tableQueryRef.value?.refreshData()
+  )
   const overview = reactive<Api.Hr.LifecycleOverview>({
     activeCaseCount: 0,
     dueSoonCaseCount: 0,
@@ -795,9 +822,11 @@
     }
   ])
 
-  const fetchTableData = (params: TableParams) => {
+  const fetchTableData = async (params: TableParams) => {
     const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
-    return fetchLifecycleRecords(activeEntity.value, { ...params, from, to })
+    const response = await fetchLifecycleRecords(activeEntity.value, { ...params, from, to })
+    markRows(response.data)
+    return response
   }
   const loadReferences = async () => {
     const tenantId = tableState.searchQuery.tenantId
@@ -846,19 +875,23 @@
   }
   const handleDelete = async (row: RecordItem) => {
     if (!row.id) return
-    try {
-      await confirmAction(`确定删除这条${activeTab.value.label}记录吗？`, '删除确认', {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-        confirmButtonType: 'danger'
-      })
-      await deleteLifecycleRecord(activeEntity.value, row.id)
-      await tableQueryRef.value?.refreshRemove()
-      await Promise.all([refreshOverview(), loadReferences()])
-    } catch {
-      /* 用户取消或服务端状态门禁拒绝。 */
-    }
+    const entity = activeEntity.value
+    const label =
+      entity === 'case'
+        ? (row as Api.Hr.LifecycleCase).caseNo
+        : entity === 'template'
+          ? `${(row as Api.Hr.LifecycleTemplate).templateName}（${(row as Api.Hr.LifecycleTemplate).templateCode}）`
+          : (row as Api.Hr.LifecycleTask | Api.Hr.LifecycleTemplateTask).taskName
+    await deleteRecord({
+      resource: { id: row.id, label },
+      resourceLabel: activeTab.value.label,
+      permission: permissionFor('delete'),
+      remove: () => deleteLifecycleRecord(entity, row.id!),
+      onDeleted: async () => {
+        await tableQueryRef.value?.refreshRemove()
+        await Promise.all([refreshOverview(), loadReferences()])
+      }
+    })
   }
   const handleSubmitApproval = async (row: Api.Hr.LifecycleCase) => {
     if (!row.id) return
@@ -870,8 +903,9 @@
       })
       await submitHrApproval('hr_lifecycle_case', row.id)
       await refreshAfterAction()
-    } catch {
-      /* 用户取消或审批规则拒绝。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '生命周期事项提交失败，请刷新状态后重试')
     }
   }
   const handleCaseTransition = async (
@@ -903,8 +937,9 @@
         action === 'complete' ? row.plannedEffectiveDate : undefined
       )
       await refreshAfterAction()
-    } catch {
-      /* 用户取消或执行门禁拒绝。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '生命周期事项状态更新失败，请刷新后重试')
     }
   }
   const handleTaskTransition = async (
@@ -935,8 +970,9 @@
         })
       await transitionLifecycleTask(row.id, action, note)
       await refreshAfterAction()
-    } catch {
-      /* 用户取消或任务状态拒绝。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '执行任务状态更新失败，请刷新后重试')
     }
   }
   const handleTemplateTransition = async (
@@ -958,8 +994,9 @@
       )
       await transitionLifecycleTemplate(row.id, action)
       await refreshAfterAction()
-    } catch {
-      /* 用户取消或模板状态拒绝。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '标准任务包状态更新失败，请刷新后重试')
     }
   }
 
@@ -975,7 +1012,11 @@
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .lifecycle-page {
+    @include hr-table-workspace-layout(360px);
+
     &__journey {
       padding: 18px 20px 0;
       overflow: hidden;

@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:TalentInventory:View">
     <div class="talent-inventory-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="false" />
       <BusinessWorkspaceHeader
         eyebrow="TALENT INVENTORY"
         title="人才盘点"
@@ -20,7 +21,7 @@
       />
 
       <ArtSectionCard
-        class="talent-inventory-page__workspace"
+        class="talent-inventory-page__workspace business-workspace-content"
         title="个体人才决策清单"
         :subtitle="`回答谁值得培养、谁已胜任、谁需补齐评估；更新时间 ${generatedAt}`"
         :loading="loading && !overview"
@@ -28,7 +29,7 @@
         :empty="Boolean(overview) && !filteredRecords.length"
         empty-title="暂无盘点员工"
         empty-description="当前筛选范围暂无匹配员工，可调整关键词或盘点范围。"
-        :min-height="360"
+        min-height="100%"
         @retry="loadInventory"
       >
         <template #actions>
@@ -186,6 +187,7 @@
 </template>
 
 <script setup lang="ts">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import type { ColumnOption } from '@/types'
   import ArtTable from '@/components/core/tables/art-table/index.vue'
   import BusinessWorkspaceHeader, {
@@ -394,7 +396,24 @@
 <style scoped lang="scss">
   .talent-inventory-page {
     &__workspace {
+      display: flex;
+      flex-direction: column;
       min-width: 0;
+      overflow: hidden;
+
+      :deep(.art-section-card__header) {
+        flex: 0 0 auto;
+      }
+
+      :deep(.art-section-card__body) {
+        display: flex;
+        flex-direction: column;
+      }
+
+      :deep(.art-table) {
+        flex: 1 1 0;
+        min-height: 0;
+      }
     }
 
     &__filters {
@@ -410,6 +429,7 @@
 
     &__decision-strip {
       display: grid;
+      flex: 0 0 auto;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: var(--art-space-2);
       margin-bottom: 16px;
@@ -482,6 +502,7 @@
     }
 
     &__capacity-alert {
+      flex: 0 0 auto;
       margin-bottom: 16px;
     }
 
@@ -586,6 +607,16 @@
 
       &__decision-strip {
         grid-template-columns: 1fr;
+      }
+    }
+  }
+
+  @media only screen and (width <= 640px) {
+    .talent-inventory-page__workspace {
+      min-height: 420px;
+
+      :deep(.art-table) {
+        flex-basis: auto;
       }
     }
   }

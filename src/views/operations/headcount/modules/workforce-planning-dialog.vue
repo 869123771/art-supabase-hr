@@ -32,6 +32,7 @@
 </template>
 
 <script setup lang="ts">
+  import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import dayjs from 'dayjs'
@@ -321,16 +322,6 @@
     Object.keys(form.model).forEach((key) => delete form.model[key as keyof FormModel])
     Object.assign(form.model, next)
   }
-  const toOwnerSelection = (reference?: Api.Hr.WorkforcePlanningReference | null) =>
-    reference
-      ? ([
-          {
-            id: reference.id,
-            employeeNo: reference.code ?? '',
-            employeeName: reference.name ?? '未命名员工'
-          }
-        ] as EmployeeIntegrationItem[])
-      : []
 
   const handleTenantChange = async (): Promise<void> => {
     Object.assign(formModel, {
@@ -352,21 +343,25 @@
     formModel.baselineCount = position?.currentCount ?? 0
     if (entity.value === 'effective') formModel.approvedCount = position?.headcountLimit ?? 1
   }
+  let referenceRequest = 0
   const loadReferences = async (): Promise<void> => {
-    if (isPlatformSuper.value && !formModel.tenantId) {
-      planOptions.value = []
-      organizationOptions.value = []
-      positionOptions.value = []
-      return
-    }
+    const request = ++referenceRequest
+    const tenantId = formModel.tenantId
+    const kind = entity.value
+    planOptions.value = []
+    organizationOptions.value = []
+    positionOptions.value = []
+    if (isPlatformSuper.value && !tenantId) return
     const [plans, organizations, positions] = await Promise.all([
-      fetchWorkforcePlanningOptions('plan', formModel.tenantId),
-      fetchWorkforcePlanningOptions('organization', formModel.tenantId),
-      fetchWorkforcePlanningOptions('position', formModel.tenantId)
+      kind === 'line' ? fetchWorkforcePlanningOptions('plan', tenantId) : undefined,
+      kind !== 'cycle' ? fetchWorkforcePlanningOptions('organization', tenantId) : undefined,
+      kind !== 'cycle' ? fetchWorkforcePlanningOptions('position', tenantId) : undefined
     ])
-    planOptions.value = (plans.data ?? []).filter((option) => option.status === 'draft')
-    organizationOptions.value = organizations.data ?? []
-    positionOptions.value = positions.data ?? []
+    if (request !== referenceRequest || tenantId !== formModel.tenantId || kind !== entity.value)
+      return
+    planOptions.value = (plans?.data ?? []).filter((option) => option.status === 'draft')
+    organizationOptions.value = organizations?.data ?? []
+    positionOptions.value = positions?.data ?? []
   }
 
   const validateBusiness = (): void => {
@@ -456,7 +451,8 @@
         ...createInitialModel(),
         ...(structuredClone(toRaw(row)) as Partial<FormModel>)
       })
-      if ('owner' in row) ownerSelection.value = toOwnerSelection(row.owner)
+      if ('owner' in row)
+        ownerSelection.value = employeeReferenceSelection(row.owner, formModel.tenantId)
     }
     await nextTick()
     formRef.value?.clearValidate()

@@ -9,6 +9,7 @@
     empty-description="请返回员工列表重新选择，或刷新后重试。"
     @retry="loadPage"
   >
+    <MasterDeleteProcessingNotice :location-ready="profile?.id === route.query.recordId" />
     <ArtPageHeader
       :title="profile?.employeeName || '员工档案详情'"
       :subtitle="profile?.employeeNo || '--'"
@@ -151,6 +152,7 @@
 </template>
 
 <script setup lang="ts">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import ArtDescriptions from '@/components/core/base/art-descriptions/index.vue'
   import type { ArtDescriptionItem } from '@/components/core/base/art-descriptions/types'
   import ArtDictDisplay from '@/components/core/base/art-dict-display/index.vue'

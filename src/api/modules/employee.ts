@@ -5,19 +5,12 @@ import TreeUtils from '@/utils/tree'
 
 type Employee = Api.Hr.Employee
 type EmployeeSearchParams = Api.Hr.EmployeeSearchParams
-type EmployeeSelectorItem = Api.Hr.EmployeeSelectorItem
 type EmployeeProfile = Api.Hr.EmployeeProfile
 type EmployeeProfilePayload = Api.Hr.EmployeeProfilePayload
 type OrganizationScopeFilterItem = Api.SystemManage.OrganizationScopeFilterItem
 
 interface EmployeeListPayload {
   records?: Employee[]
-  total?: number
-  fieldAccess?: Api.Hr.EmployeeFieldAccessMap
-}
-
-interface EmployeeSelectorListPayload {
-  records?: EmployeeSelectorItem[]
   total?: number
   fieldAccess?: Api.Hr.EmployeeFieldAccessMap
 }
@@ -61,28 +54,6 @@ export async function fetchEmployeeList(params: EmployeeSearchParams) {
         p_hire_start: params.hireDateRange?.[0] || null,
         p_hire_end: params.hireDateRange?.[1] || null,
         p_record_id: params.recordId || null
-      }),
-    { showErrorMessage: true }
-  )
-
-  return {
-    data: result.data?.records ?? [],
-    total: result.data?.total ?? 0,
-    error: result.error,
-    fieldAccess: result.data?.fieldAccess ?? {}
-  }
-}
-
-export async function fetchEmployeeSelectorList(
-  params: Pick<EmployeeSearchParams, 'tenantId' | 'keyword' | 'from' | 'to'>
-) {
-  const { tenantId, keyword, from = 0, to = 9 } = params
-  const result = await responseHandle<EmployeeSelectorListPayload>(
-    () =>
-      supabase.rpc('hr_list_employee_selector_secure', {
-        ...buildSupabaseRpcRange(from, to),
-        p_tenant_id: tenantId || null,
-        p_keyword: normalizeNullableText(keyword)
       }),
     { showErrorMessage: true }
   )

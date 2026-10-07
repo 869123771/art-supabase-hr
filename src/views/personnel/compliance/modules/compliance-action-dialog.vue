@@ -40,6 +40,7 @@
 </template>
 
 <script setup lang="ts">
+  import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import { getFriendlySupabaseErrorMessage } from '@/utils/supabase'
@@ -290,23 +291,6 @@
     }))
   })
 
-  const toSelection = (
-    reference?: Api.Hr.ComplianceReference | null,
-    tenantId?: string
-  ): EmployeeIntegrationItem[] =>
-    reference
-      ? [
-          {
-            id: reference.id,
-            tenantId: tenantId || '',
-            employeeNo: reference.employeeNo || '',
-            employeeName: reference.employeeName || '未命名员工',
-            jobTitle: reference.jobTitle,
-            employmentStatus: 'active'
-          }
-        ]
-      : []
-
   const validateBusiness = (): void => {
     if (action.value !== 'renew' || !formModel.startDate) return
     const oldContract = record.value as Api.Hr.ComplianceContract
@@ -378,7 +362,7 @@
         renewalReminderDays: contract.renewalReminderDays ?? 30,
         renewalOwnerId: contract.renewalOwnerId
       })
-      ownerSelection.value = toSelection(contract.renewalOwner, contract.tenantId)
+      ownerSelection.value = employeeReferenceSelection(contract.renewalOwner, contract.tenantId)
     }
   }
 

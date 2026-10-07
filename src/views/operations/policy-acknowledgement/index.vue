@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:PolicyAcknowledgement:View">
     <div class="policy-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="locationReady" />
       <BusinessWorkspaceHeader
         eyebrow="POLICY DISTRIBUTION & ACKNOWLEDGEMENT"
         title="政策与签收"
@@ -134,11 +135,16 @@
       />
 
       <PolicyDocumentDialog ref="dialogRef" @success="handleDialogSuccess" />
+      <MasterDataDeleteGuard ref="deleteGuardRef" />
     </div>
   </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
+  import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
   import dayjs from 'dayjs'
   import { ElButton, ElTag, type TagProps } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
@@ -156,7 +162,7 @@
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import type { ColumnOption, DialogType } from '@/types'
   import {
@@ -209,6 +215,7 @@
   const { confirmAction, promptText } = useArtFeedback()
   const activeEntity = ref<Entity>('policy')
   const activeTab = computed(() => tabs.find((tab) => tab.value === activeEntity.value) ?? tabs[0]!)
+  const { deleteGuardRef, deleteRecord } = useRecordDeleteGuard('hr_policy_document', '政策草稿')
   const navigationItems: HrEntityNavigationItem[] = tabs
   const tableQueryRef = ref<ArtTableQueryExpose>()
   const dialogRef = ref<DialogExpose>()
@@ -217,6 +224,15 @@
   const tableState = reactive<{ searchQuery: Api.Hr.PolicyAcknowledgementSearchParams }>({
     searchQuery: { keyword: '', status: '', tenantId: '' }
   })
+  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+    { hr_policy_document: 'policy', hr_policy_receipt: 'receipt' },
+    activeEntity,
+    tableState.searchQuery,
+    () => void tableQueryRef.value?.refreshData(),
+    () => {
+      focusedPolicy.value = null
+    }
+  )
   const overview = reactive<Api.Hr.PolicyAcknowledgementOverview>({
     draftPolicyCount: 0,
     publishedPolicyCount: 0,
@@ -630,7 +646,8 @@
       policyId: activeEntity.value === 'receipt' ? focusedPolicy.value?.id : undefined
     })
   }
-  const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (_rows, response) => {
+  const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
+    markRows(rows)
     tableTotal.value = response.total ?? 0
   }
   const refreshOverview = async (): Promise<void> => {
@@ -703,8 +720,9 @@
       }
       await transitionPolicyAcknowledgement('policy', row.id, action, comment)
       await refreshWorkspace()
-    } catch {
-      /* 用户取消或服务端范围、状态及权限校验失败时保留当前视图。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '政策版本处理失败，请刷新范围与状态后重试')
     }
   }
   const handleReceiptMore = async (
@@ -736,31 +754,32 @@
       })
       await transitionPolicyAcknowledgement('receipt', row.id, action, comment)
       await refreshWorkspace()
-    } catch {
-      /* 用户取消或服务端状态、权限校验失败时保留当前视图。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '政策签收处理失败，请刷新签收状态后重试')
     }
   }
   const handleDelete = async (row: Api.Hr.HrPolicyDocument): Promise<void> => {
     if (!row.id) return
-    try {
-      await confirmAction('仅未发布且没有下游依赖的草稿可以删除。确认继续？', '删除政策草稿', {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-        confirmButtonType: 'danger'
-      })
-      await deletePolicyDocument(row.id)
-      await refreshWorkspace()
-    } catch {
-      /* 用户取消或服务端依赖校验失败时不重复提示。 */
-    }
+    const label = `${row.policyTitle}（${row.policyCode} · v${row.versionNo}）`
+    await deleteRecord({
+      resource: { id: row.id, label },
+      permission: 'Hr:PolicyAcknowledgement:Policy:Manage',
+      confirmMessage: `确认删除政策草稿“${label}”？仅未发布且没有下游依赖的草稿可删除。`,
+      remove: () => deletePolicyDocument(row.id!),
+      onDeleted: refreshWorkspace
+    })
   }
 
   onMounted(() => void refreshOverview())
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .policy-page {
+    @include hr-table-workspace-layout(420px);
+
     --policy-border: color-mix(in srgb, var(--art-card-border) 84%, transparent);
 
     display: flex;
@@ -770,6 +789,7 @@
 
     &__command,
     &__workspace {
+      flex: 0 0 auto;
       min-width: 0;
       padding: 18px;
       background: var(--art-bg-color);
@@ -827,6 +847,11 @@
       color: var(--art-text-gray-900);
     }
 
+    &__lifecycle-scroll {
+      min-width: 0;
+      height: auto;
+    }
+
     &__command em,
     &__workspace header span {
       margin-top: 2px;
@@ -840,8 +865,9 @@
 
     &__lifecycle {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(200px, 1fr));
       gap: 1px;
+      min-width: 1006px;
       padding: 0;
       margin: 18px 0 0;
       list-style: none;

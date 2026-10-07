@@ -41,6 +41,7 @@
 </template>
 
 <script setup lang="ts">
+  import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import { normalizeNullableText } from '@/utils/form/normalize'
@@ -240,22 +241,6 @@
     }))
   })
 
-  const toSelection = (
-    reference?: Api.Hr.EmployeeExperienceReference | null,
-    tenantId?: string
-  ): EmployeeIntegrationItem[] =>
-    reference
-      ? [
-          {
-            id: reference.id,
-            tenantId: tenantId || '',
-            employeeNo: reference.employeeNo || '',
-            employeeName: reference.employeeName || '未命名员工',
-            jobTitle: reference.jobTitle,
-            employmentStatus: 'active'
-          }
-        ]
-      : []
   const loadTenants = async (): Promise<void> => {
     if (!isPlatformSuper.value || tenantOptions.value.length) return
     const response = await fetchEnabledTenantList()
@@ -312,7 +297,10 @@
       formModel.surveyId = payload.presetSurvey.id
     }
     if (payload.presetDimension) formModel.dimension = payload.presetDimension
-    ownerSelection.value = toSelection(payload.editData?.ownerEmployee, formModel.tenantId)
+    ownerSelection.value = employeeReferenceSelection(
+      payload.editData?.ownerEmployee,
+      formModel.tenantId
+    )
     await nextTick()
     formRef.value?.clearValidate()
     await dialogRef.value?.handleOpen(undefined, {

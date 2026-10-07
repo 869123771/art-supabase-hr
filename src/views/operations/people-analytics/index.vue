@@ -1,6 +1,10 @@
 <template>
   <ArtPermissionGuard permission="Hr:PeopleAnalytics:View">
-    <div class="people-analytics-page business-workspace-page art-full-height">
+    <div
+      class="people-analytics-page business-workspace-page art-full-height"
+      :class="{ 'is-empty': isEmpty }"
+    >
+      <MasterDeleteProcessingNotice :location-ready="false" />
       <BusinessWorkspaceHeader
         eyebrow="PEOPLE ANALYTICS"
         title="人力分析"
@@ -74,13 +78,14 @@
 
       <ArtSectionCard
         v-else-if="isEmpty"
+        class="people-analytics-page__empty business-workspace-content"
         title="尚无可分析的人力存量"
         subtitle="员工建立生效任职后，系统会自动形成趋势、结构与数据质量分析。"
         empty
         empty-title="当前截止日没有生效任职"
         empty-description="请检查员工入职与主任职的生效日期，或调整统计截止日。"
         :empty-visual-size="104"
-        :min-height="320"
+        min-height="100%"
       />
 
       <template v-else-if="analytics">
@@ -272,6 +277,7 @@
 </template>
 
 <script setup lang="ts">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import { getFriendlySupabaseErrorMessage } from '@/utils/supabase'
   import dayjs from 'dayjs'
   import BusinessWorkspaceHeader, {
@@ -521,7 +527,12 @@
     return dayjs(date).isAfter(dayjs(), 'day')
   }
 
+  let overviewRequest = 0
+  onBeforeUnmount(() => {
+    overviewRequest += 1
+  })
   async function loadOverview(): Promise<void> {
+    const request = ++overviewRequest
     loading.value = true
     errorMessage.value = ''
     try {
@@ -529,6 +540,7 @@
         asOfDate: asOfDate.value,
         periodMonths: periodMonths.value
       })
+      if (request !== overviewRequest) return
       if (response.data) {
         analytics.value = response.data
       } else {
@@ -539,9 +551,10 @@
         )
       }
     } catch (error) {
+      if (request !== overviewRequest) return
       errorMessage.value = getFriendlySupabaseErrorMessage(error, '人力分析数据加载失败')
     } finally {
-      loading.value = false
+      if (request === overviewRequest) loading.value = false
     }
   }
 
@@ -550,11 +563,28 @@
 
 <style scoped lang="scss">
   .people-analytics-page {
-    --analytics-primary: #5b6cf9;
-    --analytics-success: #27b88d;
-    --analytics-danger: #ec6f76;
+    --analytics-primary: var(--theme-color);
+    --analytics-success: var(--el-color-success);
+    --analytics-danger: var(--el-color-danger);
 
+    height: auto;
+    min-height: var(--art-full-height);
     padding-bottom: 4px;
+
+    &.is-empty {
+      height: var(--art-full-height);
+      min-height: 0;
+    }
+
+    &__empty {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+
+      :deep(.art-section-card__header) {
+        flex: 0 0 auto;
+      }
+    }
 
     &__control,
     &__control-copy,

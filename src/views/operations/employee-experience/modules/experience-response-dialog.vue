@@ -1,60 +1,78 @@
 <template>
   <ArtDialog ref="dialogRef" size="lg">
-    <div v-if="detail" class="experience-response-dialog">
-      <section class="experience-response-dialog__hero" aria-labelledby="experience-response-title">
-        <div>
-          <span aria-hidden="true"><ArtSvgIcon icon="ri:chat-heart-line" /></span>
+    <ArtAsyncState
+      :loading="loading"
+      :error="errorMessage"
+      :empty="!canAnswer"
+      :empty-text="unavailableTitle"
+      :empty-description="
+        detail?.availability === 'available'
+          ? '请联系调查管理员核对题目配置后重新打开。'
+          : '请返回调查列表查看当前开放和完成状态。'
+      "
+      :min-height="240"
+      @retry="loadDetail"
+    >
+      <div v-if="detail" class="experience-response-dialog">
+        <section
+          class="experience-response-dialog__hero"
+          aria-labelledby="experience-response-title"
+        >
           <div>
-            <small>{{ detail.surveyCode }}</small>
-            <h3 id="experience-response-title">{{ detail.surveyName }}</h3>
-            <p>{{ detail.description || '请基于近期真实体验作答。' }}</p>
+            <span aria-hidden="true"><ArtSvgIcon icon="ri:chat-heart-line" /></span>
+            <div>
+              <small>{{ detail.surveyCode }}</small>
+              <h3 id="experience-response-title">{{ detail.surveyName }}</h3>
+              <p>{{ detail.description || '请基于近期真实体验作答。' }}</p>
+            </div>
+          </div>
+          <dl>
+            <div
+              ><dt>题目</dt><dd>{{ detail.questions?.length ?? detail.questionCount }} 题</dd></div
+            >
+            <div
+              ><dt>开放至</dt><dd>{{ formatDate(detail.endDate) }}</dd></div
+            >
+          </dl>
+        </section>
+
+        <div class="experience-response-dialog__privacy" role="note">
+          <ArtSvgIcon icon="ri:shield-user-line" />
+          <div>
+            <strong>本次提交不保存您的员工身份</strong>
+            <p
+              >{{ detail.privacyNote }} 低于
+              {{ detail.minimumGroupSize }} 人的结果不会向管理者展示。</p
+            >
           </div>
         </div>
-        <dl>
-          <div
-            ><dt>题目</dt><dd>{{ detail.questions?.length ?? detail.questionCount }} 题</dd></div
-          >
-          <div
-            ><dt>开放至</dt><dd>{{ formatDate(detail.endDate) }}</dd></div
-          >
-        </dl>
-      </section>
 
-      <div class="experience-response-dialog__privacy" role="note">
-        <ArtSvgIcon icon="ri:shield-user-line" />
-        <div>
-          <strong>本次提交不保存您的员工身份</strong>
-          <p
-            >{{ detail.privacyNote }} 低于
-            {{ detail.minimumGroupSize }} 人的结果不会向管理者展示。</p
-          >
-        </div>
+        <ArtForm
+          ref="formRef"
+          v-model="form.model"
+          :items="form.items"
+          :rules="form.rules"
+          :span="24"
+          :gutter="20"
+          label-position="top"
+          :show-reset="false"
+          :show-submit="false"
+          class="experience-response-dialog__form"
+        />
+
+        <footer class="experience-response-dialog__footer-note">
+          <ArtSvgIcon icon="ri:information-line" />
+          提交后不能再次编辑。系统只在达到匿名阈值后展示聚合结果，不将答案用于个人绩效、任职或员工关系判断。
+        </footer>
       </div>
-
-      <ArtForm
-        ref="formRef"
-        v-model="form.model"
-        :items="form.items"
-        :rules="form.rules"
-        :span="24"
-        :gutter="20"
-        label-position="top"
-        :show-reset="false"
-        :show-submit="false"
-        class="experience-response-dialog__form"
-      />
-
-      <footer class="experience-response-dialog__footer-note">
-        <ArtSvgIcon icon="ri:information-line" />
-        提交后不能再次编辑。系统只在达到匿名阈值后展示聚合结果，不将答案用于个人绩效、任职或员工关系判断。
-      </footer>
-    </div>
+    </ArtAsyncState>
   </ArtDialog>
 </template>
 
 <script setup lang="ts">
   import type { FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
+  import ArtAsyncState from '@/components/core/feedback/art-async-state/index.vue'
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
   import ArtForm, { type FormItem } from '@/components/core/forms/art-form/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
@@ -79,7 +97,52 @@
   const dialogRef = ref<ArtDialogExpose>()
   const formRef = ref<ArtFormExpose>()
   const detail = shallowRef<Api.Hr.EmployeeExperienceMySurvey>()
+  const canAnswer = computed(
+    () => detail.value?.availability === 'available' && Boolean(detail.value.questions?.length)
+  )
+  const unavailableTitle = computed(() => {
+    switch (detail.value?.availability) {
+      case 'completed':
+        return '您已完成本次调查'
+      case 'expired':
+        return '本次调查已结束'
+      case 'unavailable':
+        return '本次调查尚未开放'
+      default:
+        return '调查暂无可填写题目'
+    }
+  })
   const participantId = ref('')
+  const loading = ref(false)
+  const errorMessage = ref('')
+  let detailRequest = 0
+
+  const loadDetail = async (): Promise<void> => {
+    const request = ++detailRequest
+    const id = participantId.value
+    loading.value = true
+    errorMessage.value = ''
+    dialogRef.value?.setOptions({ confirmDisabled: true })
+    try {
+      const response = await fetchEmployeeExperienceDetail<Api.Hr.EmployeeExperienceMySurvey>(
+        'my',
+        id
+      )
+      if (request !== detailRequest || id !== participantId.value) return
+      if (response.error) throw response.error
+      detail.value = response.data ?? undefined
+      dialogRef.value?.setOptions({ confirmDisabled: !canAnswer.value })
+      await nextTick()
+      formRef.value?.clearValidate()
+    } catch {
+      if (request === detailRequest) errorMessage.value = '调查题目加载失败，请重新加载后填写'
+    } finally {
+      if (request === detailRequest) loading.value = false
+    }
+  }
+  onBeforeUnmount(() => {
+    detailRequest++
+  })
   const formModel = reactive<FormModel>({ answers: {} })
 
   const dictLabel = (code: string, value?: string | null): string =>
@@ -181,6 +244,7 @@
     })
 
   const submit = async (): Promise<boolean> => {
+    if (loading.value || errorMessage.value || !canAnswer.value) return false
     try {
       if (!(await validateArtFormForSubmit(formRef.value))) return false
       try {
@@ -204,25 +268,18 @@
   const handleOpen = async (record: Api.Hr.EmployeeExperienceMySurvey): Promise<void> => {
     participantId.value = record.id
     detail.value = undefined
+    errorMessage.value = ''
+    loading.value = true
     formModel.answers = {}
     await dialogRef.value?.handleOpen(undefined, {
       title: '填写匿名员工体验调查',
       subtitle: '请基于真实体验作答，提交后答案与员工身份物理分离',
       confirmText: '匿名提交',
+      confirmDisabled: true,
       contentMaxHeight: 'calc(100vh - 164px)',
-      onOpen: async (_data, api) => {
-        api.setLoading(true)
-        try {
-          const response = await fetchEmployeeExperienceDetail<Api.Hr.EmployeeExperienceMySurvey>(
-            'my',
-            record.id
-          )
-          detail.value = response.data ?? undefined
-          await nextTick()
-          formRef.value?.clearValidate()
-        } finally {
-          api.setLoading(false)
-        }
+      onOpen: loadDetail,
+      onClose: () => {
+        detailRequest++
       },
       onConfirm: async (_data, api) => {
         api.setLoading(true)

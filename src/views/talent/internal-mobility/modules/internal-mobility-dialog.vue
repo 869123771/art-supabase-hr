@@ -47,7 +47,29 @@
         label-position="top"
         :show-reset="false"
         :show-submit="false"
-      />
+      >
+        <template #hiringManagerEmployeeId>
+          <ArtEmployeeSelect
+            v-model="form.model.hiringManagerEmployeeId"
+            v-model:selected-data="employeeSelection.manager"
+            :tenant-id="form.model.tenantId"
+            :api-fn="fetchInternalMobilityEmployeeSelector"
+            :display-fields="[]"
+            placeholder="请选择机会负责人"
+          />
+        </template>
+        <template #employeeId>
+          <ArtEmployeeSelect
+            v-model="form.model.employeeId"
+            v-model:selected-data="employeeSelection.applicant"
+            :tenant-id="form.model.tenantId"
+            :api-fn="fetchInternalMobilityEmployeeSelector"
+            :display-fields="[]"
+            :disabled="Boolean(form.model.id)"
+            placeholder="请选择申请员工"
+          />
+        </template>
+      </ArtForm>
     </div>
   </ArtDialog>
 </template>
@@ -61,6 +83,9 @@
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
   import ArtForm, { type FormItem } from '@/components/core/forms/art-form/index.vue'
+  import ArtEmployeeSelect from '@/components/business/art-employee-select/index.vue'
+  import type { EmployeeIntegrationItem } from '@/api/integration/employees'
+  import { fetchInternalMobilityEmployeeSelector } from '@hr/api/modules/internal-mobility'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
@@ -133,9 +158,13 @@
   const references = reactive({
     organizations: [] as Api.Hr.InternalMobilityReference[],
     positions: [] as Api.Hr.InternalMobilityReference[],
-    employees: [] as Api.Hr.InternalMobilityReference[],
     opportunities: [] as Api.Hr.InternalMobilityReference[]
   })
+
+  const employeeSelection = reactive<{
+    manager: EmployeeIntegrationItem[]
+    applicant: EmployeeIntegrationItem[]
+  }>({ manager: [], applicant: [] })
 
   const createInitialModel = (): FormModel => ({
     id: undefined,
@@ -234,9 +263,7 @@
     {
       label: '机会负责人',
       key: 'hiringManagerEmployeeId',
-      type: 'select',
-      options: toOptions(references.employees),
-      props: { filterable: true }
+      type: 'input'
     },
     {
       label: '录用容量',
@@ -313,9 +340,8 @@
           {
             label: '申请员工',
             key: 'employeeId',
-            type: 'select' as const,
+            type: 'input' as const,
             span: 24,
-            options: toOptions(references.employees),
             props: { filterable: true, disabled: Boolean(formModel.id) }
           }
         ]
@@ -408,25 +434,27 @@
     rules: formRules
   })
 
+  let referenceRequest = 0
   const loadReferences = async (): Promise<void> => {
-    if (entity.value === 'opportunity') {
-      if (!formModel.tenantId && isPlatformSuper.value) return
-      const [organizations, positions, employees] = await Promise.all([
-        fetchInternalMobilityOptions('organization', formModel.tenantId),
-        fetchInternalMobilityOptions('position', formModel.tenantId),
-        fetchInternalMobilityOptions('employee', formModel.tenantId)
-      ])
-      references.organizations = organizations.data ?? []
-      references.positions = positions.data ?? []
-      references.employees = employees.data ?? []
+    const request = ++referenceRequest
+    const tenantId = formModel.tenantId
+    const kind = entity.value
+    references.organizations = []
+    references.positions = []
+    references.opportunities = []
+    if (!tenantId && isPlatformSuper.value && kind === 'opportunity') return
+    const [organizations, positions, opportunities] = await Promise.all([
+      kind === 'opportunity' ? fetchInternalMobilityOptions('organization', tenantId) : undefined,
+      kind === 'opportunity' ? fetchInternalMobilityOptions('position', tenantId) : undefined,
+      kind === 'application' && !selectedOpportunity.value
+        ? fetchInternalMobilityOptions('opportunity', tenantId)
+        : undefined
+    ])
+    if (request !== referenceRequest || tenantId !== formModel.tenantId || kind !== entity.value)
       return
-    }
-    const requests = [fetchInternalMobilityOptions('opportunity', formModel.tenantId)]
-    if (manageAccess.value)
-      requests.push(fetchInternalMobilityOptions('employee', formModel.tenantId))
-    const [opportunities, employees] = await Promise.all(requests)
-    references.opportunities = opportunities.data ?? []
-    references.employees = employees?.data ?? []
+    references.organizations = organizations?.data ?? []
+    references.positions = positions?.data ?? []
+    references.opportunities = opportunities?.data ?? []
   }
 
   const validateDates = (): boolean => {
@@ -505,6 +533,31 @@
     manageAccess.value = Boolean(payload.manageAccess)
     selectedOpportunity.value = payload.opportunity
     Object.assign(formModel, createInitialModel(), payload.editData ?? {})
+    employeeSelection.manager = []
+    employeeSelection.applicant = []
+    const row = payload.editData
+    if (row && 'hiringManagerEmployeeId' in row && row.hiringManagerName && row.tenantId) {
+      employeeSelection.manager = [
+        {
+          id: row.hiringManagerEmployeeId,
+          tenantId: row.tenantId,
+          employeeName: row.hiringManagerName,
+          employeeNo: '',
+          employmentStatus: ''
+        }
+      ]
+    }
+    if (row && 'employeeName' in row && row.employeeId && row.employeeName && row.tenantId) {
+      employeeSelection.applicant = [
+        {
+          id: row.employeeId,
+          tenantId: row.tenantId,
+          employeeName: row.employeeName,
+          employeeNo: row.employeeNo ?? '',
+          employmentStatus: ''
+        }
+      ]
+    }
     if (payload.opportunity) {
       formModel.opportunityId = payload.opportunity.id
       formModel.tenantId = payload.opportunity.tenantId
@@ -543,6 +596,8 @@
       formModel.positionId = undefined
       formModel.hiringManagerEmployeeId = undefined
       formModel.employeeId = undefined
+      employeeSelection.manager = []
+      employeeSelection.applicant = []
       await loadReferences()
     }
   )

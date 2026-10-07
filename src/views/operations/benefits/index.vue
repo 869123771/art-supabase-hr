@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:Benefits:View">
     <div class="benefits-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="false" />
       <BusinessWorkspaceHeader
         eyebrow="BENEFITS & ENROLLMENT CONTROL"
         title="福利与参保"
@@ -111,6 +112,7 @@
 </template>
 
 <script setup lang="tsx">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import dayjs from 'dayjs'
   import { ElTag, type TagProps } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
@@ -131,7 +133,7 @@
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
   import { useAuth } from '@/hooks/core/useAuth'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import { fetchEnabledTenantList } from '@/api/system-manage'
@@ -835,8 +837,9 @@
       )
       await transitionBenefitRecord(activeEntity.value, row.id, action)
       await refreshAfterMutation()
-    } catch {
-      // 用户取消操作时保持当前页面状态。
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '福利记录处理失败，请刷新状态后重试')
     }
   }
 
@@ -870,7 +873,11 @@
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .benefits-page {
+    @include hr-table-workspace-layout(360px);
+
     display: flex;
     flex-direction: column;
     gap: var(--art-page-gap);

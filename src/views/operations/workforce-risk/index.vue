@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:WorkforceRisk:View">
     <div class="workforce-risk-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="false" />
       <BusinessWorkspaceHeader
         eyebrow="WORKFORCE RISK"
         title="人力风险中心"
@@ -19,7 +20,16 @@
         @refresh="loadOverview"
       />
 
-      <ArtSectionCard class="workforce-risk-page__workspace" preserve-content-structure>
+      <ArtSectionCard
+        class="workforce-risk-page__workspace business-workspace-content"
+        :loading="loading && !overview"
+        :error="errorMessage"
+        :empty="Boolean(overview) && !filteredItems.length"
+        empty-title="当前筛选范围没有需要处置的人力风险"
+        empty-description="可调整筛选范围，继续关注最新风险识别结果。"
+        min-height="100%"
+        @retry="loadOverview"
+      >
         <template #header>
           <header class="workforce-risk-page__toolbar">
             <div>
@@ -36,22 +46,7 @@
           </header>
         </template>
 
-        <ElAlert v-if="errorMessage" type="error" show-icon :closable="false" :title="errorMessage">
-          <template #default>
-            <ElButton type="primary" link @click="loadOverview">重新加载</ElButton>
-          </template>
-        </ElAlert>
-
-        <ElSkeleton v-else-if="loading && !overview" :rows="6" animated />
-
-        <ArtEmptyState
-          v-else-if="!filteredItems.length"
-          title="当前筛选范围没有需要处置的人力风险"
-          description="可调整筛选范围，继续关注最新风险识别结果。"
-          :visual-size="96"
-        />
-
-        <ol v-else class="workforce-risk-page__list">
+        <ol class="workforce-risk-page__list">
           <li v-for="item in filteredItems" :key="item.id" class="workforce-risk-page__item">
             <span class="workforce-risk-page__risk-icon" :class="`is-${item.level}`">
               <ArtSvgIcon :icon="kindMeta[item.kind].icon" />
@@ -84,9 +79,9 @@
 </template>
 
 <script setup lang="ts">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import { getFriendlySupabaseErrorMessage } from '@/utils/supabase'
   import ArtSectionCard from '@/components/core/surfaces/art-section-card/index.vue'
-  import ArtEmptyState from '@/components/core/feedback/art-empty-state/index.vue'
   import { useRouter } from 'vue-router'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric
@@ -203,9 +198,12 @@
     &__workspace {
       display: flex;
       flex-direction: column;
-      gap: 16px;
       min-width: 0;
-      padding: 18px;
+      overflow: hidden;
+
+      :deep(.art-section-card__header) {
+        flex: 0 0 auto;
+      }
     }
 
     &__toolbar {
@@ -213,6 +211,7 @@
       gap: 16px;
       align-items: flex-end;
       justify-content: space-between;
+      padding: var(--art-section-padding);
 
       p {
         margin: 5px 0 0;

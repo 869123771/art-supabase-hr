@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:Attendance:View">
     <div class="attendance-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="locationReady" />
       <BusinessWorkspaceHeader
         eyebrow="TIME & ATTENDANCE CONTROL"
         title="考勤与工时"
@@ -69,21 +70,28 @@
           emptyText: `暂无${activeTab.label}`,
           emptyDescription: activeTab.emptyDescription
         }"
+        :on-success="handleTableSuccess"
         focusable
       />
 
       <AttendanceDialog ref="dialogRef" @success="handleSaveSuccess" />
+      <MasterDataDeleteGuard ref="deleteGuardRef" />
     </div>
   </ArtPermissionGuard>
 </template>
 
 <script setup lang="tsx">
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
+  import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
   import dayjs from 'dayjs'
   import { ElTag } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
     ArtTableQueryExpose,
-    ArtTableQueryHeaderAction
+    ArtTableQueryHeaderAction,
+    ArtTableQueryProps
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
@@ -96,7 +104,7 @@
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import type { ColumnOption, DialogType } from '@/types'
@@ -182,6 +190,17 @@
   const { confirmAction, promptText } = useArtFeedback()
   const activeEntity = ref<Entity>('record')
   const activeTab = computed(() => tabs.find((tab) => tab.value === activeEntity.value) ?? tabs[0]!)
+  const deleteTables: Record<Entity, string> = {
+    record: 'hr_attendance_record',
+    assignment: 'hr_shift_assignment',
+    correction: 'hr_attendance_correction',
+    period: 'hr_attendance_period',
+    shift: 'hr_shift'
+  }
+  const { deleteGuardRef, deleteRecord } = useRecordDeleteGuard(
+    () => deleteTables[activeEntity.value],
+    () => activeTab.value.label
+  )
   const navigationItems: HrEntityNavigationItem[] = tabs
   const tableQueryRef = ref<ArtTableQueryExpose>()
   const dialogRef = ref<DialogExpose>()
@@ -194,6 +213,21 @@
       periodMonth: dayjs().startOf('month').format('YYYY-MM-DD')
     }
   })
+  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+    {
+      hr_attendance_record: 'record',
+      hr_shift_assignment: 'assignment',
+      hr_attendance_correction: 'correction',
+      hr_attendance_period: 'period',
+      hr_shift: 'shift'
+    },
+    activeEntity,
+    tableState.searchQuery,
+    () => void tableQueryRef.value?.refreshData(),
+    () => {
+      tableState.searchQuery.periodMonth = ''
+    }
+  )
   const overview = reactive<Api.Hr.TimeAttendanceOverview>({
     activeShiftCount: 0,
     todayAssignmentCount: 0,
@@ -805,6 +839,7 @@
     const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
     return fetchTimeAttendanceRecords(activeEntity.value, { ...params, from, to })
   }
+  const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows) => markRows(rows)
   const refreshOverview = async () => {
     const response = await fetchTimeAttendanceOverview(tableState.searchQuery.tenantId)
     if (response.data) Object.assign(overview, response.data)
@@ -830,19 +865,25 @@
 
   const handleDelete = async (row: RecordItem) => {
     if (!row.id || activeEntity.value === 'record') return
-    try {
-      await confirmAction(`确定删除这条${activeTab.value.label}记录吗？`, '删除确认', {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-        confirmButtonType: 'danger'
-      })
-      await deleteTimeAttendanceRecord(activeEntity.value, row.id)
-      await tableQueryRef.value?.refreshRemove()
-      await refreshOverview()
-    } catch {
-      /* 用户取消或服务端门禁拒绝。 */
-    }
+    const entity = activeEntity.value
+    const label =
+      entity === 'shift'
+        ? `${(row as Api.Hr.TimeAttendanceShift).shiftName}（${(row as Api.Hr.TimeAttendanceShift).shiftCode}）`
+        : entity === 'period'
+          ? (row as Api.Hr.TimeAttendancePeriod).periodMonth
+          : entity === 'correction'
+            ? ((row as Api.Hr.TimeAttendanceCorrection).correctionNo ?? '考勤修正单')
+            : `${(row as Api.Hr.TimeAttendanceAssignment).employee?.name ?? '员工'} · ${(row as Api.Hr.TimeAttendanceAssignment).workDate}`
+    await deleteRecord({
+      resource: { id: row.id, label },
+      resourceLabel: activeTab.value.label,
+      permission: 'Hr:Attendance:Delete',
+      remove: () => deleteTimeAttendanceRecord(entity, row.id!),
+      onDeleted: async () => {
+        await tableQueryRef.value?.refreshRemove()
+        await refreshOverview()
+      }
+    })
   }
 
   const handleRecordAction = async (
@@ -868,8 +909,9 @@
         })
       await transitionTimeAttendanceDailyRecord(row.id, action, comment)
       await refreshAfterAction()
-    } catch {
-      /* 用户取消或状态门禁拒绝。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '日考勤处理失败，请刷新记录后重试')
     }
   }
 
@@ -901,8 +943,9 @@
         )
       await transitionTimeAttendanceCorrection(row.id, action, comment)
       await refreshAfterAction()
-    } catch {
-      /* 用户取消或审核门禁拒绝。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '考勤修正处理失败，请刷新申请后重试')
     }
   }
 
@@ -933,8 +976,9 @@
         )
       await transitionTimeAttendancePeriod(row.id, action, comment)
       await refreshAfterAction()
-    } catch {
-      /* 用户取消或封账门禁拒绝。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '考勤期间处理失败，请刷新期间状态后重试')
     }
   }
 
@@ -950,7 +994,11 @@
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .attendance-page {
+    @include hr-table-workspace-layout(360px);
+
     &__control {
       flex: 0 0 auto;
       padding: 18px 20px 0;

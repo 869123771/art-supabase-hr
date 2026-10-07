@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:Recruitment:View">
     <div class="recruitment-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="locationReady" />
       <BusinessWorkspaceHeader
         eyebrow="RECRUITMENT OPERATIONS"
         title="招聘运营工作台"
@@ -73,6 +74,7 @@
 
       <RecruitmentDialog ref="dialogRef" @success="handleSaveSuccess" />
       <RecruitmentActionDialog ref="actionDialogRef" @success="handleActionSuccess" />
+      <MasterDataDeleteGuard ref="deleteGuardRef" />
     </div>
   </ArtPermissionGuard>
 </template>
@@ -98,6 +100,10 @@
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
+  import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
   import { useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useAuth } from '@/hooks/core/useAuth'
   import { useUserStore } from '@/store/modules/user'
@@ -204,6 +210,10 @@
   const { confirmAction } = useArtFeedback()
   const activeEntity = ref<Entity>('requisition')
   const activeTab = computed(() => tabs.find((tab) => tab.entity === activeEntity.value) ?? tabs[0])
+  const { deleteGuardRef, deleteRecord } = useRecordDeleteGuard(
+    () => (activeEntity.value === 'requisition' ? 'hr_recruitment_requisition' : 'hr_candidate'),
+    () => activeTab.value.label
+  )
   const tableQueryRef = ref<ArtTableQueryExpose>()
   const dialogRef = ref<DialogExpose>()
   const actionDialogRef = ref<ActionDialogExpose>()
@@ -211,6 +221,16 @@
   const tableState = reactive<{ searchQuery: Api.Hr.RecruitmentSearchParams }>({
     searchQuery: { tenantId: '', status: '', keyword: '' }
   })
+  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+    {
+      hr_recruitment_requisition: 'requisition',
+      hr_candidate: 'candidate',
+      hr_recruitment_handoff: 'handoff'
+    },
+    activeEntity,
+    tableState.searchQuery,
+    () => void tableQueryRef.value?.refreshData()
+  )
   const overview = reactive<Api.Hr.RecruitmentOverview>({
     activeRequisitionCount: 0,
     openCandidateCount: 0,
@@ -1018,6 +1038,7 @@
     const { from, to } = buildSupabasePageRange(params as TableParams)
     const response = await fetchRecruitmentRecords(activeEntity.value, { ...params, from, to })
     sensitiveAccess.value = response.sensitiveAccess
+    markRows(response.data)
     return response
   }
   const refreshOverview = async (): Promise<void> => {
@@ -1094,18 +1115,20 @@
   const handleDelete = async (
     row: Api.Hr.RecruitmentRequisition | Api.Hr.RecruitmentCandidate
   ): Promise<void> => {
+    if (!row.id) return
     const entity = activeEntity.value === 'requisition' ? 'requisition' : 'candidate'
     const label =
       entity === 'requisition'
         ? (row as Api.Hr.RecruitmentRequisition).requisitionNo
         : (row as Api.Hr.RecruitmentCandidate).candidateName
-    await confirmAction(`确定删除「${label}」吗？仅未进入流程的记录允许删除。`, '删除招聘记录', {
-      confirmButtonText: '确认删除',
-      type: 'warning',
-      confirmButtonType: 'danger'
+    await deleteRecord({
+      resource: { id: row.id, label },
+      resourceLabel: activeTab.value.label,
+      permission: 'Hr:Recruitment:Delete',
+      confirmMessage: `确定删除「${label}」吗？仅未进入流程的记录允许删除。`,
+      remove: () => deleteRecruitmentRecord(entity, row.id!),
+      onDeleted: () => tableQueryRef.value?.refreshRemove() ?? Promise.resolve()
     })
-    await deleteRecruitmentRecord(entity, row.id!)
-    void tableQueryRef.value?.refreshRemove()
   }
 
   onMounted(async () => {
@@ -1137,7 +1160,11 @@
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .recruitment-page {
+    @include hr-table-workspace-layout(420px);
+
     &__pipeline {
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1322,7 +1349,6 @@
 
     :deep(.art-table-query) {
       flex: 1;
-      min-height: 0;
     }
 
     @media (width <= 1180px) {

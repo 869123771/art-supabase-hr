@@ -1,6 +1,7 @@
 <template>
   <ArtPermissionGuard permission="Hr:InternalMobility:View">
     <div class="mobility-page business-workspace-page art-full-height">
+      <MasterDeleteProcessingNotice :location-ready="locationReady" />
       <BusinessWorkspaceHeader
         eyebrow="INTERNAL TALENT MARKETPLACE"
         title="内部人才市场"
@@ -145,6 +146,7 @@
       />
 
       <InternalMobilityDialog ref="dialogRef" @success="handleDialogSuccess" />
+      <MasterDataDeleteGuard ref="deleteGuardRef" />
     </div>
   </ArtPermissionGuard>
 </template>
@@ -168,8 +170,12 @@
     type BusinessWorkspaceTag
   } from '@/components/business/business-workspace-header/index.vue'
   import BusinessTableWorkspaceActions from '@/components/business/business-table-workspace-actions/index.vue'
+  import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
+  import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
+  import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
+  import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
   import { fetchEnabledTenantList } from '@/api/system-manage'
-  import { useArtFeedback } from '@/hooks/core/useArtFeedback'
+  import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import type { ColumnOption, DialogType } from '@/types'
@@ -231,6 +237,13 @@
   const activeTab = computed(
     () => tabs.find((item) => item.value === activeEntity.value) ?? tabs[0]!
   )
+  const { deleteGuardRef, deleteRecord } = useRecordDeleteGuard(
+    () =>
+      activeEntity.value === 'opportunity'
+        ? 'hr_internal_opportunity'
+        : 'hr_internal_mobility_application',
+    () => activeTab.value.label
+  )
   const navigationItems: HrEntityNavigationItem[] = tabs
   const tableQueryRef = ref<ArtTableQueryExpose>()
   const dialogRef = ref<DialogExpose>()
@@ -240,6 +253,15 @@
   const tableState = reactive<{ searchQuery: Api.Hr.InternalMobilitySearchParams }>({
     searchQuery: { keyword: '', status: '', tenantId: '' }
   })
+  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+    {
+      hr_internal_mobility_application: 'application',
+      hr_internal_opportunity: 'opportunity'
+    },
+    activeEntity,
+    tableState.searchQuery,
+    () => void tableQueryRef.value?.refreshData()
+  )
   const overview = reactive<Api.Hr.InternalMobilityOverview>({
     openOpportunityCount: 0,
     closingSoonCount: 0,
@@ -776,14 +798,16 @@
     )
   }
 
-  const fetchTableData = (params: TableParams) => {
+  const fetchTableData = async (params: TableParams) => {
     const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
-    return fetchInternalMobilityRecords(activeEntity.value, {
+    const response = await fetchInternalMobilityRecords(activeEntity.value, {
       ...params,
       from,
       to,
       opportunityId: activeEntity.value === 'application' ? focusedOpportunity.value?.id : undefined
     })
+    markRows(response.data)
+    return response
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (_rows, response) => {
     tableTotal.value = response.total ?? 0
@@ -834,7 +858,7 @@
     if (item.key === 'apply') return openDialog('application', undefined, row)
     if (item.key === 'applications') return focusApplications(row)
     if (item.key === 'edit') return openDialog('opportunity', row)
-    if (item.key === 'delete') return handleDelete('opportunity', row.id)
+    if (item.key === 'delete') return handleDelete('opportunity', row)
     await handleOpportunityTransition(row, String(item.key))
   }
   const handleApplicationMore = async (
@@ -842,7 +866,7 @@
     row: Api.Hr.InternalMobilityApplication
   ) => {
     if (item.key === 'edit') return openDialog('application', row)
-    if (item.key === 'delete') return handleDelete('application', row.id)
+    if (item.key === 'delete') return handleDelete('application', row)
     await handleApplicationTransition(row, String(item.key))
   }
   const handleOpportunityTransition = async (
@@ -879,8 +903,9 @@
         )
       await transitionInternalMobility('opportunity', row.id, action, comment)
       await refreshWorkspace()
-    } catch {
-      /* 用户取消或服务端状态、日期及权限校验失败时保留当前视图。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '内部机会处理失败，请刷新状态后重试')
     }
   }
   const handleApplicationTransition = async (
@@ -959,24 +984,28 @@
       }
       await transitionInternalMobility('application', row.id, action, comment, score)
       await refreshWorkspace()
-    } catch {
-      /* 用户取消或服务端状态、容量及权限校验失败时保留当前视图。 */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close')
+        notifyFriendlyError(error, '内部申请处理失败，请刷新状态后重试')
     }
   }
-  const handleDelete = async (kind: Entity, id?: string) => {
-    if (!id) return
-    try {
-      await confirmAction('仅未进入流程的草稿可以删除。确认继续？', '删除内部人才市场草稿', {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-        confirmButtonType: 'danger'
-      })
-      await deleteInternalMobilityRecord(kind, id)
-      await refreshWorkspace()
-    } catch {
-      /* 用户取消或服务端依赖校验失败时不重复提示。 */
-    }
+  const handleDelete = async (kind: Entity, row: RecordItem) => {
+    if (!row.id) return
+    const label =
+      kind === 'opportunity'
+        ? `${(row as Api.Hr.InternalMobilityOpportunity).opportunityTitle}（${(row as Api.Hr.InternalMobilityOpportunity).opportunityCode}）`
+        : `${(row as Api.Hr.InternalMobilityApplication).employeeName ?? '我的申请'} · ${(row as Api.Hr.InternalMobilityApplication).opportunityTitle ?? '内部机会'}`
+    await deleteRecord({
+      resource: { id: row.id, label },
+      resourceLabel: activeTab.value.label,
+      permission:
+        kind === 'opportunity'
+          ? 'Hr:InternalMobility:Opportunity:Manage'
+          : 'Hr:InternalMobility:Application:Self',
+      confirmMessage: `确认删除“${label}”？仅未进入流程的草稿可以删除。`,
+      remove: () => deleteInternalMobilityRecord(kind, row.id!),
+      onDeleted: refreshWorkspace
+    })
   }
   onMounted(async () => {
     if (isPlatformSuper.value) {
@@ -991,7 +1020,11 @@
 </script>
 
 <style scoped lang="scss">
+  @use '../../shared/hr-table-workspace-layout' as *;
+
   .mobility-page {
+    @include hr-table-workspace-layout(420px);
+
     --mobility-border: color-mix(in srgb, var(--art-card-border) 84%, transparent);
 
     display: flex;

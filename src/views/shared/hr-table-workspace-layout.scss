@@ -1,0 +1,12 @@
+@mixin hr-table-workspace-layout($table-min-height: 360px) {
+  height: auto;
+  min-height: var(--art-full-height);
+
+  > .art-table-query {
+    min-height: $table-min-height;
+  }
+
+  &.art-table-focus-path > .art-table-query {
+    min-height: 0;
+  }
+}
