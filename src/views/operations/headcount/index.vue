@@ -114,6 +114,8 @@
 </template>
 
 <script setup lang="tsx">
+  import { toNameCodeOption } from '@/utils/form/option'
+
   import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import dayjs from 'dayjs'
   import { ElProgress, ElTag } from 'element-plus'
@@ -320,10 +322,7 @@
         key: 'planId',
         type: 'select',
         props: {
-          options: planFilterOptions.value.map((option) => ({
-            label: `${option.name ?? '--'}${option.code ? ` · ${option.code}` : ''}`,
-            value: option.id
-          })),
+          options: planFilterOptions.value.map(toNameCodeOption),
           clearable: true,
           filterable: true
         }

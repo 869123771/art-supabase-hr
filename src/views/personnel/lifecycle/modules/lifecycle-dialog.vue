@@ -11,7 +11,7 @@
       <ArtForm
         ref="formRef"
         v-model="form.model"
-        :items="form.items"
+        :items="hrTenantScopedFormItems(form.items, Boolean(form.model.id))"
         :rules="form.rules"
         :span="12"
         :gutter="24"
@@ -55,6 +55,9 @@
 </template>
 
 <script setup lang="ts">
+  import { toNameCodeOption } from '@/utils/form/option'
+
+  import { hrTenantScopedFormItems } from '@hr/views/shared/hr-tenant-scoped-form-items'
   import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
@@ -70,7 +73,11 @@
   import type { EmployeeIntegrationItem } from '@/api/integration/employees'
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
-  import { fetchLifecycleOptions, saveLifecycleRecord } from '@hr/api'
+  import {
+    hrOrganizationTreeField,
+    toHrOrganizationTreeOptions
+  } from '../../../shared/hr-organization-tree-field'
+  import { fetchHrOrganizationTree, fetchLifecycleOptions, saveLifecycleRecord } from '@hr/api'
   import { fetchLifecycleEmployeeSelector } from '@hr/api/modules/lifecycle'
   import type { DialogType } from '@/types'
 
@@ -130,7 +137,7 @@
   const tenantOptions = ref<FormItemOption[]>([])
   const caseOptions = shallowRef<Api.Hr.LifecycleReference[]>([])
   const templateOptions = shallowRef<Api.Hr.LifecycleReference[]>([])
-  const organizationOptions = shallowRef<Api.Hr.LifecycleReference[]>([])
+  const organizationOptions = shallowRef<ReturnType<typeof toHrOrganizationTreeOptions>>([])
   const positionOptions = shallowRef<Api.Hr.LifecycleReference[]>([])
   const handoffOptions = shallowRef<Api.Hr.LifecycleReference[]>([])
   const selections = reactive({
@@ -171,11 +178,6 @@
   })
   const formModel = reactive<FormModel>(createInitialModel())
 
-  const toOptions = (items: Api.Hr.LifecycleReference[]): FormItemOption[] =>
-    items.map((item) => ({
-      label: [item.name, item.code].filter(Boolean).join(' · '),
-      value: item.id
-    }))
   const activeTemplateOptions = computed(() =>
     templateOptions.value.filter(
       (item) => item.caseType === formModel.caseType && item.status === 'active'
@@ -220,7 +222,7 @@
       label: '招聘交接来源',
       key: 'handoffId',
       type: 'select',
-      options: toOptions(handoffOptions.value),
+      options: handoffOptions.value.map(toNameCodeOption),
       hidden: () => formModel.caseType !== 'onboarding' || Boolean(formModel.id),
       props: {
         clearable: true,
@@ -248,23 +250,22 @@
       label: '标准任务包',
       key: 'templateId',
       type: 'select',
-      options: toOptions(activeTemplateOptions.value),
+      options: activeTemplateOptions.value.map(toNameCodeOption),
       props: { clearable: true, placeholder: '默认使用当前事项类型的标准任务包' },
       description: '建单时固化为实际任务，后续调整模板不会改写在途事项。'
     },
     { label: '组织与责任', key: 'ownerSection', type: 'divider', span: 24 },
-    {
-      label: '组织',
+    hrOrganizationTreeField({
       key: 'organizationId',
-      type: 'select',
-      options: toOptions(organizationOptions.value),
-      props: { clearable: true, filterable: true, placeholder: '请选择事项所属组织' }
-    },
+      label: '组织',
+      options: organizationOptions.value,
+      placeholder: '请选择事项所属组织'
+    }),
     {
       label: '岗位',
       key: 'positionId',
       type: 'select',
-      options: toOptions(positionOptions.value),
+      options: positionOptions.value.map(toNameCodeOption),
       props: { clearable: true, filterable: true, placeholder: '请选择事项关联岗位' }
     },
     { label: '事项负责人', key: 'ownerEmployeeId', type: 'input' },
@@ -290,7 +291,7 @@
       label: '生命周期事项',
       key: 'lifecycleCaseId',
       type: 'select',
-      options: toOptions(caseOptions.value),
+      options: caseOptions.value.map(toNameCodeOption),
       props: { filterable: true, placeholder: '请选择生命周期事项' }
     },
     {
@@ -363,7 +364,9 @@
       label: '所属任务包',
       key: 'templateId',
       type: 'select',
-      options: toOptions(templateOptions.value.filter((item) => item.status !== 'active')),
+      options: templateOptions.value
+        .filter((item) => item.status !== 'active')
+        .map(toNameCodeOption),
       props: { filterable: true, placeholder: '请选择草稿或停用任务包' }
     },
     {
@@ -503,7 +506,7 @@
       kind === 'case' || kind === 'template_task'
         ? fetchLifecycleOptions('template', tenantId)
         : undefined,
-      kind === 'case' ? fetchLifecycleOptions('organization', tenantId) : undefined,
+      kind === 'case' ? fetchHrOrganizationTree('lifecycle', { tenantId }) : undefined,
       kind === 'case' ? fetchLifecycleOptions('position', tenantId) : undefined,
       kind === 'case' ? fetchLifecycleOptions('handoff', tenantId) : undefined
     ])
@@ -511,7 +514,7 @@
       return
     caseOptions.value = cases?.data ?? []
     templateOptions.value = templates?.data ?? []
-    organizationOptions.value = organizations?.data ?? []
+    organizationOptions.value = toHrOrganizationTreeOptions(organizations?.data ?? [])
     positionOptions.value = positions?.data ?? []
     handoffOptions.value = handoffs?.data ?? []
     if (entity.value === 'case' && !formModel.templateId) handleCaseTypeChange()

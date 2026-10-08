@@ -10,7 +10,7 @@
       <ArtForm
         ref="formRef"
         v-model="form.model"
-        :items="form.items"
+        :items="hrTenantScopedFormItems(form.items, Boolean(form.model.id))"
         :rules="form.rules"
         :span="12"
         :gutter="24"
@@ -52,6 +52,7 @@
 </template>
 
 <script setup lang="ts">
+  import { hrTenantScopedFormItems } from '@hr/views/shared/hr-tenant-scoped-form-items'
   import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
@@ -67,8 +68,9 @@
   import type { EmployeeIntegrationItem } from '@/api/integration/employees'
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
+  import { toHrOrganizationTreeOptions } from '../../../shared/hr-organization-tree-field'
   import {
-    fetchEmployeeOrganizationOptions,
+    fetchHrOrganizationTree,
     fetchOrganizationPositionDirectory,
     fetchRecruitmentOptions,
     saveRecruitmentRecord
@@ -243,13 +245,19 @@
           {
             label: '招聘组织',
             key: 'organizationId',
-            type: 'select',
-            api: () => fetchEmployeeOrganizationOptions({ tenantId: model.tenantId }),
+            type: 'treeSelect',
+            api: async () => {
+              const response = await fetchHrOrganizationTree('recruitment', {
+                tenantId: model.tenantId
+              })
+              return { ...response, data: toHrOrganizationTreeOptions(response.data ?? []) }
+            },
             resultField: 'data',
-            labelField: 'organizationName',
-            valueField: 'id',
             props: {
               filterable: true,
+              checkStrictly: true,
+              renderAfterExpand: false,
+              defaultExpandAll: true,
               placeholder: '请选择招聘组织',
               onChange: handleOrganizationChange
             }

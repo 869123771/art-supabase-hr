@@ -1,8 +1,8 @@
+export { fetchHrOrganizationTree } from './modules/organization-options'
 export {
   deleteEmployee,
   fetchEmployeeList,
   fetchEmployeeOrganizationTree,
-  fetchEmployeeOrganizationOptions,
   fetchOrganizationPositionDirectory,
   fetchEmployeeProfile,
   saveEmployeeProfile

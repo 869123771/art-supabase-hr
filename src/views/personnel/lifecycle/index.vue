@@ -77,6 +77,8 @@
 </template>
 
 <script setup lang="tsx">
+  import { toNameCodeOption } from '@/utils/form/option'
+
   import dayjs from 'dayjs'
   import { ElProgress } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
@@ -282,11 +284,6 @@
     }
   ])
 
-  const toOptions = (items: Api.Hr.LifecycleReference[]) =>
-    items.map((item) => ({
-      label: [item.name, item.code].filter(Boolean).join(' · '),
-      value: item.id
-    }))
   const searchItems = computed<SearchFormItem[]>(() => {
     const items: SearchFormItem[] = []
     if (isPlatformSuper.value)
@@ -307,7 +304,7 @@
         label: '事项',
         key: 'caseId',
         type: 'select',
-        options: toOptions(caseOptions.value),
+        options: caseOptions.value.map(toNameCodeOption),
         props: { clearable: true, filterable: true, placeholder: '全部生命周期事项' }
       })
     if (activeEntity.value === 'template_task')
@@ -315,7 +312,7 @@
         label: '任务包',
         key: 'templateId',
         type: 'select',
-        options: toOptions(templateOptions.value),
+        options: templateOptions.value.map(toNameCodeOption),
         props: { clearable: true, filterable: true, placeholder: '全部标准任务包' }
       })
     if (activeTab.value.statusDict)

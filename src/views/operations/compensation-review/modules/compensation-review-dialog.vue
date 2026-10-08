@@ -39,7 +39,7 @@
       <ArtForm
         ref="formRef"
         v-model="form.model"
-        :items="form.items"
+        :items="hrTenantScopedFormItems(form.items, Boolean(form.model.id) || parentTenantLocked)"
         :rules="form.rules"
         :span="12"
         :gutter="22"
@@ -52,6 +52,7 @@
 </template>
 
 <script setup lang="ts">
+  import { hrTenantScopedFormItems } from '@hr/views/shared/hr-tenant-scoped-form-items'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import dayjs from 'dayjs'
@@ -62,7 +63,12 @@
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
-  import { fetchCompensationReviewOptions, saveCompensationReviewRecord } from '@hr/api'
+  import { useTenantScopeFormPolicy } from '@/hooks/core/useTenantScopeFormPolicy'
+  import { fetchHrOrganizationTree, saveCompensationReviewRecord } from '@hr/api'
+  import {
+    hrOrganizationTreeField,
+    toHrOrganizationTreeOptions
+  } from '../../../shared/hr-organization-tree-field'
   import type { DialogType } from '@/types'
 
   type Entity = Api.Hr.CompensationReviewEntity
@@ -118,17 +124,19 @@
 
   const emit = defineEmits<{ success: [entity: Entity, type: DialogType] }>()
   const userStore = useUserStore()
-  const { getUserInfo, isPlatformSuper } = storeToRefs(userStore)
+  const { isPlatformSuper } = storeToRefs(userStore)
+  const { defaultWriteTenantId } = useTenantScopeFormPolicy()
   const dialogRef = ref<ArtDialogExpose>()
   const formRef = ref<ArtFormExpose>()
   const entity = ref<Entity>('cycle')
   const dialogType = ref<DialogType>('add')
+  const parentTenantLocked = ref(false)
   const tenantOptions = ref<Array<{ label: string; value: string }>>([])
-  const organizationOptions = ref<Array<{ label: string; value: string }>>([])
+  const organizationOptions = ref<ReturnType<typeof toHrOrganizationTreeOptions>>([])
 
   const createInitialModel = (): FormModel => ({
     id: undefined,
-    tenantId: isPlatformSuper.value ? undefined : getUserInfo.value.tenantId,
+    tenantId: defaultWriteTenantId.value ?? undefined,
     cycleId: undefined,
     cycleCode: `MERIT-${dayjs().year()}`,
     cycleName: `${dayjs().year()} 年度调薪复核`,
@@ -248,7 +256,12 @@
             type: 'select',
             span: 24,
             options: tenantOptions.value,
-            props: { filterable: true, placeholder: '请选择所属租户' }
+            props: {
+              filterable: true,
+              disabled: dialogType.value === 'edit',
+              placeholder: '请选择所属租户',
+              onChange: handleTenantChange
+            }
           }
         ]
       : []
@@ -274,13 +287,13 @@
       type: 'number',
       props: { min: 2000, max: 2200, precision: 0, class: '!w-full' }
     },
-    {
-      label: '组织范围',
+    hrOrganizationTreeField({
       key: 'scopeOrganizationId',
-      type: 'select',
+      label: '组织范围',
       options: organizationOptions.value,
-      props: { clearable: true, filterable: true, placeholder: '全部组织' }
-    },
+      placeholder: formModel.tenantId ? '全部组织' : '请先选择租户',
+      disabled: !formModel.tenantId
+    }),
     { label: '节奏与生效', key: 'timeline', type: 'divider', span: 24 },
     {
       label: '经理建议截止',
@@ -322,17 +335,14 @@
 
   const budgetItems = computed<FormItem[]>(() => [
     {
-      label: '所属组织',
-      key: 'organizationId',
-      type: 'select',
-      span: 24,
-      options: organizationOptions.value,
-      props: {
+      ...hrOrganizationTreeField({
+        key: 'organizationId',
+        label: '所属组织',
+        options: organizationOptions.value,
         disabled: dialogType.value === 'edit',
-        clearable: true,
-        filterable: true,
         placeholder: '未分配组织或选择具体组织'
-      }
+      }),
+      span: 24
     },
     {
       label: '批准预算金额',
@@ -478,12 +488,21 @@
     }
   }
 
+  let organizationLoadVersion = 0
   const loadOptions = async (): Promise<void> => {
-    const response = await fetchCompensationReviewOptions('organization', formModel.tenantId)
-    organizationOptions.value = (response.data ?? []).map((item) => ({
-      label: `${item.name ?? '--'}${item.code ? `（${item.code}）` : ''}`,
-      value: item.id
-    }))
+    const version = ++organizationLoadVersion
+    const tenantId = formModel.tenantId
+    organizationOptions.value = []
+    if (!tenantId || entity.value === 'item') return
+    const response = await fetchHrOrganizationTree('compensationReview', { tenantId })
+    if (version !== organizationLoadVersion || tenantId !== formModel.tenantId) return
+    organizationOptions.value = toHrOrganizationTreeOptions(response.data ?? [])
+  }
+
+  const handleTenantChange = async (): Promise<void> => {
+    formModel.scopeOrganizationId = undefined
+    formModel.organizationId = undefined
+    await loadOptions()
   }
 
   const submit = async (): Promise<boolean> => {
@@ -512,11 +531,13 @@
   }
 
   const handleOpen = async (payload: OpenPayload): Promise<void> => {
+    parentTenantLocked.value = payload.entity !== 'cycle' && Boolean(payload.cycle)
+    organizationLoadVersion += 1
     entity.value = payload.entity
     dialogType.value = payload.type
     Object.assign(formModel, createInitialModel())
     organizationOptions.value = []
-    if (payload.cycle) {
+    if (entity.value !== 'cycle' && payload.cycle) {
       formModel.cycleId = payload.cycle.id
       formModel.tenantId = payload.cycle.tenantId
       formModel.cycleStatus = payload.cycle.status

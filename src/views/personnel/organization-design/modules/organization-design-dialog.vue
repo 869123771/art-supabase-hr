@@ -20,22 +20,41 @@
       <ArtForm
         ref="formRef"
         v-model="form.model"
-        :items="form.items"
+        :items="hrTenantScopedFormItems(form.items, Boolean(form.model.id) || parentTenantLocked)"
         :rules="form.rules"
         :span="12"
         :gutter="22"
         label-position="top"
         :show-reset="false"
         :show-submit="false"
-      />
+      >
+        <template #ownerEmployeeId>
+          <ArtEmployeeSelect
+            v-model="form.model.ownerEmployeeId"
+            v-model:selected-data="ownerSelection"
+            :tenant-id="form.model.tenantId"
+            :api-fn="fetchOrganizationDesignEmployeeSelector"
+            :display-fields="['jobTitle']"
+            placeholder="可选：请选择方案负责人"
+          />
+        </template>
+      </ArtForm>
     </div>
   </ArtDialog>
 </template>
 
 <script setup lang="ts">
+  import { toNameCodeOption } from '@/utils/form/option'
+
+  import { hrTenantScopedFormItems } from '@hr/views/shared/hr-tenant-scoped-form-items'
+  import { watchIgnorable } from '@vueuse/core'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import dayjs from 'dayjs'
+  import ArtEmployeeSelect from '@/components/business/art-employee-select/index.vue'
+  import type { EmployeeIntegrationItem } from '@/api/integration/employees'
+  import { employeeReferenceSelection } from '@/utils/form/employee-reference'
+  import { fetchOrganizationDesignEmployeeSelector } from '@hr/api/modules/organization-design'
   import { ElMessage, type FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
@@ -43,8 +62,14 @@
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
+  import {
+    hrOrganizationTreeField,
+    toHrOrganizationTreeOptions,
+    withoutHrOrganizationBranch
+  } from '../../../shared/hr-organization-tree-field'
   import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import {
+    fetchHrOrganizationTree,
     fetchOrganizationDesignOptions,
     saveOrganizationDesignChange,
     saveOrganizationDesignScenario
@@ -95,10 +120,11 @@
   const formRef = ref<ArtFormExpose>()
   const entity = ref<Entity>('scenario')
   const dialogType = ref<DialogType>('add')
+  const parentTenantLocked = ref(false)
   const tenantOptions = ref<Array<{ label: string; value: string }>>([])
+  const organizationOptions = ref<ReturnType<typeof toHrOrganizationTreeOptions>>([])
+  const ownerSelection = shallowRef<EmployeeIntegrationItem[]>([])
   const references = reactive({
-    organizations: [] as Api.Hr.OrganizationDesignReference[],
-    employees: [] as Api.Hr.OrganizationDesignReference[],
     scenarios: [] as Api.Hr.OrganizationDesignReference[]
   })
 
@@ -122,11 +148,7 @@
     sequence: 10
   })
   const formModel = reactive<FormModel>(createInitialModel())
-  const toOptions = (items: Api.Hr.OrganizationDesignReference[]) =>
-    items.map((item) => ({
-      label: `${item.name}${item.code ? `（${item.code}）` : ''}`,
-      value: item.id
-    }))
+
   const tenantItems = computed<FormItem[]>(() =>
     isPlatformSuper.value
       ? [
@@ -136,7 +158,7 @@
             type: 'select',
             span: 24,
             options: tenantOptions.value,
-            props: { filterable: true }
+            props: { filterable: true, disabled: Boolean(formModel.id) }
           }
         ]
       : []
@@ -151,9 +173,7 @@
     {
       label: '方案负责人',
       key: 'ownerEmployeeId',
-      type: 'select',
-      options: toOptions(references.employees),
-      props: { clearable: true, filterable: true }
+      type: 'input'
     },
     {
       label: '变革目标与业务理由',
@@ -171,7 +191,7 @@
       label: '所属方案',
       key: 'scenarioId',
       type: 'select',
-      options: toOptions(references.scenarios),
+      options: references.scenarios.map(toNameCodeOption),
       props: { filterable: true, disabled: Boolean(formModel.id) }
     },
     {
@@ -182,24 +202,28 @@
     },
     ...(formModel.changeType !== 'create'
       ? [
-          {
-            label: '目标组织',
+          hrOrganizationTreeField({
             key: 'organizationId',
-            type: 'select' as const,
-            options: toOptions(references.organizations),
-            props: { filterable: true, disabled: Boolean(formModel.id) }
-          }
+            label: '目标组织',
+            options: organizationOptions.value,
+            disabled: Boolean(formModel.id),
+            onChange: () => {
+              formModel.proposedParentId = undefined
+            }
+          })
         ]
       : []),
     ...(['create', 'reparent'].includes(formModel.changeType)
       ? [
-          {
-            label: '拟上级组织',
+          hrOrganizationTreeField({
             key: 'proposedParentId',
-            type: 'select' as const,
-            options: toOptions(references.organizations),
-            props: { clearable: formModel.changeType === 'create', filterable: true }
-          }
+            label: '拟上级组织',
+            options: withoutHrOrganizationBranch(
+              organizationOptions.value,
+              formModel.changeType === 'reparent' ? formModel.organizationId : undefined
+            ),
+            clearable: formModel.changeType === 'create'
+          })
         ]
       : []),
     ...(formModel.changeType === 'create'
@@ -295,15 +319,22 @@
     rules: formRules
   })
 
+  let referenceRequest = 0
   const loadReferences = async (): Promise<void> => {
-    if (!formModel.tenantId && isPlatformSuper.value) return
-    const kinds =
-      entity.value === 'scenario'
-        ? (['employee'] as const)
-        : (['organization', 'scenario'] as const)
-    const responses = await Promise.all(
-      kinds.map((kind) => fetchOrganizationDesignOptions(kind, formModel.tenantId))
-    )
+    const request = ++referenceRequest
+    const tenantId = formModel.tenantId
+    const kind = entity.value
+    organizationOptions.value = []
+    references.scenarios = []
+    if (!tenantId && isPlatformSuper.value) return
+    const kinds = kind === 'change' ? (['scenario'] as const) : ([] as const)
+    const [responses, organizations] = await Promise.all([
+      Promise.all(kinds.map((kind) => fetchOrganizationDesignOptions(kind, tenantId))),
+      kind === 'change' ? fetchHrOrganizationTree('organizationDesign', { tenantId }) : undefined
+    ])
+    if (request !== referenceRequest || tenantId !== formModel.tenantId || kind !== entity.value)
+      return
+    organizationOptions.value = toHrOrganizationTreeOptions(organizations?.data ?? [])
     kinds.forEach((kind, index) => {
       references[`${kind}s` as keyof typeof references] = responses[index]?.data ?? []
     })
@@ -358,13 +389,30 @@
     }
   }
   const handleOpen = async (payload: OpenPayload): Promise<void> => {
-    entity.value = payload.entity
-    dialogType.value = payload.type
-    Object.assign(formModel, createInitialModel(), payload.editData ?? {})
-    if (payload.scenario) {
-      formModel.scenarioId = payload.scenario.id
-      formModel.tenantId = payload.scenario.tenantId
-    }
+    parentTenantLocked.value = Boolean(payload.scenario)
+    referenceRequest += 1
+    ignoreTenantUpdates(() => {
+      entity.value = payload.entity
+      dialogType.value = payload.type
+      Object.assign(formModel, createInitialModel(), payload.editData ?? {})
+      ownerSelection.value =
+        payload.editData &&
+        'ownerEmployeeId' in payload.editData &&
+        payload.editData.ownerEmployeeId
+          ? employeeReferenceSelection(
+              {
+                id: payload.editData.ownerEmployeeId,
+                name: payload.editData.ownerEmployeeName,
+                code: payload.editData.ownerEmployeeNo
+              },
+              formModel.tenantId
+            )
+          : []
+      if (payload.scenario) {
+        formModel.scenarioId = payload.scenario.id
+        formModel.tenantId = payload.scenario.tenantId
+      }
+    })
     await nextTick()
     formRef.value?.clearValidate()
     await dialogRef.value?.handleOpen(undefined, {
@@ -390,10 +438,11 @@
       onConfirm: submit
     })
   }
-  watch(
+  const { ignoreUpdates: ignoreTenantUpdates } = watchIgnorable(
     () => formModel.tenantId,
     async (tenantId, previous) => {
-      if (!tenantId || tenantId === previous || dialogType.value !== 'add') return
+      if (tenantId === previous || dialogType.value !== 'add') return
+      ownerSelection.value = []
       formModel.ownerEmployeeId = undefined
       formModel.scenarioId = undefined
       formModel.organizationId = undefined

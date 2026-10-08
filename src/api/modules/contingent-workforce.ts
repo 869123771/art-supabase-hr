@@ -2,6 +2,7 @@ import { buildSupabaseRpcRange } from '@/utils/supabase'
 import { normalizeNullableText } from '@/utils/form/normalize'
 import { omit } from 'lodash-es'
 import { useSupabase } from '@/hooks'
+import { createEmployeeReferenceSelector } from '@/api/integration/employees'
 import { withRequestOptions } from '@/api/providers/supabase/query'
 import type { ApiRequestOptions } from '@/types/api/request'
 
@@ -154,3 +155,7 @@ export async function deleteContingentWorkforceRecord(
     { showMessage: true, breakReturn: true, message: '外部用工记录已删除' }
   )
 }
+
+export const fetchContingentSponsorEmployeeSelector = createEmployeeReferenceSelector((tenantId) =>
+  fetchContingentWorkforceOptions('sponsor', tenantId)
+)

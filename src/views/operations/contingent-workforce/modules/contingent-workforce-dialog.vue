@@ -24,23 +24,42 @@
       <ArtForm
         ref="formRef"
         v-model="form.model"
-        :items="form.items"
+        :items="hrTenantScopedFormItems(form.items, Boolean(form.model.id) || parentTenantLocked)"
         :rules="form.rules"
         :span="12"
         :gutter="22"
         label-position="top"
         :show-reset="false"
         :show-submit="false"
-      />
+      >
+        <template #sponsorEmployeeId>
+          <ArtEmployeeSelect
+            v-model="form.model.sponsorEmployeeId"
+            v-model:selected-data="sponsorSelection"
+            :tenant-id="form.model.tenantId"
+            :api-fn="fetchContingentSponsorEmployeeSelector"
+            :display-fields="['jobTitle']"
+            placeholder="请选择内部负责人"
+          />
+        </template>
+      </ArtForm>
     </div>
   </ArtDialog>
 </template>
 
 <script setup lang="ts">
+  import { toNameCodeOption } from '@/utils/form/option'
+
+  import { hrTenantScopedFormItems } from '@hr/views/shared/hr-tenant-scoped-form-items'
+  import { watchIgnorable } from '@vueuse/core'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import { normalizeNullableText } from '@/utils/form/normalize'
   import dayjs from 'dayjs'
+  import ArtEmployeeSelect from '@/components/business/art-employee-select/index.vue'
+  import type { EmployeeIntegrationItem } from '@/api/integration/employees'
+  import { employeeReferenceSelection } from '@/utils/form/employee-reference'
+  import { fetchContingentSponsorEmployeeSelector } from '@hr/api/modules/contingent-workforce'
   import { ElMessage, type FormRules } from 'element-plus'
   import ArtDialog from '@/components/core/dialogs/art-dialog/index.vue'
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
@@ -50,8 +69,16 @@
   import { useAuth } from '@/hooks/core/useAuth'
   import { useUserStore } from '@/store/modules/user'
   import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
-  import { fetchContingentWorkforceOptions, saveContingentWorkforceRecord } from '@hr/api'
+  import {
+    fetchContingentWorkforceOptions,
+    fetchHrOrganizationTree,
+    saveContingentWorkforceRecord
+  } from '@hr/api'
   import type { DialogType } from '@/types'
+  import {
+    hrOrganizationTreeField,
+    toHrOrganizationTreeOptions
+  } from '../../../shared/hr-organization-tree-field'
 
   type Entity = Api.Hr.ContingentWorkforceEntity
   type RecordItem = Api.Hr.ContingentWorkforceRecord
@@ -134,13 +161,14 @@
   const formRef = ref<ArtFormExpose>()
   const entity = ref<Entity>('engagement')
   const dialogType = ref<DialogType>('add')
+  const parentTenantLocked = ref(false)
   const tenantOptions = ref<Array<{ label: string; value: string }>>([])
+  const organizationOptions = ref<ReturnType<typeof toHrOrganizationTreeOptions>>([])
+  const sponsorSelection = shallowRef<EmployeeIntegrationItem[]>([])
   const references = reactive({
     vendors: [] as Api.Hr.ContingentWorkforceReference[],
     workers: [] as Api.Hr.ContingentWorkforceReference[],
-    organizations: [] as Api.Hr.ContingentWorkforceReference[],
     positions: [] as Api.Hr.ContingentWorkforceReference[],
-    sponsors: [] as Api.Hr.ContingentWorkforceReference[],
     engagements: [] as Api.Hr.ContingentWorkforceReference[]
   })
 
@@ -198,12 +226,6 @@
   })
   const formModel = reactive<FormModel>(createInitialModel())
 
-  const toOptions = (items: Api.Hr.ContingentWorkforceReference[]) =>
-    items.map((item) => ({
-      label: `${item.name}${item.code ? `（${item.code}）` : ''}`,
-      value: item.id
-    }))
-
   const commonTenantItems = (): FormItem[] =>
     isPlatformSuper.value
       ? [
@@ -213,7 +235,11 @@
             type: 'select',
             span: 24,
             options: tenantOptions.value,
-            props: { filterable: true, placeholder: '请选择所属租户' }
+            props: {
+              filterable: true,
+              disabled: Boolean(formModel.id),
+              placeholder: '请选择所属租户'
+            }
           }
         ]
       : []
@@ -263,7 +289,7 @@
       label: '所属供应商',
       key: 'vendorId',
       type: 'select',
-      options: toOptions(references.vendors),
+      options: references.vendors.map(toNameCodeOption),
       props: { clearable: true, filterable: true, placeholder: '外包/派遣必选' }
     },
     { label: '供应商人员编号', key: 'vendorWorkerNo', type: 'input', props: { maxlength: 60 } },
@@ -292,29 +318,26 @@
       label: '外部人员',
       key: 'workerId',
       type: 'select',
-      options: toOptions(references.workers),
+      options: references.workers.map(toNameCodeOption),
       props: { filterable: true, placeholder: '请选择未锁定的外部人员' }
     },
-    {
-      label: '用工组织',
+    hrOrganizationTreeField({
       key: 'organizationId',
-      type: 'select',
-      options: toOptions(references.organizations),
-      props: { filterable: true }
-    },
+      label: '用工组织',
+      options: organizationOptions.value
+    }),
     {
       label: '关联岗位',
       key: 'positionId',
       type: 'select',
-      options: toOptions(filteredPositions.value),
+      options: filteredPositions.value.map(toNameCodeOption),
       props: { clearable: true, filterable: true, placeholder: '可选：不占正式员工编制' }
     },
     {
       label: '内部负责人',
       key: 'sponsorEmployeeId',
-      type: 'select',
-      options: toOptions(references.sponsors),
-      props: { filterable: true, placeholder: '对准入、在场与退场负责' }
+      type: 'input',
+      description: '对准入、在场与退场负责'
     },
     { label: '服务角色', key: 'serviceTitle', type: 'input', props: { maxlength: 120 } },
     { label: '工作地点', key: 'workLocation', type: 'input', props: { maxlength: 160 } },
@@ -374,7 +397,7 @@
       key: 'engagementId',
       type: 'select',
       span: 24,
-      options: toOptions(references.engagements),
+      options: references.engagements.map(toNameCodeOption),
       props: { filterable: true, disabled: dialogType.value === 'edit' }
     },
     {
@@ -639,20 +662,36 @@
     }
   }
 
+  let referenceRequest = 0
   const loadReferences = async (): Promise<void> => {
-    if (!formModel.tenantId && isPlatformSuper.value) return
+    const request = ++referenceRequest
     const tenantId = formModel.tenantId
+    const kind = entity.value
+    organizationOptions.value = []
+    Object.assign(references, { vendors: [], workers: [], positions: [], engagements: [] })
+    if (!tenantId && isPlatformSuper.value) return
     const kinds =
       entity.value === 'worker'
         ? (['vendor'] as const)
         : entity.value === 'engagement'
-          ? (['vendor', 'worker', 'organization', 'position', 'sponsor'] as const)
+          ? (['vendor', 'worker', 'position'] as const)
           : entity.value === 'control'
             ? (['engagement'] as const)
             : ([] as const)
-    const responses = await Promise.all(
-      kinds.map((kind) => fetchContingentWorkforceOptions(kind, tenantId))
-    )
+    const [responses, organizations, sponsors] = await Promise.all([
+      Promise.all(kinds.map((kind) => fetchContingentWorkforceOptions(kind, tenantId))),
+      entity.value === 'engagement'
+        ? fetchHrOrganizationTree('contingentWorkforce', { tenantId })
+        : undefined,
+      entity.value === 'engagement' && dialogType.value === 'edit'
+        ? fetchContingentWorkforceOptions('sponsor', tenantId)
+        : undefined
+    ])
+    if (request !== referenceRequest || tenantId !== formModel.tenantId || kind !== entity.value)
+      return
+    organizationOptions.value = toHrOrganizationTreeOptions(organizations?.data ?? [])
+    const sponsor = sponsors?.data?.find((item) => item.id === formModel.sponsorEmployeeId)
+    if (sponsor) sponsorSelection.value = employeeReferenceSelection(sponsor, tenantId)
     kinds.forEach((kind, index) => {
       const key = `${kind}s` as keyof typeof references
       references[key] = responses[index]?.data ?? []
@@ -660,15 +699,27 @@
   }
 
   const handleOpen = async (payload: OpenPayload): Promise<void> => {
-    entity.value = payload.entity
-    dialogType.value = payload.type
-    Object.assign(formModel, createInitialModel())
-    if (payload.editData) setFromRecord(payload.editData)
-    if (payload.engagement) {
-      formModel.engagementId = payload.engagement.id
-      formModel.tenantId = payload.engagement.tenantId
-      formModel.dueDate = payload.engagement.startDate
-    }
+    parentTenantLocked.value = Boolean(payload.engagement)
+    referenceRequest += 1
+    ignoreReferenceUpdates(() => {
+      entity.value = payload.entity
+      dialogType.value = payload.type
+      Object.assign(formModel, createInitialModel())
+      sponsorSelection.value = []
+      if (payload.editData) {
+        setFromRecord(payload.editData)
+        if ('sponsorEmployeeId' in payload.editData)
+          sponsorSelection.value = employeeReferenceSelection(
+            { id: payload.editData.sponsorEmployeeId, name: payload.editData.sponsorEmployeeName },
+            formModel.tenantId
+          )
+      }
+      if (payload.engagement) {
+        formModel.engagementId = payload.engagement.id
+        formModel.tenantId = payload.engagement.tenantId
+        formModel.dueDate = payload.engagement.startDate
+      }
+    })
     await nextTick()
     formRef.value?.clearValidate()
     await dialogRef.value?.handleOpen(undefined, {
@@ -695,23 +746,21 @@
     })
   }
 
-  watch(
-    () => formModel.tenantId,
-    async (tenantId, previousTenantId) => {
-      if (!tenantId || tenantId === previousTenantId || dialogType.value !== 'add') return
+  const { ignoreUpdates: ignoreReferenceUpdates } = watchIgnorable(
+    [() => formModel.tenantId, () => formModel.organizationId] as const,
+    async ([tenantId, organizationId], [previousTenantId, previousOrganizationId]) => {
+      if (tenantId === previousTenantId || dialogType.value !== 'add') {
+        if (organizationId !== previousOrganizationId) formModel.positionId = undefined
+        return
+      }
       formModel.vendorId = undefined
       formModel.workerId = undefined
       formModel.organizationId = undefined
       formModel.positionId = undefined
+      sponsorSelection.value = []
       formModel.sponsorEmployeeId = undefined
       formModel.engagementId = undefined
       await loadReferences()
-    }
-  )
-  watch(
-    () => formModel.organizationId,
-    (organizationId, previousOrganizationId) => {
-      if (organizationId !== previousOrganizationId) formModel.positionId = undefined
     }
   )
   watch(

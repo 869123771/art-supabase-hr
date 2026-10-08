@@ -5,7 +5,7 @@
       class="position-dialog__form"
       :model-value="form"
       @update:model-value="replaceReactiveModel(form, $event)"
-      :items="formItems"
+      :items="hrTenantScopedFormItems(formItems, Boolean(form.id))"
       :rules="formRules"
       :span="12"
       :gutter="24"
@@ -17,6 +17,7 @@
 </template>
 
 <script setup lang="ts">
+  import { hrTenantScopedFormItems } from '@hr/views/shared/hr-tenant-scoped-form-items'
   import { replaceReactiveModel } from '@/utils/form/model'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'

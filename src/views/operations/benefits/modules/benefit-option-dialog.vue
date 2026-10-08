@@ -23,6 +23,8 @@
 </template>
 
 <script setup lang="ts">
+  import { toNameCodeOption } from '@/utils/form/option'
+
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import { normalizeNullableText } from '@/utils/form/normalize'
@@ -130,10 +132,7 @@
         label: '薪资扣款项目',
         key: 'payComponentId',
         type: 'select',
-        options: componentOptions.value.map((item) => ({
-          label: `${item.name || item.code}（${item.code}）`,
-          value: item.id
-        })),
+        options: componentOptions.value.map(toNameCodeOption),
         props: { clearable: true, filterable: true, placeholder: '可选：映射到标准薪资项目' },
         help: '只建立受控输入映射，不直接执行薪资计算或财务记账'
       },

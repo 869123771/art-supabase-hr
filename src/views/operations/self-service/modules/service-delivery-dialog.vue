@@ -10,7 +10,7 @@
       <ArtForm
         ref="formRef"
         v-model="form.model"
-        :items="form.items"
+        :items="hrTenantScopedFormItems(form.items, Boolean(form.model.id) || parentTenantLocked)"
         :rules="form.rules"
         :span="12"
         :gutter="24"
@@ -32,6 +32,7 @@
 </template>
 
 <script setup lang="ts">
+  import { hrTenantScopedFormItems } from '@hr/views/shared/hr-tenant-scoped-form-items'
   import { uniqBy } from 'lodash-es'
   import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
@@ -101,6 +102,7 @@
   const entity = ref<Entity>('request')
   const managerView = ref(false)
   const editing = ref(false)
+  const parentTenantLocked = ref(false)
   const tenantOptions = ref<FormItemOption[]>([])
   const serviceOptions = ref<FormItemOption[]>([])
   const selectedService = shallowRef<Api.Hr.ServiceDeliveryReference>()
@@ -434,6 +436,7 @@
   }
 
   const handleOpen = async (payload: OpenPayload): Promise<void> => {
+    parentTenantLocked.value = Boolean(payload.preset?.tenantId)
     entity.value = payload.entity
     managerView.value = payload.managerView
     editing.value = payload.type === 'edit'

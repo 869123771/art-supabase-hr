@@ -34,7 +34,7 @@
         <ArtForm
           ref="formRef"
           v-model="form.model"
-          :items="form.items"
+          :items="hrTenantScopedFormItems(form.items, Boolean(form.model.id))"
           :rules="form.rules"
           :show-reset="false"
           :show-submit="false"
@@ -47,6 +47,7 @@
 </template>
 
 <script setup lang="ts">
+  import { hrTenantScopedFormItems } from '@hr/views/shared/hr-tenant-scoped-form-items'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import { cloneDeep, compact, get } from 'lodash-es'
@@ -58,12 +59,12 @@
   import type { EmployeeIntegrationItem } from '@/api/integration/employees'
   import ArtSectionTitle from '@/components/core/surfaces/art-section-title/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
-  import TreeUtils from '@/utils/tree'
+  import { toHrOrganizationTreeOptions } from './hr-organization-tree-field'
   import { useUserStore } from '@/store/modules/user'
   import { useDocumentNumberRule } from '@/hooks/core/useDocumentNumberRule'
   import { useTenantScopeFormPolicy } from '@/hooks/core/useTenantScopeFormPolicy'
   import {
-    fetchEmployeeOrganizationTree,
+    fetchHrOrganizationTree,
     fetchHrWorkspaceRecords,
     fetchPositionOptions,
     saveHrWorkspaceRecord
@@ -107,12 +108,6 @@
     )
   }
   const dialogModeLabel = computed(() => (isEditing.value ? '编辑记录' : '新增记录'))
-  const organizationTreeUtils = new TreeUtils({
-    idKey: 'id',
-    parentKey: 'parentId',
-    childrenKey: 'children'
-  })
-
   const form = reactive<FormState>({
     model: {},
     items: computed(() => currentTab.value?.fields.map(createFormItem) ?? []),
@@ -151,8 +146,11 @@
       return (result.data ?? []).map((item) => ({ ...item }))
     }
     if (key.toLowerCase().includes('organizationid')) {
-      const result = await fetchEmployeeOrganizationTree({ tenantId: targetTenantId.value })
-      return organizationTreeUtils.treeToList(result.data ?? [])
+      if (!currentWorkspace.value) throw new Error('人力资源工作台尚未初始化')
+      const result = await fetchHrOrganizationTree(currentWorkspace.value.organizationFeature, {
+        tenantId: targetTenantId.value
+      })
+      return toHrOrganizationTreeOptions(result.data ?? [])
     }
     if (!field.optionEntity) return []
     const result = await fetchHrWorkspaceRecords(field.optionEntity, {
@@ -218,11 +216,21 @@
             : null
         }
       }
-    } else if (field.type === 'select') {
+    } else if (field.type === 'select' || field.type === 'treeSelect') {
       base.api = () => fetchFieldOptions(field)
-      base.valueField = 'id'
-      base.labelFn = (option) => getOptionLabel(option, field.optionLabelKeys ?? ['id'])
-      base.props = { ...base.props, filterable: true }
+      if (field.type === 'treeSelect') {
+        base.props = {
+          ...base.props,
+          filterable: true,
+          checkStrictly: true,
+          renderAfterExpand: false,
+          defaultExpandAll: true
+        }
+      } else {
+        base.valueField = 'id'
+        base.labelFn = (option) => getOptionLabel(option, field.optionLabelKeys ?? ['id'])
+        base.props = { ...base.props, filterable: true }
+      }
     }
     if (field.type === 'date') {
       const isDateTime = ['clockInAt', 'clockOutAt', 'startAt', 'endAt'].includes(String(field.key))

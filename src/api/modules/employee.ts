@@ -99,14 +99,6 @@ export async function fetchEmployeeOrganizationTree(params: { tenantId?: string 
   }
 }
 
-export async function fetchEmployeeOrganizationOptions(params: { tenantId?: string } = {}) {
-  const result = await fetchEmployeeOrganizationTree(params)
-  return {
-    ...result,
-    data: organizationTreeUtils.treeToList(result.data ?? [])
-  }
-}
-
 export async function fetchOrganizationPositionDirectory(organizationId?: string) {
   const response = await responseHandle<OrganizationPositionDirectoryPayload>(
     () =>

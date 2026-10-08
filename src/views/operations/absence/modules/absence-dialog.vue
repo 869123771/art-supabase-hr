@@ -9,7 +9,7 @@
       <ArtForm
         ref="formRef"
         v-model="form.model"
-        :items="form.items"
+        :items="hrTenantScopedFormItems(form.items, Boolean(form.model.id))"
         :rules="form.rules"
         :span="12"
         :gutter="24"
@@ -33,6 +33,9 @@
 </template>
 
 <script setup lang="ts">
+  import { toNameCodeOption } from '@/utils/form/option'
+
+  import { hrTenantScopedFormItems } from '@hr/views/shared/hr-tenant-scoped-form-items'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import dayjs from 'dayjs'
@@ -45,7 +48,16 @@
   } from '@/components/core/forms/art-form/index.vue'
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
-  import { adjustLeaveBalance, fetchAbsenceOptions, saveAbsenceRecord } from '@hr/api'
+  import {
+    hrOrganizationTreeField,
+    toHrOrganizationTreeOptions
+  } from '../../../shared/hr-organization-tree-field'
+  import {
+    adjustLeaveBalance,
+    fetchAbsenceOptions,
+    fetchHrOrganizationTree,
+    saveAbsenceRecord
+  } from '@hr/api'
   import ArtEmployeeSelect from '@/components/business/art-employee-select/index.vue'
   import type { EmployeeIntegrationItem } from '@/api/integration/employees'
   import { fetchAbsenceEmployeeSelector } from '@hr/api/modules/absence'
@@ -112,7 +124,7 @@
   const tenantOptions = ref<FormItemOption[]>([])
   const employeeSelection = shallowRef<EmployeeIntegrationItem[]>([])
   const leaveTypeOptions = shallowRef<Api.Hr.AbsenceReference[]>([])
-  const organizationOptions = shallowRef<Api.Hr.AbsenceReference[]>([])
+  const organizationOptions = shallowRef<ReturnType<typeof toHrOrganizationTreeOptions>>([])
   const gradeOptions = shallowRef<Api.Hr.AbsenceReference[]>([])
 
   const createInitialModel = (): AbsenceFormModel => ({
@@ -358,10 +370,7 @@
       label,
       key: String(key),
       type: 'select',
-      options: options.map((option) => ({
-        label: `${option.name ?? ''}${option.code ? ` · ${option.code}` : ''}`,
-        value: option.id
-      })),
+      options: options.map(toNameCodeOption),
       props: { filterable: true, placeholder }
     }
   }
@@ -377,7 +386,12 @@
 
   const createScopeItem = (): FormItem | null => {
     if (form.model.scopeType === 'organization')
-      return select('organizationId', '指定组织', organizationOptions.value, '请选择适用组织')
+      return hrOrganizationTreeField({
+        key: 'organizationId',
+        label: '指定组织',
+        options: organizationOptions.value,
+        placeholder: '请选择适用组织'
+      })
     if (form.model.scopeType === 'employee')
       return { label: '指定员工', key: 'employeeId', type: 'input' }
     if (form.model.scopeType === 'grade')
@@ -401,13 +415,13 @@
     if (isPlatformSuper.value && !tenantId) return
     const [leaveTypes, organizations, grades] = await Promise.all([
       kind !== 'type' ? fetchAbsenceOptions('leave_type', tenantId) : undefined,
-      kind === 'policy' ? fetchAbsenceOptions('organization', tenantId) : undefined,
+      kind === 'policy' ? fetchHrOrganizationTree('absence', { tenantId }) : undefined,
       kind === 'policy' ? fetchAbsenceOptions('grade', tenantId) : undefined
     ])
     if (request !== referenceRequest || tenantId !== form.model.tenantId || kind !== entity.value)
       return
     leaveTypeOptions.value = leaveTypes?.data ?? []
-    organizationOptions.value = organizations?.data ?? []
+    organizationOptions.value = toHrOrganizationTreeOptions(organizations?.data ?? [])
     gradeOptions.value = grades?.data ?? []
   }
 

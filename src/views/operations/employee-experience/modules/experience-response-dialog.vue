@@ -1,7 +1,6 @@
 <template>
-  <ArtDialog ref="dialogRef" size="lg">
+  <ArtDialog :loading="loading" ref="dialogRef" size="lg">
     <ArtAsyncState
-      :loading="loading"
       :error="errorMessage"
       :empty="!canAnswer"
       :empty-text="unavailableTitle"

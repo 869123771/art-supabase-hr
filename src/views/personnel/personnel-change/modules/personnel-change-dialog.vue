@@ -4,7 +4,7 @@
       <ArtForm
         ref="formRef"
         v-model="form.model"
-        :items="form.items"
+        :items="hrTenantScopedFormItems(form.items, Boolean(form.model.id))"
         :rules="form.rules"
         :show-reset="false"
         :show-submit="false"
@@ -62,6 +62,7 @@
 </template>
 
 <script setup lang="ts">
+  import { hrTenantScopedFormItems } from '@hr/views/shared/hr-tenant-scoped-form-items'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import { cloneDeep } from 'lodash-es'
@@ -81,9 +82,10 @@
   import { useTenantScopeFormPolicy } from '@/hooks/core/useTenantScopeFormPolicy'
   import { useUserStore } from '@/store/modules/user'
   import { useTenantScopeStore } from '@/store/modules/tenant-scope'
+  import { toHrOrganizationTreeOptions } from '../../../shared/hr-organization-tree-field'
   import {
     fetchAssignmentPositionOptions,
-    fetchEmployeeOrganizationOptions,
+    fetchHrOrganizationTree,
     fetchJobArchitectureOptions,
     fetchPersonnelChangeEmployees,
     savePersonnelChange
@@ -252,8 +254,12 @@
     return { ...result, fieldAccess: {} }
   }
 
-  const loadOrganizationOptions = async () =>
-    (await fetchEmployeeOrganizationOptions({ tenantId: targetTenantId.value })).data ?? []
+  const loadOrganizationOptions = async () => {
+    const response = await fetchHrOrganizationTree('personnelChange', {
+      tenantId: targetTenantId.value
+    })
+    return { ...response, data: toHrOrganizationTreeOptions(response.data ?? []) }
+  }
 
   const loadPositionOptions = async (): Promise<Api.Hr.PositionOption[]> => {
     const result = await fetchAssignmentPositionOptions(form.model.toOrganizationId ?? undefined)
@@ -448,15 +454,15 @@
         {
           label: '新组织',
           key: 'toOrganizationId',
-          type: 'select',
+          type: 'treeSelect',
           hidden: !positionChangeTypes.has(changeType),
           immediate: false,
           api: loadOrganizationOptions,
-          valueField: 'id',
-          labelFn: (option) =>
-            `${option.organizationName ?? ''} · ${option.organizationCode ?? ''}`,
+          resultField: 'data',
           props: {
             filterable: true,
+            checkStrictly: true,
+            renderAfterExpand: false,
             clearable: true,
             placeholder: '请选择新组织',
             onChange: handleOrganizationChange

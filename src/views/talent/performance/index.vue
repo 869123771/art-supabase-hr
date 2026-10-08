@@ -111,6 +111,8 @@
 </template>
 
 <script setup lang="tsx">
+  import { toNameCodeOption } from '@/utils/form/option'
+
   import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
   import dayjs from 'dayjs'
@@ -359,11 +361,7 @@
         calibration_item: '员工、会议或调整依据'
       })[activeEntity.value]
   )
-  const toOptions = (items: Api.Hr.PerformanceReference[]) =>
-    items.map((item) => ({
-      label: [item.name, item.code].filter(Boolean).join(' · '),
-      value: item.id
-    }))
+
   const searchItems = computed<SearchFormItem[]>(() => {
     const items: SearchFormItem[] = []
     if (isPlatformSuper.value)
@@ -384,7 +382,7 @@
         label: '绩效周期',
         key: 'cycleId',
         type: 'select',
-        options: toOptions(cycleOptions.value),
+        options: cycleOptions.value.map(toNameCodeOption),
         props: { clearable: true, filterable: true, placeholder: '全部周期' }
       })
     if (activeEntity.value === 'calibration_item')
@@ -392,7 +390,7 @@
         label: '校准会议',
         key: 'sessionId',
         type: 'select',
-        options: toOptions(calibrationOptions.value),
+        options: calibrationOptions.value.map(toNameCodeOption),
         props: { clearable: true, filterable: true, placeholder: '全部会议' }
       })
     if (activeTab.value.statusDict)

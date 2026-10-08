@@ -10,7 +10,7 @@
       <ArtForm
         ref="formRef"
         v-model="form.model"
-        :items="form.items"
+        :items="hrTenantScopedFormItems(form.items, Boolean(form.model.id))"
         :rules="form.rules"
         :span="12"
         :gutter="24"
@@ -32,6 +32,9 @@
 </template>
 
 <script setup lang="ts">
+  import { toNameCodeOption } from '@/utils/form/option'
+
+  import { hrTenantScopedFormItems } from '@hr/views/shared/hr-tenant-scoped-form-items'
   import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
@@ -47,7 +50,15 @@
   import type { EmployeeIntegrationItem } from '@/api/integration/employees'
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
-  import { fetchWorkforcePlanningOptions, saveWorkforcePlanningRecord } from '@hr/api'
+  import {
+    hrOrganizationTreeField,
+    toHrOrganizationTreeOptions
+  } from '../../../shared/hr-organization-tree-field'
+  import {
+    fetchHrOrganizationTree,
+    fetchWorkforcePlanningOptions,
+    saveWorkforcePlanningRecord
+  } from '@hr/api'
   import type { DialogType } from '@/types'
 
   type Entity = Api.Hr.WorkforcePlanningEntity
@@ -97,7 +108,7 @@
   const entity = ref<Entity>('cycle')
   const tenantOptions = ref<FormItemOption[]>([])
   const planOptions = shallowRef<Api.Hr.WorkforcePlanningReference[]>([])
-  const organizationOptions = shallowRef<Api.Hr.WorkforcePlanningReference[]>([])
+  const organizationOptions = shallowRef<ReturnType<typeof toHrOrganizationTreeOptions>>([])
   const positionOptions = shallowRef<Api.Hr.WorkforcePlanningReference[]>([])
   const ownerSelection = ref<EmployeeIntegrationItem[]>([])
 
@@ -213,10 +224,7 @@
     label,
     key: String(key),
     type: 'select',
-    options: options.map((option) => ({
-      label: `${option.name ?? '未命名'}${option.code ? ` · ${option.code}` : ''}`,
-      value: option.id
-    })),
+    options: options.map(toNameCodeOption),
     props: { filterable: true, placeholder: `请选择${label}`, onChange }
   })
 
@@ -264,7 +272,12 @@
         return [
           ...tenantItem.value,
           select('planId', '草稿规划', planOptions.value),
-          select('organizationId', '组织', organizationOptions.value, handleOrganizationChange),
+          hrOrganizationTreeField({
+            key: 'organizationId',
+            label: '组织',
+            options: organizationOptions.value,
+            onChange: handleOrganizationChange
+          }),
           select('positionId', '岗位', filteredPositions.value, handlePositionChange),
           dict('priority', '需求优先级', 'hrWorkforcePlanPriority'),
           number('plannedHires', '计划增员'),
@@ -276,7 +289,12 @@
         ]
       return [
         ...tenantItem.value,
-        select('organizationId', '组织', organizationOptions.value, handleOrganizationChange),
+        hrOrganizationTreeField({
+          key: 'organizationId',
+          label: '组织',
+          options: organizationOptions.value,
+          onChange: handleOrganizationChange
+        }),
         select('positionId', '岗位', filteredPositions.value, handlePositionChange),
         number('approvedCount', '核定人数'),
         { label: '启用该记录', key: 'enabled', type: 'switch' },
@@ -354,13 +372,13 @@
     if (isPlatformSuper.value && !tenantId) return
     const [plans, organizations, positions] = await Promise.all([
       kind === 'line' ? fetchWorkforcePlanningOptions('plan', tenantId) : undefined,
-      kind !== 'cycle' ? fetchWorkforcePlanningOptions('organization', tenantId) : undefined,
+      kind !== 'cycle' ? fetchHrOrganizationTree('headcount', { tenantId }) : undefined,
       kind !== 'cycle' ? fetchWorkforcePlanningOptions('position', tenantId) : undefined
     ])
     if (request !== referenceRequest || tenantId !== formModel.tenantId || kind !== entity.value)
       return
     planOptions.value = (plans?.data ?? []).filter((option) => option.status === 'draft')
-    organizationOptions.value = organizations?.data ?? []
+    organizationOptions.value = toHrOrganizationTreeOptions(organizations?.data ?? [])
     positionOptions.value = positions?.data ?? []
   }
 

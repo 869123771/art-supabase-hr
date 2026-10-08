@@ -17,7 +17,7 @@
       <ArtForm
         ref="formRef"
         v-model="form.model"
-        :items="form.items"
+        :items="hrTenantScopedFormItems(form.items, Boolean(form.model.id))"
         :rules="form.rules"
         :span="12"
         :gutter="22"
@@ -30,6 +30,7 @@
 </template>
 
 <script setup lang="ts">
+  import { hrTenantScopedFormItems } from '@hr/views/shared/hr-tenant-scoped-form-items'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import { normalizeNullableText } from '@/utils/form/normalize'
@@ -41,7 +42,11 @@
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
-  import { fetchEmployeeOrganizationOptions, saveEmployeeExperienceRecord } from '@hr/api'
+  import { fetchHrOrganizationTree, saveEmployeeExperienceRecord } from '@hr/api'
+  import {
+    hrOrganizationTreeField,
+    toHrOrganizationTreeOptions
+  } from '../../../shared/hr-organization-tree-field'
   import type { DialogType } from '@/types'
 
   interface ArtFormExpose {
@@ -56,7 +61,7 @@
   const formRef = ref<ArtFormExpose>()
   const dialogType = ref<DialogType>('add')
   const tenantOptions = ref<Array<{ label: string; value: string }>>([])
-  const organizationOptions = ref<Array<{ label: string; value: string }>>([])
+  const organizationOptions = ref<ReturnType<typeof toHrOrganizationTreeOptions>>([])
 
   const createInitialModel = (): Api.Hr.EmployeeExperienceSurvey => ({
     id: undefined,
@@ -141,12 +146,12 @@
         help: '发布时按当日有效任职快照固化参与人员'
       },
       {
-        label: '目标组织',
-        key: 'audienceOrganizationId',
-        type: 'select',
-        options: organizationOptions.value,
-        hidden: () => formModel.audienceType !== 'organization',
-        props: { filterable: true, placeholder: '请选择目标组织' }
+        ...hrOrganizationTreeField({
+          key: 'audienceOrganizationId',
+          label: '目标组织',
+          options: organizationOptions.value
+        }),
+        hidden: () => formModel.audienceType !== 'organization'
       },
       {
         label: '最小匿名阈值',
@@ -219,16 +224,15 @@
       value: tenant.id!
     }))
   }
+  let organizationRequest = 0
   const loadOrganizations = async (): Promise<void> => {
-    if (!formModel.tenantId) {
-      organizationOptions.value = []
-      return
-    }
-    const response = await fetchEmployeeOrganizationOptions({ tenantId: formModel.tenantId })
-    organizationOptions.value = (response.data ?? []).map((organization) => ({
-      label: `${organization.organizationName} · ${organization.organizationCode}`,
-      value: organization.id!
-    }))
+    const request = ++organizationRequest
+    const tenantId = formModel.tenantId
+    organizationOptions.value = []
+    if (!tenantId) return
+    const response = await fetchHrOrganizationTree('experience', { tenantId })
+    if (request !== organizationRequest || tenantId !== formModel.tenantId) return
+    organizationOptions.value = toHrOrganizationTreeOptions(response.data ?? [])
   }
   const submit = async (): Promise<boolean> => {
     try {
@@ -261,6 +265,7 @@
     type: DialogType,
     editData?: Api.Hr.EmployeeExperienceSurvey
   ): Promise<void> => {
+    organizationRequest += 1
     dialogType.value = type
     Object.assign(formModel, createInitialModel(), editData ?? {})
     await nextTick()

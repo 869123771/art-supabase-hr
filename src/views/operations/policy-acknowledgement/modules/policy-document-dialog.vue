@@ -24,7 +24,7 @@
       <ArtForm
         ref="formRef"
         v-model="form.model"
-        :items="form.items"
+        :items="hrTenantScopedFormItems(form.items, Boolean(form.model.id))"
         :rules="form.rules"
         :span="12"
         :gutter="22"
@@ -37,6 +37,10 @@
 </template>
 
 <script setup lang="ts">
+  import { toNameCodeOption } from '@/utils/form/option'
+
+  import { hrTenantScopedFormItems } from '@hr/views/shared/hr-tenant-scoped-form-items'
+  import { watchIgnorable } from '@vueuse/core'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import { normalizeNullableText } from '@/utils/form/normalize'
@@ -49,7 +53,15 @@
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
   import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
-  import { fetchPolicyAcknowledgementOptions, savePolicyDocument } from '@hr/api'
+  import {
+    fetchHrOrganizationTree,
+    fetchPolicyAcknowledgementOptions,
+    savePolicyDocument
+  } from '@hr/api'
+  import {
+    hrOrganizationTreeField,
+    toHrOrganizationTreeOptions
+  } from '../../../shared/hr-organization-tree-field'
   import type { DialogType } from '@/types'
 
   interface OpenPayload {
@@ -90,7 +102,7 @@
   const formRef = ref<ArtFormExpose>()
   const dialogType = ref<DialogType>('add')
   const tenantOptions = ref<Array<{ label: string; value: string }>>([])
-  const organizationOptions = ref<Array<{ label: string; value: string }>>([])
+  const organizationOptions = ref<ReturnType<typeof toHrOrganizationTreeOptions>>([])
   const policyOptions = ref<Array<{ label: string; value: string }>>([])
 
   const createInitialModel = (): FormModel => ({
@@ -121,7 +133,11 @@
             type: 'select',
             span: 24,
             options: tenantOptions.value,
-            props: { filterable: true, placeholder: '请选择所属租户' }
+            props: {
+              filterable: true,
+              disabled: Boolean(formModel.id),
+              placeholder: '请选择所属租户'
+            }
           }
         ]
       : []
@@ -161,13 +177,12 @@
     },
     ...(formModel.audienceType === 'organization'
       ? [
-          {
-            label: '适用组织',
+          hrOrganizationTreeField({
             key: 'audienceOrganizationId',
-            type: 'select' as const,
+            label: '适用组织',
             options: organizationOptions.value,
-            props: { filterable: true, placeholder: '请选择组织（含下级组织）' }
-          }
+            placeholder: '请选择组织（含下级组织）'
+          })
         ]
       : []),
     ...(formModel.audienceType === 'employment_type'
@@ -239,22 +254,22 @@
     rules: ComputedRef<FormRules<FormModel>>
   }>({ model: formModel, items: formItems, rules: formRules })
 
+  let referenceRequest = 0
   const loadReferences = async (): Promise<void> => {
-    if (!formModel.tenantId && isPlatformSuper.value) return
+    const request = ++referenceRequest
+    const tenantId = formModel.tenantId
+    organizationOptions.value = []
+    policyOptions.value = []
+    if (!tenantId && isPlatformSuper.value) return
     const [organizationResponse, policyResponse] = await Promise.all([
-      fetchPolicyAcknowledgementOptions('organization', formModel.tenantId),
-      fetchPolicyAcknowledgementOptions('policy', formModel.tenantId)
+      fetchHrOrganizationTree('policyAcknowledgement', { tenantId }),
+      fetchPolicyAcknowledgementOptions('policy', tenantId)
     ])
-    organizationOptions.value = (organizationResponse.data ?? []).map((item) => ({
-      label: `${item.name}${item.code ? `（${item.code}）` : ''}`,
-      value: item.id
-    }))
+    if (request !== referenceRequest || tenantId !== formModel.tenantId) return
+    organizationOptions.value = toHrOrganizationTreeOptions(organizationResponse.data ?? [])
     policyOptions.value = (policyResponse.data ?? [])
       .filter((item) => item.id !== formModel.id)
-      .map((item) => ({
-        label: `${item.name}${item.code ? ` · ${item.code}` : ''}`,
-        value: item.id
-      }))
+      .map(toNameCodeOption)
   }
 
   const validateBusinessRules = (): boolean => {
@@ -304,8 +319,11 @@
   }
 
   const handleOpen = async (payload: OpenPayload): Promise<void> => {
-    dialogType.value = payload.type
-    Object.assign(formModel, createInitialModel(), payload.editData ?? {})
+    referenceRequest += 1
+    ignoreTenantUpdates(() => {
+      dialogType.value = payload.type
+      Object.assign(formModel, createInitialModel(), payload.editData ?? {})
+    })
     await nextTick()
     formRef.value?.clearValidate()
     await dialogRef.value?.handleOpen(undefined, {
@@ -332,10 +350,10 @@
     })
   }
 
-  watch(
+  const { ignoreUpdates: ignoreTenantUpdates } = watchIgnorable(
     () => formModel.tenantId,
     async (tenantId, previousTenantId) => {
-      if (!tenantId || tenantId === previousTenantId || dialogType.value !== 'add') return
+      if (tenantId === previousTenantId || dialogType.value !== 'add') return
       formModel.audienceOrganizationId = undefined
       formModel.supersedesPolicyId = undefined
       await loadReferences()

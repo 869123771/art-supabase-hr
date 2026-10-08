@@ -177,7 +177,7 @@
   const page = reactive<{ loading: boolean; error: Error | null }>({ loading: false, error: null })
 
   const employeeInitials = computed(() => {
-    const name = profile.value?.employeeName.trim() || ''
+    const name = profile.value?.employeeName?.trim() || ''
     return Array.from(name).slice(0, 1).join('').toUpperCase() || '员'
   })
   const canViewContactDetails = computed(() =>

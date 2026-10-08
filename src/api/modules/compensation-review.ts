@@ -74,12 +74,16 @@ export async function fetchCompensationReviewOptions(
   )
 }
 
-const normalizePayload = (record: Api.Hr.CompensationReviewRecord) =>
+const normalizePayload = (
+  record: Api.Hr.CompensationReviewRecord,
+  entity: Api.Hr.CompensationReviewEntity
+) =>
   keysToSnakeDeep(
     omit(record, [
       'id',
       'scopeOrganizationName',
-      'cycleName',
+      // The cycle owns its name; budgets and items only carry the joined display value.
+      ...(entity === 'cycle' ? [] : ['cycleName']),
       'cycleStatus',
       'employeeNo',
       'employeeName',
@@ -118,7 +122,7 @@ export async function saveCompensationReviewRecord(
       supabase.rpc('hr_save_compensation_review_record_secure', {
         p_kind: entity,
         p_id: record.id ?? null,
-        p_payload: normalizePayload(record)
+        p_payload: normalizePayload(record, entity)
       }),
     {
       showMessage: true,

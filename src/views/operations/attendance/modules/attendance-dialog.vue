@@ -11,7 +11,7 @@
       <ArtForm
         ref="formRef"
         v-model="form.model"
-        :items="form.items"
+        :items="hrTenantScopedFormItems(form.items, Boolean(form.model.id))"
         :rules="form.rules"
         :span="12"
         :gutter="24"
@@ -35,6 +35,9 @@
 </template>
 
 <script setup lang="ts">
+  import { toNameCodeOption } from '@/utils/form/option'
+
+  import { hrTenantScopedFormItems } from '@hr/views/shared/hr-tenant-scoped-form-items'
   import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
@@ -148,12 +151,6 @@
   })
   const formModel = reactive<FormModel>(createInitialModel())
 
-  const toOptions = (items: Api.Hr.TimeAttendanceReference[]): FormItemOption[] =>
-    items.map((item) => ({
-      label: [item.name, item.code].filter(Boolean).join(' · '),
-      value: item.id
-    }))
-
   const recordSelectOptions = computed<FormItemOption[]>(() =>
     recordOptions.value.map((item) => ({
       label: `${item.name ?? '未命名员工'} · ${item.workDate ?? item.code ?? ''}`,
@@ -242,7 +239,7 @@
       label: '执行班次',
       key: 'shiftId',
       type: 'select',
-      options: toOptions(shiftOptions.value),
+      options: shiftOptions.value.map(toNameCodeOption),
       props: { filterable: true, placeholder: '请选择启用班次' }
     },
     {
@@ -274,7 +271,7 @@
       label: '执行班次',
       key: 'shiftId',
       type: 'select',
-      options: toOptions(shiftOptions.value),
+      options: shiftOptions.value.map(toNameCodeOption),
       props: { clearable: true, filterable: true, placeholder: '可按员工排班自动识别' }
     },
     {

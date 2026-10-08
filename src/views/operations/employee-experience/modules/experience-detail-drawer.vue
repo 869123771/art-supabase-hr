@@ -1,7 +1,6 @@
 <template>
-  <ArtDrawer ref="drawerRef">
+  <ArtDrawer :loading="loading" ref="drawerRef">
     <ArtAsyncState
-      :loading="loading"
       :error="loadError"
       :empty="missing"
       empty-text="详情记录不可用"

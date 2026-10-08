@@ -11,7 +11,7 @@
       <ArtForm
         ref="formRef"
         v-model="form.model"
-        :items="form.items"
+        :items="hrTenantScopedFormItems(form.items, Boolean(form.model.id))"
         :rules="form.rules"
         :span="12"
         :gutter="24"
@@ -65,6 +65,9 @@
 </template>
 
 <script setup lang="ts">
+  import { toNameCodeOption } from '@/utils/form/option'
+
+  import { hrTenantScopedFormItems } from '@hr/views/shared/hr-tenant-scoped-form-items'
   import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
@@ -81,7 +84,11 @@
   import { fetchPerformanceEmployeeSelector } from '@hr/api/modules/performance'
   import { fetchEnabledTenantList } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
-  import { fetchPerformanceOptions, savePerformanceRecord } from '@hr/api'
+  import {
+    hrOrganizationTreeField,
+    toHrOrganizationTreeOptions
+  } from '../../../shared/hr-organization-tree-field'
+  import { fetchHrOrganizationTree, fetchPerformanceOptions, savePerformanceRecord } from '@hr/api'
   import type { DialogType } from '@/types'
 
   type Entity = Api.Hr.PerformanceEntity
@@ -156,7 +163,7 @@
   const tenantOptions = ref<FormItemOption[]>([])
   const cycleOptions = shallowRef<Api.Hr.PerformanceReference[]>([])
   const reviewOptions = shallowRef<Api.Hr.PerformanceReference[]>([])
-  const organizationOptions = shallowRef<Api.Hr.PerformanceReference[]>([])
+  const organizationOptions = shallowRef<ReturnType<typeof toHrOrganizationTreeOptions>>([])
   const selections = reactive({
     owner: [] as EmployeeIntegrationItem[],
     employee: [] as EmployeeIntegrationItem[],
@@ -294,13 +301,12 @@
           input('sessionNo', '会议编号', '如 CAL_2027_ANNUAL_01'),
           input('sessionName', '会议名称', '如 运营条线年度绩效校准会'),
           select('cycleId', '绩效周期', cycleOptions.value, '请选择执行或评议中的周期'),
-          select(
-            'organizationId',
-            '校准组织范围',
-            organizationOptions.value,
-            '不选则覆盖整个周期',
-            true
-          ),
+          hrOrganizationTreeField({
+            key: 'organizationId',
+            label: '校准组织范围',
+            options: organizationOptions.value,
+            placeholder: '不选则覆盖整个周期'
+          }),
           { label: '校准主持人', key: 'facilitatorEmployeeId', type: 'input' },
           datetime('scheduledAt', '会议时间'),
           textarea('distributionNote', '校准口径', '说明评分尺度、分布参考及需重点讨论的群体')
@@ -451,10 +457,7 @@
     label,
     key: String(key),
     type: 'select',
-    options: options.map((option) => ({
-      label: [option.name, option.code].filter(Boolean).join(' · '),
-      value: option.id
-    })),
+    options: options.map(toNameCodeOption),
     props: { filterable: true, clearable, placeholder }
   })
 
@@ -480,13 +483,13 @@
       kind === 'goal' || kind === 'check_in'
         ? fetchPerformanceOptions('review', tenantId)
         : undefined,
-      kind === 'calibration' ? fetchPerformanceOptions('organization', tenantId) : undefined
+      kind === 'calibration' ? fetchHrOrganizationTree('performance', { tenantId }) : undefined
     ])
     if (request !== referenceRequest || tenantId !== formModel.tenantId || kind !== entity.value)
       return
     cycleOptions.value = cycles?.data ?? []
     reviewOptions.value = reviews?.data ?? []
-    organizationOptions.value = organizations?.data ?? []
+    organizationOptions.value = toHrOrganizationTreeOptions(organizations?.data ?? [])
   }
 
   const handleTenantChange = async (): Promise<void> => {

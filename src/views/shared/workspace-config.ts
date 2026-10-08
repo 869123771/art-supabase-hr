@@ -1,3 +1,5 @@
+import type { HrOrganizationFeature } from '@hr/api/modules/organization-options'
+
 export type HrWorkspaceKey = 'personnelChange' | 'headcount' | 'talent' | 'recruitment'
 
 export interface HrWorkspaceColumn {
@@ -16,7 +18,15 @@ export interface HrWorkspaceField {
   key: keyof Api.Hr.WorkspaceRecord
   label: string
   type:
-    'input' | 'textarea' | 'select' | 'employeeSelect' | 'date' | 'number' | 'switch' | 'timeSelect'
+    | 'input'
+    | 'textarea'
+    | 'select'
+    | 'treeSelect'
+    | 'employeeSelect'
+    | 'date'
+    | 'number'
+    | 'switch'
+    | 'timeSelect'
   required?: boolean
   dictCode?: string
   optionEntity?: Api.Hr.WorkspaceEntity
@@ -42,6 +52,7 @@ export interface HrWorkspaceTab {
 }
 
 export interface HrWorkspaceDefinition {
+  organizationFeature: HrOrganizationFeature
   eyebrow: string
   title: string
   description: string
@@ -72,9 +83,7 @@ const organizationField = (
 ): HrWorkspaceField => ({
   key,
   label,
-  type: 'select',
-  optionEntity: 'headcount',
-  optionLabelKeys: ['organizationCode', 'organizationName']
+  type: 'treeSelect'
 })
 const input = (
   key: keyof Api.Hr.WorkspaceRecord,
@@ -114,6 +123,7 @@ const dict = (
 
 export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinition> = {
   personnelChange: {
+    organizationFeature: 'personnelChange',
     eyebrow: 'PEOPLE LIFECYCLE',
     title: '人事异动中心',
     icon: 'ri:swap-box-line',
@@ -162,6 +172,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
     ]
   },
   headcount: {
+    organizationFeature: 'headcount',
     eyebrow: 'WORKFORCE PLAN',
     title: '编制管理',
     icon: 'ri:organization-chart',
@@ -204,6 +215,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
     ]
   },
   talent: {
+    organizationFeature: 'talent',
     eyebrow: 'TALENT DEVELOPMENT',
     title: '培训与能力',
     icon: 'ri:book-open-line',
@@ -373,6 +385,7 @@ export const hrWorkspaceDefinitions: Record<HrWorkspaceKey, HrWorkspaceDefinitio
     ]
   },
   recruitment: {
+    organizationFeature: 'recruitment',
     eyebrow: 'RECRUITMENT PIPELINE',
     title: '招聘工作台',
     icon: 'ri:user-add-line',

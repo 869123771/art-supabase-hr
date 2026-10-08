@@ -40,7 +40,7 @@
       <ArtForm
         ref="formRef"
         v-model="form.model"
-        :items="form.items"
+        :items="hrTenantScopedFormItems(form.items, Boolean(form.model.id))"
         :rules="form.rules"
         :span="12"
         :gutter="22"
@@ -75,6 +75,9 @@
 </template>
 
 <script setup lang="ts">
+  import { toNameCodeOption } from '@/utils/form/option'
+
+  import { hrTenantScopedFormItems } from '@hr/views/shared/hr-tenant-scoped-form-items'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import { normalizeNullableText } from '@/utils/form/normalize'
@@ -91,11 +94,16 @@
   import { useUserStore } from '@/store/modules/user'
   import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import {
+    fetchHrOrganizationTree,
     fetchInternalMobilityOptions,
     saveInternalMobilityApplication,
     saveInternalMobilityOpportunity
   } from '@hr/api'
   import type { DialogType } from '@/types'
+  import {
+    hrOrganizationTreeField,
+    toHrOrganizationTreeOptions
+  } from '../../../shared/hr-organization-tree-field'
 
   type Entity = Api.Hr.InternalMobilityEntity
   type RecordItem = Api.Hr.InternalMobilityRecord
@@ -156,7 +164,7 @@
   const selectedOpportunity = ref<Api.Hr.InternalMobilityOpportunity>()
   const tenantOptions = ref<Array<{ label: string; value: string }>>([])
   const references = reactive({
-    organizations: [] as Api.Hr.InternalMobilityReference[],
+    organizations: [] as ReturnType<typeof toHrOrganizationTreeOptions>,
     positions: [] as Api.Hr.InternalMobilityReference[],
     opportunities: [] as Api.Hr.InternalMobilityReference[]
   })
@@ -195,11 +203,7 @@
     managerAwareness: 'not_informed'
   })
   const formModel = reactive<FormModel>(createInitialModel())
-  const toOptions = (items: Api.Hr.InternalMobilityReference[]) =>
-    items.map((item) => ({
-      label: `${item.name}${item.code ? `（${item.code}）` : ''}`,
-      value: item.id
-    }))
+
   const opportunityTypeLabel = (value: Api.Hr.InternalOpportunityType): string =>
     ({ permanent: '永久岗位', rotation: '轮岗机会', project: '项目机会', gig: '短期任务' })[value]
 
@@ -234,20 +238,18 @@
       type: 'select',
       options: opportunityTypeOptions
     },
-    {
-      label: '目标组织',
+    hrOrganizationTreeField({
       key: 'organizationId',
-      type: 'select',
-      options: toOptions(references.organizations),
-      props: { filterable: true }
-    },
+      label: '目标组织',
+      options: references.organizations
+    }),
     ...(formModel.opportunityType === 'permanent'
       ? [
           {
             label: '目标岗位',
             key: 'positionId',
             type: 'select' as const,
-            options: toOptions(filteredPositions.value),
+            options: filteredPositions.value.map(toNameCodeOption),
             props: { filterable: true }
           }
         ]
@@ -256,7 +258,7 @@
             label: '关联岗位（可选）',
             key: 'positionId',
             type: 'select' as const,
-            options: toOptions(filteredPositions.value),
+            options: filteredPositions.value.map(toNameCodeOption),
             props: { clearable: true, filterable: true }
           }
         ]),
@@ -330,7 +332,7 @@
             key: 'opportunityId',
             type: 'select' as const,
             span: 24,
-            options: toOptions(references.opportunities),
+            options: references.opportunities.map(toNameCodeOption),
             props: { filterable: true, disabled: Boolean(formModel.id) }
           }
         ]
@@ -444,7 +446,9 @@
     references.opportunities = []
     if (!tenantId && isPlatformSuper.value && kind === 'opportunity') return
     const [organizations, positions, opportunities] = await Promise.all([
-      kind === 'opportunity' ? fetchInternalMobilityOptions('organization', tenantId) : undefined,
+      kind === 'opportunity'
+        ? fetchHrOrganizationTree('internalMobility', { tenantId })
+        : undefined,
       kind === 'opportunity' ? fetchInternalMobilityOptions('position', tenantId) : undefined,
       kind === 'application' && !selectedOpportunity.value
         ? fetchInternalMobilityOptions('opportunity', tenantId)
@@ -452,7 +456,7 @@
     ])
     if (request !== referenceRequest || tenantId !== formModel.tenantId || kind !== entity.value)
       return
-    references.organizations = organizations?.data ?? []
+    references.organizations = toHrOrganizationTreeOptions(organizations?.data ?? [])
     references.positions = positions?.data ?? []
     references.opportunities = opportunities?.data ?? []
   }

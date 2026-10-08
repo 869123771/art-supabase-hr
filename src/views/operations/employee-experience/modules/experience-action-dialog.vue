@@ -17,7 +17,7 @@
       <ArtForm
         ref="formRef"
         v-model="form.model"
-        :items="form.items"
+        :items="hrTenantScopedFormItems(form.items, Boolean(form.model.id) || parentTenantLocked)"
         :rules="form.rules"
         :span="12"
         :gutter="22"
@@ -41,6 +41,7 @@
 </template>
 
 <script setup lang="ts">
+  import { hrTenantScopedFormItems } from '@hr/views/shared/hr-tenant-scoped-form-items'
   import { employeeReferenceSelection } from '@/utils/form/employee-reference'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
@@ -57,10 +58,14 @@
   import { useUserStore } from '@/store/modules/user'
   import {
     fetchEmployeeExperienceRecords,
-    fetchEmployeeOrganizationOptions,
+    fetchHrOrganizationTree,
     saveEmployeeExperienceRecord
   } from '@hr/api'
   import type { DialogType } from '@/types'
+  import {
+    hrOrganizationTreeField,
+    toHrOrganizationTreeOptions
+  } from '../../../shared/hr-organization-tree-field'
 
   interface OpenPayload {
     type: DialogType
@@ -79,9 +84,10 @@
   const dialogRef = ref<ArtDialogExpose>()
   const formRef = ref<ArtFormExpose>()
   const dialogType = ref<DialogType>('add')
+  const parentTenantLocked = ref(false)
   const tenantOptions = ref<Array<{ label: string; value: string }>>([])
   const surveys = ref<Api.Hr.EmployeeExperienceSurvey[]>([])
-  const organizationOptions = ref<Array<{ label: string; value: string }>>([])
+  const organizationOptions = ref<ReturnType<typeof toHrOrganizationTreeOptions>>([])
   const ownerSelection = ref<EmployeeIntegrationItem[]>([])
 
   const createInitialModel = (): Api.Hr.EmployeeExperienceAction => ({
@@ -166,13 +172,12 @@
         type: 'select',
         options: dictOptions('hrExperienceDimension')
       },
-      {
-        label: '行动组织',
+      hrOrganizationTreeField({
         key: 'organizationId',
-        type: 'select',
+        label: '行动组织',
         options: organizationOptions.value,
-        props: { clearable: true, filterable: true, placeholder: '可选：不选表示全组织行动' }
-      },
+        placeholder: '可选：不选表示全组织行动'
+      }),
       { label: '责任与期限', key: 'accountability', type: 'divider', span: 24 },
       { label: '行动负责人', key: 'ownerEmployeeId', type: 'input' },
       {
@@ -258,16 +263,15 @@
       ['open', 'closed'].includes(survey.status)
     )
   }
+  let organizationRequest = 0
   const loadOrganizations = async (): Promise<void> => {
-    if (!formModel.tenantId) {
-      organizationOptions.value = []
-      return
-    }
-    const response = await fetchEmployeeOrganizationOptions({ tenantId: formModel.tenantId })
-    organizationOptions.value = (response.data ?? []).map((organization) => ({
-      label: `${organization.organizationName} · ${organization.organizationCode}`,
-      value: organization.id!
-    }))
+    const request = ++organizationRequest
+    const tenantId = formModel.tenantId
+    organizationOptions.value = []
+    if (!tenantId) return
+    const response = await fetchHrOrganizationTree('experience', { tenantId })
+    if (request !== organizationRequest || tenantId !== formModel.tenantId) return
+    organizationOptions.value = toHrOrganizationTreeOptions(response.data ?? [])
   }
   const submit = async (): Promise<boolean> => {
     try {
@@ -290,6 +294,8 @@
     }
   }
   const handleOpen = async (payload: OpenPayload): Promise<void> => {
+    parentTenantLocked.value = Boolean(payload.presetSurvey)
+    organizationRequest += 1
     dialogType.value = payload.type
     Object.assign(formModel, createInitialModel(), payload.editData ?? {})
     if (payload.presetSurvey) {
