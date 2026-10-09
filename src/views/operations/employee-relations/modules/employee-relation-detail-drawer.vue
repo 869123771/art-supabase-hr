@@ -20,10 +20,22 @@
           </div>
           <div class="employee-relation-detail__status">
             <ElTag :type="severityTone" effect="light" round>
-              {{ dictLabel('hrEmployeeRelationSeverity', record.severity) }}风险
+              {{
+                userStore.getDictLabelByValue(
+                  'hrEmployeeRelationSeverity',
+                  record.severity,
+                  record.severity ?? '--'
+                )
+              }}风险
             </ElTag>
             <ElTag type="primary" effect="plain" round>
-              {{ dictLabel('hrEmployeeRelationCaseStatus', record.status) }}
+              {{
+                userStore.getDictLabelByValue(
+                  'hrEmployeeRelationCaseStatus',
+                  record.status,
+                  record.status ?? '--'
+                )
+              }}
             </ElTag>
           </div>
         </section>
@@ -120,12 +132,24 @@
                 <div>
                   <strong>{{ action.title }}</strong>
                   <ElTag effect="plain" size="small">
-                    {{ dictLabel('commonActionProgressStatus', action.status) }}
+                    {{
+                      userStore.getDictLabelByValue(
+                        'commonActionProgressStatus',
+                        action.status,
+                        action.status ?? '--'
+                      )
+                    }}
                   </ElTag>
                 </div>
                 <p>
-                  {{ dictLabel('hrEmployeeRelationActionType', action.actionType) }} ·
-                  {{ action.ownerEmployee?.employeeName || '未指定负责人' }} · 截止
+                  {{
+                    userStore.getDictLabelByValue(
+                      'hrEmployeeRelationActionType',
+                      action.actionType,
+                      action.actionType ?? '--'
+                    )
+                  }}
+                  · {{ action.ownerEmployee?.employeeName || '未指定负责人' }} · 截止
                   {{ formatDate(action.dueDate) }}
                 </p>
                 <small v-if="action.completionNote">{{ action.completionNote }}</small>
@@ -159,19 +183,33 @@
             >
               <article>
                 <div>
-                  <strong>{{ dictLabel('hrEmployeeRelationEventType', event.eventType) }}</strong>
+                  <strong>{{
+                    userStore.getDictLabelByValue(
+                      'hrEmployeeRelationEventType',
+                      event.eventType,
+                      event.eventType ?? '--'
+                    )
+                  }}</strong>
                   <span>{{ event.actor?.employeeName || event.createBy || '系统自动处理' }}</span>
                 </div>
                 <small v-if="event.fromStatus || event.toStatus">
                   {{
                     event.fromStatus
-                      ? dictLabel('hrEmployeeRelationCaseStatus', event.fromStatus)
+                      ? userStore.getDictLabelByValue(
+                          'hrEmployeeRelationCaseStatus',
+                          event.fromStatus,
+                          event.fromStatus ?? '--'
+                        )
                       : '初始状态'
                   }}
                   <ArtSvgIcon icon="ri:arrow-right-line" />
                   {{
                     event.toStatus
-                      ? dictLabel('hrEmployeeRelationCaseStatus', event.toStatus)
+                      ? userStore.getDictLabelByValue(
+                          'hrEmployeeRelationCaseStatus',
+                          event.toStatus,
+                          event.toStatus ?? '--'
+                        )
                       : '状态未变更'
                   }}
                 </small>
@@ -225,10 +263,7 @@
   )
   onBeforeUnmount(() => openDetail(''))
   const userStore = useUserStore()
-  const { getDictMap } = storeToRefs(userStore)
 
-  const dictLabel = (code: string, value?: string | null): string =>
-    getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
   const formatDate = createDateTimeFormatter({ format: 'YYYY-MM-DD' })
   const subjectIdentity = computed(
     () =>
@@ -252,8 +287,16 @@
   const summaryItems = computed<DisplayItem[]>(() => [
     {
       label: '案件类型',
-      value: dictLabel('hrEmployeeRelationCaseType', record.value?.caseType),
-      hint: dictLabel('hrEmployeeRelationSource', record.value?.source)
+      value: userStore.getDictLabelByValue(
+        'hrEmployeeRelationCaseType',
+        record.value?.caseType,
+        record.value?.caseType ?? '--'
+      ),
+      hint: userStore.getDictLabelByValue(
+        'hrEmployeeRelationSource',
+        record.value?.source,
+        record.value?.source ?? '--'
+      )
     },
     {
       label: '案件负责人',

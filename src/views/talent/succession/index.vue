@@ -117,7 +117,7 @@
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
-  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
@@ -342,8 +342,7 @@
     )
     return items
   })
-  const dictLabel = (code: string, value?: string | null) =>
-    getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
+
   const riskType = (value?: string | null): 'success' | 'warning' | 'danger' | 'info' =>
     value === 'high' || value === 'critical'
       ? 'danger'
@@ -373,7 +372,7 @@
     formatter: (row) => {
       const status = String('status' in row ? row.status : '')
       return (
-        <HrTableActions>
+        <BusinessTableRowActions>
           <ArtButtonTable
             type="edit"
             permission={permissionFor('Edit')}
@@ -424,7 +423,7 @@
                 void handleReview(row as Api.Hr.SuccessionCandidate, 'withdraw')
             }}
           />
-        </HrTableActions>
+        </BusinessTableRowActions>
       )
     }
   })
@@ -463,7 +462,11 @@
           width: 115,
           formatter: (row) => (
             <ElTag type={riskType((row as Api.Hr.SuccessionPlan).criticality)} effect="light" round>
-              {dictLabel('hrSuccessionCriticality', (row as Api.Hr.SuccessionPlan).criticality)}
+              {userStore.getDictLabelByValue(
+                'hrSuccessionCriticality',
+                (row as Api.Hr.SuccessionPlan).criticality,
+                (row as Api.Hr.SuccessionPlan).criticality ?? '--'
+              )}
             </ElTag>
           )
         },
@@ -474,13 +477,18 @@
           formatter: (row) => (
             <div class="succession-page__tag-stack">
               <ElTag type={riskType((row as Api.Hr.SuccessionPlan).vacancyRisk)} effect="plain">
-                {dictLabel('commonRiskLevel', (row as Api.Hr.SuccessionPlan).vacancyRisk)}
+                {userStore.getDictLabelByValue(
+                  'commonRiskLevel',
+                  (row as Api.Hr.SuccessionPlan).vacancyRisk,
+                  (row as Api.Hr.SuccessionPlan).vacancyRisk ?? '--'
+                )}
               </ElTag>
               <span>
                 影响：
-                {dictLabel(
+                {userStore.getDictLabelByValue(
                   'hrSuccessionCriticality',
-                  (row as Api.Hr.SuccessionPlan).businessImpact
+                  (row as Api.Hr.SuccessionPlan).businessImpact,
+                  (row as Api.Hr.SuccessionPlan).businessImpact ?? '--'
                 )}
               </span>
             </div>
@@ -536,7 +544,11 @@
           width: 105,
           formatter: (row) => (
             <ElTag type={statusType((row as Api.Hr.SuccessionPlan).status)} effect="light">
-              {dictLabel('hrSuccessionPlanStatus', (row as Api.Hr.SuccessionPlan).status)}
+              {userStore.getDictLabelByValue(
+                'hrSuccessionPlanStatus',
+                (row as Api.Hr.SuccessionPlan).status,
+                (row as Api.Hr.SuccessionPlan).status ?? '--'
+              )}
             </ElTag>
           )
         },
@@ -580,7 +592,11 @@
               effect="light"
               round
             >
-              {dictLabel('hrSuccessionReadiness', (row as Api.Hr.SuccessionCandidate).readiness)}
+              {userStore.getDictLabelByValue(
+                'hrSuccessionReadiness',
+                (row as Api.Hr.SuccessionCandidate).readiness,
+                (row as Api.Hr.SuccessionCandidate).readiness ?? '--'
+              )}
             </ElTag>
           )
         },
@@ -589,7 +605,11 @@
           label: '潜力',
           width: 110,
           formatter: (row) =>
-            dictLabel('hrSuccessionPotential', (row as Api.Hr.SuccessionCandidate).potentialLevel)
+            userStore.getDictLabelByValue(
+              'hrSuccessionPotential',
+              (row as Api.Hr.SuccessionCandidate).potentialLevel,
+              (row as Api.Hr.SuccessionCandidate).potentialLevel ?? '--'
+            )
         },
         {
           prop: 'retentionRisk',
@@ -600,7 +620,11 @@
               type={riskType((row as Api.Hr.SuccessionCandidate).retentionRisk)}
               effect="plain"
             >
-              {dictLabel('commonRiskLevel', (row as Api.Hr.SuccessionCandidate).retentionRisk)}
+              {userStore.getDictLabelByValue(
+                'commonRiskLevel',
+                (row as Api.Hr.SuccessionCandidate).retentionRisk,
+                (row as Api.Hr.SuccessionCandidate).retentionRisk ?? '--'
+              )}
             </ElTag>
           )
         },
@@ -623,7 +647,11 @@
           width: 110,
           formatter: (row) => (
             <ElTag type={statusType((row as Api.Hr.SuccessionCandidate).status)} effect="light">
-              {dictLabel('hrSuccessionCandidateStatus', (row as Api.Hr.SuccessionCandidate).status)}
+              {userStore.getDictLabelByValue(
+                'hrSuccessionCandidateStatus',
+                (row as Api.Hr.SuccessionCandidate).status,
+                (row as Api.Hr.SuccessionCandidate).status ?? '--'
+              )}
             </ElTag>
           )
         },
@@ -639,9 +667,10 @@
           <div class="succession-page__identity">
             <strong>{(row as Api.Hr.SuccessionDevelopmentAction).actionTitle}</strong>
             <small>
-              {dictLabel(
+              {userStore.getDictLabelByValue(
                 'hrSuccessionActionType',
-                (row as Api.Hr.SuccessionDevelopmentAction).actionType
+                (row as Api.Hr.SuccessionDevelopmentAction).actionType,
+                (row as Api.Hr.SuccessionDevelopmentAction).actionType ?? '--'
               )}
             </small>
           </div>
@@ -700,9 +729,10 @@
             type={statusType((row as Api.Hr.SuccessionDevelopmentAction).status)}
             effect="light"
           >
-            {dictLabel(
+            {userStore.getDictLabelByValue(
               'hrSuccessionActionStatus',
-              (row as Api.Hr.SuccessionDevelopmentAction).status
+              (row as Api.Hr.SuccessionDevelopmentAction).status,
+              (row as Api.Hr.SuccessionDevelopmentAction).status ?? '--'
             )}
           </ElTag>
         )

@@ -121,14 +121,14 @@
   } from '@/utils/supabase/delete-reference'
   import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
   import { formatWithDayjs } from '@/utils/time'
-  import { canViewField, getFieldAccess } from '@/utils/field-permission'
+  import { isReadableFieldAccess, canViewField, getFieldAccess } from '@/utils/field-permission'
   import { buildSupabasePageRange } from '@/utils/supabase/pagination'
   import TreeUtils from '@/utils/tree'
   import { useUserStore } from '@/store/modules/user'
   import { useTenantScopeStore } from '@/store/modules/tenant-scope'
   import { deleteEmployee, fetchEmployeeList, fetchEmployeeOrganizationTree } from '@hr/api'
   import HrEmployeeIdentityCell from '@hr/views/shared/hr-employee-identity-cell.vue'
-  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
 
   defineOptions({ name: 'HrEmployeeRoster' })
@@ -214,7 +214,7 @@
       icon: 'ri:user-follow-line',
       tone: 'success'
     },
-    ...(['read', 'edit'].includes(getFieldAccess(listFieldAccess.value, 'maintenanceAudit'))
+    ...(isReadableFieldAccess(getFieldAccess(listFieldAccess.value, 'maintenanceAudit'))
       ? [
           {
             label: '已开通账号',
@@ -374,7 +374,7 @@
             formatter: (row: Employee) => {
               const access = getFieldAccess(row.fieldAccess, 'maintenanceAudit')
               if (access === 'masked') return '***'
-              return ['read', 'edit'].includes(access)
+              return isReadableFieldAccess(access)
                 ? h(
                     'span',
                     { class: ['hr-roster-account', row.account?.id ? 'is-linked' : ''] },
@@ -390,7 +390,7 @@
             formatter: (row: Employee) => {
               const access = getFieldAccess(row.fieldAccess, 'maintenanceAudit')
               if (access === 'masked') return '***'
-              return ['read', 'edit'].includes(access)
+              return isReadableFieldAccess(access)
                 ? formatWithDayjs(row.updateTime, 'YYYY-MM-DD HH:mm') || '--'
                 : '--'
             }
@@ -403,7 +403,7 @@
       width: 112,
       fixed: 'right',
       formatter: (row) =>
-        h(HrTableActions, null, () => [
+        h(BusinessTableRowActions, null, () => [
           h(ArtButtonTable, {
             type: 'view',
             label: '查看员工详情',

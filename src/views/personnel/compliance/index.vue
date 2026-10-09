@@ -105,6 +105,7 @@
 </template>
 
 <script setup lang="tsx">
+  import { createDateTimeFormatter } from '@/utils/ui/format'
   import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
   import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
@@ -114,7 +115,6 @@
     getDeleteReferenceContext
   } from '@/utils/supabase/delete-reference'
   import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
-  import dayjs from 'dayjs'
   import { ElTag, type TagProps } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
@@ -126,7 +126,7 @@
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
-  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
@@ -400,11 +400,6 @@
     return items
   })
 
-  const dictLabel = (code: string, value?: string | null): string =>
-    getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
-  const identity = (title?: string | null, subtitle?: string | null) => (
-    <BusinessTableIdentityCell primary={title} secondary={subtitle} />
-  )
   const riskTone = (risk?: Api.Hr.ComplianceRiskStatus): TagProps['type'] =>
     ['overdue', 'critical'].includes(risk || '')
       ? 'danger'
@@ -420,12 +415,16 @@
   const riskCell = (risk?: Api.Hr.ComplianceRiskStatus, days?: number | null) => (
     <div class="compliance-page__risk-cell">
       <ElTag type={riskTone(risk)} effect="light" round>
-        {dictLabel('hrComplianceRiskStatus', risk)}
+        {userStore.getDictLabelByValue('hrComplianceRiskStatus', risk, risk ?? '--')}
       </ElTag>
       <small>{daysText(days)}</small>
     </div>
   )
-  const dateText = (value?: string | null) => (value ? dayjs(value).format('YYYY-MM-DD') : '--')
+  const dateText = createDateTimeFormatter({
+    format: 'YYYY-MM-DD',
+    emptyText: '--',
+    invalidText: '--'
+  })
 
   const columnsFactory = (): ColumnOption<RecordItem>[] => {
     if (activeEntity.value === 'risk') return riskColumns()
@@ -441,9 +440,11 @@
       link: { permission: 'Hr:Compliance:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.ComplianceRisk
-        return identity(
-          item.employee.employeeName,
-          `${item.employee.employeeNo ?? '--'} · ${item.employee.positionName ?? item.employee.jobTitle ?? '未维护岗位'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.employee.employeeName}
+            secondary={`${item.employee.employeeNo ?? '--'} · ${item.employee.positionName ?? item.employee.jobTitle ?? '未维护岗位'}`}
+          />
         )
       }
     },
@@ -453,7 +454,7 @@
       minWidth: 200,
       formatter: (row) => {
         const item = row as Api.Hr.ComplianceRisk
-        return identity(item.subject, item.riskType)
+        return <BusinessTableIdentityCell primary={item.subject} secondary={item.riskType} />
       }
     },
     {
@@ -477,9 +478,11 @@
       minWidth: 145,
       formatter: (row) => {
         const item = row as Api.Hr.ComplianceRisk
-        return identity(
-          item.owner?.employeeName || '待指定',
-          item.owner?.jobTitle || '需要明确责任人'
+        return (
+          <BusinessTableIdentityCell
+            primary={item.owner?.employeeName || '待指定'}
+            secondary={item.owner?.jobTitle || '需要明确责任人'}
+          />
         )
       }
     },
@@ -495,9 +498,11 @@
       link: { permission: 'Hr:Compliance:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.ComplianceContract
-        return identity(
-          item.contractNo,
-          `${item.employee?.employeeName ?? '--'} · ${item.employee?.employeeNo ?? '--'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.contractNo}
+            secondary={`${item.employee?.employeeName ?? '--'} · ${item.employee?.employeeNo ?? '--'}`}
+          />
         )
       }
     },
@@ -507,9 +512,15 @@
       minWidth: 190,
       formatter: (row) => {
         const item = row as Api.Hr.ComplianceContract
-        return identity(
-          `${dateText(item.startDate)} 至 ${dateText(item.endDate)}`,
-          dictLabel('hrContractType', item.contractType)
+        return (
+          <BusinessTableIdentityCell
+            primary={`${dateText(item.startDate)} 至 ${dateText(item.endDate)}`}
+            secondary={userStore.getDictLabelByValue(
+              'hrContractType',
+              item.contractType,
+              item.contractType ?? '--'
+            )}
+          />
         )
       }
     },
@@ -525,9 +536,15 @@
       minWidth: 175,
       formatter: (row) => {
         const item = row as Api.Hr.ComplianceContract
-        return identity(
-          dictLabel('hrContractRenewalDecision', item.renewalDecision),
-          item.renewalOwner?.employeeName || '待指定负责人'
+        return (
+          <BusinessTableIdentityCell
+            primary={userStore.getDictLabelByValue(
+              'hrContractRenewalDecision',
+              item.renewalDecision,
+              item.renewalDecision ?? '--'
+            )}
+            secondary={item.renewalOwner?.employeeName || '待指定负责人'}
+          />
         )
       }
     },
@@ -546,9 +563,11 @@
       minWidth: 145,
       formatter: (row) => {
         const item = row as Api.Hr.ComplianceContract
-        return identity(
-          item.previousContractNo ? '续签版本' : '首个版本',
-          item.previousContractNo ? `承接 ${item.previousContractNo}` : '原始签署版本'
+        return (
+          <BusinessTableIdentityCell
+            primary={item.previousContractNo ? '续签版本' : '首个版本'}
+            secondary={item.previousContractNo ? `承接 ${item.previousContractNo}` : '原始签署版本'}
+          />
         )
       }
     },
@@ -563,9 +582,11 @@
       link: { permission: 'Hr:Compliance:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.ComplianceQualification
-        return identity(
-          item.qualificationName,
-          `${item.employee?.employeeName ?? '--'} · ${item.employee?.employeeNo ?? '--'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.qualificationName}
+            secondary={`${item.employee?.employeeName ?? '--'} · ${item.employee?.employeeNo ?? '--'}`}
+          />
         )
       }
     },
@@ -575,7 +596,12 @@
       minWidth: 190,
       formatter: (row) => {
         const item = row as Api.Hr.ComplianceQualification
-        return identity(item.certificateNo || '未维护证书编号', item.issuer || '未维护发证机构')
+        return (
+          <BusinessTableIdentityCell
+            primary={item.certificateNo || '未维护证书编号'}
+            secondary={item.issuer || '未维护发证机构'}
+          />
+        )
       }
     },
     {
@@ -605,9 +631,13 @@
       minWidth: 165,
       formatter: (row) => {
         const item = row as Api.Hr.ComplianceQualification
-        return identity(
-          item.responsibleEmployee?.employeeName || '待指定',
-          item.nextReviewDate ? `复审 ${dateText(item.nextReviewDate)}` : '未设置复审日'
+        return (
+          <BusinessTableIdentityCell
+            primary={item.responsibleEmployee?.employeeName || '待指定'}
+            secondary={
+              item.nextReviewDate ? `复审 ${dateText(item.nextReviewDate)}` : '未设置复审日'
+            }
+          />
         )
       }
     },
@@ -620,7 +650,7 @@
     width: 112,
     fixed: 'right',
     formatter: (row) => (
-      <HrTableActions>
+      <BusinessTableRowActions>
         <ArtButtonTable
           type="view"
           permission="Hr:Compliance:View"
@@ -631,7 +661,7 @@
           list={() => rowActions(row)}
           onClick={(item: ButtonMoreItem) => void handleRowAction(item, row)}
         />
-      </HrTableActions>
+      </BusinessTableRowActions>
     )
   })
 
@@ -1238,28 +1268,6 @@
         flex: 0 0 auto;
         margin-top: 1px;
         color: var(--theme-color);
-      }
-    }
-
-    &__identity {
-      display: grid;
-      min-width: 0;
-
-      strong {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-size: 13px;
-        color: var(--art-text-gray-900);
-        white-space: nowrap;
-      }
-
-      small {
-        margin-top: 3px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-size: 11px;
-        color: var(--art-text-gray-600);
-        white-space: nowrap;
       }
     }
 

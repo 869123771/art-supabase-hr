@@ -90,9 +90,24 @@
             <div
               ><small>调薪建议区间</small
               ><strong
-                >{{ numberText(selectedCycle.guidelineMinPercent) }}% ～
-                {{ numberText(selectedCycle.guidelineMaxPercent) }}%</strong
-              ><em>默认预算率 {{ numberText(selectedCycle.defaultBudgetPercent) }}%</em></div
+                >{{
+                  formatNumberValue(selectedCycle.guidelineMinPercent ?? 0, 'zh-CN', {
+                    maximumFractionDigits: 2
+                  })
+                }}% ～
+                {{
+                  formatNumberValue(selectedCycle.guidelineMaxPercent ?? 0, 'zh-CN', {
+                    maximumFractionDigits: 2
+                  })
+                }}%</strong
+              ><em
+                >默认预算率
+                {{
+                  formatNumberValue(selectedCycle.defaultBudgetPercent ?? 0, 'zh-CN', {
+                    maximumFractionDigits: 2
+                  })
+                }}%</em
+              ></div
             >
           </article>
           <article :class="budgetToneClass">
@@ -102,11 +117,13 @@
             <div
               ><small>预算占用</small
               ><strong>{{
-                overview.amountAccess ? `${numberText(overview.budgetUtilization)}%` : '金额受控'
+                overview.amountAccess
+                  ? `${formatNumberValue(overview.budgetUtilization ?? 0, 'zh-CN', { maximumFractionDigits: 2 })}%`
+                  : '金额受控'
               }}</strong
               ><em>{{
                 overview.amountAccess
-                  ? `${money(overview.proposedIncreaseAmount)} / ${money(overview.budgetAmount)}`
+                  ? `${formatCurrencyCodeValue(overview.proposedIncreaseAmount, selectedCycle?.currencyCode ?? 'CNY')} / ${formatCurrencyCodeValue(overview.budgetAmount, selectedCycle?.currencyCode ?? 'CNY')}`
                   : '当前权限仅展示流程状态'
               }}</em></div
             >
@@ -195,6 +212,7 @@
 </template>
 
 <script setup lang="tsx">
+  import { formatCurrencyCodeValue, formatNumberValue } from '@/utils/ui/format'
   import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
   import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
@@ -209,7 +227,7 @@
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
-  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
@@ -405,7 +423,9 @@
     },
     {
       label: '预算占用率',
-      value: overview.amountAccess ? `${numberText(overview.budgetUtilization)}%` : '--',
+      value: overview.amountAccess
+        ? `${formatNumberValue(overview.budgetUtilization ?? 0, 'zh-CN', { maximumFractionDigits: 2 })}%`
+        : '--',
       description: overview.amountAccess
         ? `${overview.outOfGuidelineCount} 项超出建议区间`
         : '当前权限不展示薪酬金额',
@@ -565,17 +585,6 @@
     ]
   })
 
-  const numberText = (value?: number | null): string =>
-    value == null ? '0' : Number(value).toLocaleString('zh-CN', { maximumFractionDigits: 2 })
-  const money = (value?: Api.Hr.ProtectedAmount): string =>
-    typeof value === 'number'
-      ? `${selectedCycle.value?.currencyCode ?? 'CNY'} ${value.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`
-      : value == null
-        ? '--'
-        : String(value)
-  const identity = (title?: string | null, subtitle?: string | null, extra?: string | null) => (
-    <BusinessTableIdentityCell primary={title} secondary={subtitle} tertiary={extra} />
-  )
   const statusTag = (status?: string) => (
     <ElTag
       type={
@@ -609,7 +618,13 @@
       },
       formatter: (row) => {
         const item = row as Api.Hr.CompensationReviewCycle
-        return identity(item.cycleName, item.cycleCode, `${item.reviewYear} 年`)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.cycleName}
+            secondary={item.cycleCode}
+            tertiary={`${item.reviewYear} 年`}
+          />
+        )
       }
     },
     {
@@ -626,10 +641,12 @@
       minWidth: 190,
       formatter: (row) => {
         const item = row as Api.Hr.CompensationReviewCycle
-        return identity(
-          `生效 ${item.effectiveDate}`,
-          `建议 ${item.recommendationDueDate}`,
-          `校准 ${item.calibrationDueDate}`
+        return (
+          <BusinessTableIdentityCell
+            primary={`生效 ${item.effectiveDate}`}
+            secondary={`建议 ${item.recommendationDueDate}`}
+            tertiary={`校准 ${item.calibrationDueDate}`}
+          />
         )
       }
     },
@@ -639,9 +656,11 @@
       minWidth: 160,
       formatter: (row) => {
         const item = row as Api.Hr.CompensationReviewCycle
-        return identity(
-          `预算率 ${numberText(item.defaultBudgetPercent)}%`,
-          `${numberText(item.guidelineMinPercent)}% ～ ${numberText(item.guidelineMaxPercent)}%`
+        return (
+          <BusinessTableIdentityCell
+            primary={`预算率 ${formatNumberValue(item.defaultBudgetPercent ?? 0, 'zh-CN', { maximumFractionDigits: 2 })}%`}
+            secondary={`${formatNumberValue(item.guidelineMinPercent ?? 0, 'zh-CN', { maximumFractionDigits: 2 })}% ～ ${formatNumberValue(item.guidelineMaxPercent ?? 0, 'zh-CN', { maximumFractionDigits: 2 })}%`}
+          />
         )
       }
     },
@@ -657,14 +676,22 @@
       label: '批准预算',
       minWidth: 150,
       align: 'right',
-      formatter: (row) => money((row as Api.Hr.CompensationReviewCycle).budgetAmount)
+      formatter: (row) =>
+        formatCurrencyCodeValue(
+          (row as Api.Hr.CompensationReviewCycle).budgetAmount,
+          (row as Api.Hr.CompensationReviewCycle).currencyCode
+        )
     },
     {
       prop: 'proposedIncreaseAmount',
       label: '建议增资',
       minWidth: 150,
       align: 'right',
-      formatter: (row) => money((row as Api.Hr.CompensationReviewCycle).proposedIncreaseAmount)
+      formatter: (row) =>
+        formatCurrencyCodeValue(
+          (row as Api.Hr.CompensationReviewCycle).proposedIncreaseAmount,
+          (row as Api.Hr.CompensationReviewCycle).currencyCode
+        )
     },
     {
       prop: 'status',
@@ -689,7 +716,13 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.CompensationReviewItem
-        return identity(item.employeeName, item.employeeNo, item.organizationName)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.employeeName}
+            secondary={item.employeeNo}
+            tertiary={item.organizationName}
+          />
+        )
       }
     },
     {
@@ -710,14 +743,22 @@
       label: '当前基本工资',
       minWidth: 150,
       align: 'right',
-      formatter: (row) => money((row as Api.Hr.CompensationReviewItem).currentBaseAmount)
+      formatter: (row) =>
+        formatCurrencyCodeValue(
+          (row as Api.Hr.CompensationReviewItem).currentBaseAmount,
+          selectedCycle.value?.currencyCode ?? 'CNY'
+        )
     },
     {
       prop: 'proposedBaseAmount',
       label: '建议基本工资',
       minWidth: 150,
       align: 'right',
-      formatter: (row) => money((row as Api.Hr.CompensationReviewItem).proposedBaseAmount)
+      formatter: (row) =>
+        formatCurrencyCodeValue(
+          (row as Api.Hr.CompensationReviewItem).proposedBaseAmount,
+          selectedCycle.value?.currencyCode ?? 'CNY'
+        )
     },
     {
       prop: 'increasePercent',
@@ -735,7 +776,7 @@
             class={item.outOfGuideline ? 'review-page__variance is-risk' : 'review-page__variance'}
           >
             {item.increasePercent > 0 ? '+' : ''}
-            {numberText(item.increasePercent)}%
+            {formatNumberValue(item.increasePercent ?? 0, 'zh-CN', { maximumFractionDigits: 2 })}%
           </span>
         )
       }
@@ -784,10 +825,12 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.CompensationReviewBudget
-        return identity(
-          item.organizationName,
-          `${item.employeeCount ?? 0} 名复核员工`,
-          item.source === 'auto' ? '按默认预算率生成' : '人工批准预算'
+        return (
+          <BusinessTableIdentityCell
+            primary={item.organizationName}
+            secondary={`${item.employeeCount ?? 0} 名复核员工`}
+            tertiary={item.source === 'auto' ? '按默认预算率生成' : '人工批准预算'}
+          />
         )
       }
     },
@@ -796,21 +839,33 @@
       label: '批准预算',
       minWidth: 160,
       align: 'right',
-      formatter: (row) => money((row as Api.Hr.CompensationReviewBudget).budgetAmount)
+      formatter: (row) =>
+        formatCurrencyCodeValue(
+          (row as Api.Hr.CompensationReviewBudget).budgetAmount,
+          selectedCycle.value?.currencyCode ?? 'CNY'
+        )
     },
     {
       prop: 'usedAmount',
       label: '已占用',
       minWidth: 150,
       align: 'right',
-      formatter: (row) => money((row as Api.Hr.CompensationReviewBudget).usedAmount)
+      formatter: (row) =>
+        formatCurrencyCodeValue(
+          (row as Api.Hr.CompensationReviewBudget).usedAmount,
+          selectedCycle.value?.currencyCode ?? 'CNY'
+        )
     },
     {
       prop: 'remainingAmount',
       label: '剩余预算',
       minWidth: 150,
       align: 'right',
-      formatter: (row) => money((row as Api.Hr.CompensationReviewBudget).remainingAmount)
+      formatter: (row) =>
+        formatCurrencyCodeValue(
+          (row as Api.Hr.CompensationReviewBudget).remainingAmount,
+          selectedCycle.value?.currencyCode ?? 'CNY'
+        )
     },
     {
       prop: 'utilizationPercent',
@@ -836,7 +891,12 @@
               }
               strokeWidth={7}
             />
-            <small>{numberText(item.utilizationPercent)}%</small>
+            <small>
+              {formatNumberValue(item.utilizationPercent ?? 0, 'zh-CN', {
+                maximumFractionDigits: 2
+              })}
+              %
+            </small>
           </div>
         )
       }
@@ -910,7 +970,7 @@
         color: 'var(--el-color-danger)'
       })
     return (
-      <HrTableActions>
+      <BusinessTableRowActions>
         <ArtButtonTable type="view" label="进入周期" onClick={() => selectCycle(row)} />
         {actions.length ? (
           <ArtButtonMore
@@ -918,7 +978,7 @@
             onClick={(item: ButtonMoreItem) => void handleCycleMoreAction(item, row)}
           />
         ) : null}
-      </HrTableActions>
+      </BusinessTableRowActions>
     )
   }
 
@@ -950,10 +1010,10 @@
       hasAuth('Hr:CompensationReview:Amount:Edit')
     if (!editable) return <span class="review-page__locked">预算锁定</span>
     return (
-      <HrTableActions>
+      <BusinessTableRowActions>
         <ArtButtonTable type="edit" onClick={() => openDialog('budget', row)} />
         <ArtButtonTable type="delete" onClick={() => handleDelete('budget', row)} />
-      </HrTableActions>
+      </BusinessTableRowActions>
     )
   }
 
@@ -1530,38 +1590,6 @@
       border-radius: 999px;
 
       svg {
-        color: var(--theme-color);
-      }
-    }
-
-    &__identity {
-      display: grid;
-      min-width: 0;
-      padding: 3px 0;
-
-      strong,
-      small,
-      em {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      strong {
-        font-size: 12px;
-        color: var(--art-text-gray-900);
-      }
-
-      small {
-        margin-top: 3px;
-        font-size: 10px;
-        color: var(--art-text-gray-500);
-      }
-
-      em {
-        margin-top: 2px;
-        font-size: 10px;
-        font-style: normal;
         color: var(--theme-color);
       }
     }

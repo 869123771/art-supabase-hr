@@ -85,6 +85,8 @@
 </template>
 
 <script setup lang="tsx">
+  import { createDateTimeFormatter, formatSensitiveCurrencyValue } from '@/utils/ui/format'
+
   import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import dayjs from 'dayjs'
   import { ElProgress, ElTag } from 'element-plus'
@@ -98,7 +100,7 @@
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
-  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
@@ -123,6 +125,17 @@
   } from '@hr/views/shared/hr-entity-navigation.vue'
   import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
   import LearningDialog from './modules/learning-dialog.vue'
+
+  const formatTableDateTime = createDateTimeFormatter({
+    format: 'YYYY-MM-DD HH:mm',
+    emptyText: '--',
+    invalidText: '--'
+  })
+  const formatTableDateTime2 = createDateTimeFormatter({
+    format: 'MM-DD HH:mm',
+    emptyText: '--',
+    invalidText: '--'
+  })
 
   defineOptions({ name: 'HrTalentDevelopment' })
   type Entity = Api.Hr.LearningEntity
@@ -317,8 +330,6 @@
     return items
   })
 
-  const dictLabel = (code: string, value?: string | null): string =>
-    getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
   const statusType = (
     value?: string | null
   ): 'success' | 'warning' | 'danger' | 'info' | 'primary' =>
@@ -331,20 +342,10 @@
           : ['cancelled', 'retired', 'expired', 'withdrawn'].includes(value ?? '')
             ? 'warning'
             : 'info'
-  const money = (value?: number | null): string =>
-    value == null
-      ? '--'
-      : new Intl.NumberFormat('zh-CN', {
-          style: 'currency',
-          currency: 'CNY',
-          maximumFractionDigits: 2
-        }).format(value)
-  const identity = (title?: string | null, subtitle?: string | null) => (
-    <BusinessTableIdentityCell primary={title} secondary={subtitle} />
-  )
+
   const statusTag = (dictionary: string, status?: string | null) => (
     <ElTag type={statusType(status)} effect="light" round>
-      {dictLabel(dictionary, status)}
+      {userStore.getDictLabelByValue(dictionary, status, status ?? '--')}
     </ElTag>
   )
 
@@ -354,7 +355,7 @@
     width: 112,
     fixed: 'right',
     formatter: (row) => (
-      <HrTableActions>
+      <BusinessTableRowActions>
         {canEdit(row) ? (
           <ArtButtonTable
             type="edit"
@@ -379,7 +380,7 @@
           ]}
           onClick={(item: ButtonMoreItem) => void handleMoreAction(item, row)}
         />
-      </HrTableActions>
+      </BusinessTableRowActions>
     )
   })
 
@@ -399,9 +400,11 @@
       fixed: 'left',
       formatter: (row) => {
         const plan = row as Api.Hr.LearningPlan
-        return identity(
-          plan.planName,
-          `${plan.planCode} · ${dictLabel('hrTrainingType', plan.trainingType)}`
+        return (
+          <BusinessTableIdentityCell
+            primary={plan.planName}
+            secondary={`${plan.planCode} · ${userStore.getDictLabelByValue('hrTrainingType', plan.trainingType, plan.trainingType ?? '--')}`}
+          />
         )
       }
     },
@@ -411,7 +414,12 @@
       minWidth: 190,
       formatter: (row) => {
         const plan = row as Api.Hr.LearningPlan
-        return identity(plan.owner?.name ?? '未指定负责人', plan.targetAudience ?? '未明确目标人群')
+        return (
+          <BusinessTableIdentityCell
+            primary={plan.owner?.name ?? '未指定负责人'}
+            secondary={plan.targetAudience ?? '未明确目标人群'}
+          />
+        )
       }
     },
     {
@@ -438,7 +446,12 @@
       minWidth: 175,
       formatter: (row) => {
         const plan = row as Api.Hr.LearningPlan
-        return identity(money(plan.budget), `实际 ${money(plan.actualCost)}`)
+        return (
+          <BusinessTableIdentityCell
+            primary={formatSensitiveCurrencyValue(plan.budget)}
+            secondary={`实际 ${formatSensitiveCurrencyValue(plan.actualCost)}`}
+          />
+        )
       }
     },
     {
@@ -457,9 +470,11 @@
       fixed: 'left',
       formatter: (row) => {
         const course = row as Api.Hr.LearningCourse
-        return identity(
-          course.courseName,
-          `${course.courseCode} · ${dictLabel('hrLearningCourseCategory', course.category)}`
+        return (
+          <BusinessTableIdentityCell
+            primary={course.courseName}
+            secondary={`${course.courseCode} · ${userStore.getDictLabelByValue('hrLearningCourseCategory', course.category, course.category ?? '--')}`}
+          />
         )
       }
     },
@@ -468,7 +483,11 @@
       label: '交付方式',
       width: 125,
       formatter: (row) =>
-        dictLabel('hrLearningDeliveryMode', (row as Api.Hr.LearningCourse).deliveryMode)
+        userStore.getDictLabelByValue(
+          'hrLearningDeliveryMode',
+          (row as Api.Hr.LearningCourse).deliveryMode,
+          (row as Api.Hr.LearningCourse).deliveryMode ?? '--'
+        )
     },
     {
       prop: 'hours',
@@ -483,9 +502,11 @@
       minWidth: 170,
       formatter: (row) => {
         const course = row as Api.Hr.LearningCourse
-        return identity(
-          course.passingScore == null ? '不设分数线' : `${course.passingScore} 分`,
-          `最低出勤 ${course.minimumAttendancePercent}%`
+        return (
+          <BusinessTableIdentityCell
+            primary={course.passingScore == null ? '不设分数线' : `${course.passingScore} 分`}
+            secondary={`最低出勤 ${course.minimumAttendancePercent}%`}
+          />
         )
       }
     },
@@ -519,7 +540,9 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.LearningCourseCompetency
-        return identity(item.course?.name, item.course?.code)
+        return (
+          <BusinessTableIdentityCell primary={item.course?.name} secondary={item.course?.code} />
+        )
       }
     },
     {
@@ -528,7 +551,12 @@
       minWidth: 240,
       formatter: (row) => {
         const item = row as Api.Hr.LearningCourseCompetency
-        return identity(item.competency?.name, item.competency?.code)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.competency?.name}
+            secondary={item.competency?.code}
+          />
+        )
       }
     },
     {
@@ -537,7 +565,11 @@
       minWidth: 160,
       formatter: (row) => (
         <ElTag type="primary" effect="light" round>
-          {dictLabel('commonCompetencyLevel', (row as Api.Hr.LearningCourseCompetency).targetLevel)}
+          {userStore.getDictLabelByValue(
+            'commonCompetencyLevel',
+            (row as Api.Hr.LearningCourseCompetency).targetLevel,
+            (row as Api.Hr.LearningCourseCompetency).targetLevel ?? '--'
+          )}
         </ElTag>
       )
     },
@@ -545,8 +577,7 @@
       prop: 'createTime',
       label: '配置时间',
       width: 165,
-      formatter: (row) =>
-        dayjs((row as Api.Hr.LearningCourseCompetency).createTime).format('YYYY-MM-DD HH:mm')
+      formatter: (row) => formatTableDateTime((row as Api.Hr.LearningCourseCompetency).createTime)
     },
     actionColumn()
   ]
@@ -558,7 +589,12 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.LearningSession
-        return identity(item.course?.name, `${item.sessionCode} · ${item.plan?.name ?? '--'}`)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.course?.name}
+            secondary={`${item.sessionCode} · ${item.plan?.name ?? '--'}`}
+          />
+        )
       }
     },
     {
@@ -567,9 +603,11 @@
       minWidth: 190,
       formatter: (row) => {
         const item = row as Api.Hr.LearningSession
-        return identity(
-          dayjs(item.startAt).format('YYYY-MM-DD HH:mm'),
-          `至 ${dayjs(item.endAt).format('MM-DD HH:mm')}`
+        return (
+          <BusinessTableIdentityCell
+            primary={formatTableDateTime(item.startAt)}
+            secondary={`至 ${formatTableDateTime2(item.endAt)}`}
+          />
         )
       }
     },
@@ -579,9 +617,11 @@
       minWidth: 180,
       formatter: (row) => {
         const item = row as Api.Hr.LearningSession
-        return identity(
-          item.instructorName ?? '未指定讲师',
-          item.location ?? item.meetingUrl ?? '--'
+        return (
+          <BusinessTableIdentityCell
+            primary={item.instructorName ?? '未指定讲师'}
+            secondary={item.location ?? item.meetingUrl ?? '--'}
+          />
         )
       }
     },
@@ -612,7 +652,12 @@
       minWidth: 160,
       formatter: (row) => {
         const item = row as Api.Hr.LearningSession
-        return identity(money(item.estimatedCost), `实际 ${money(item.actualCost)}`)
+        return (
+          <BusinessTableIdentityCell
+            primary={formatSensitiveCurrencyValue(item.estimatedCost)}
+            secondary={`实际 ${formatSensitiveCurrencyValue(item.actualCost)}`}
+          />
+        )
       }
     },
     {
@@ -632,7 +677,12 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.LearningEnrollment
-        return identity(item.employee?.name, item.employee?.code)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.employee?.name}
+            secondary={item.employee?.code}
+          />
+        )
       }
     },
     {
@@ -641,15 +691,16 @@
       minWidth: 230,
       formatter: (row) => {
         const item = row as Api.Hr.LearningEnrollment
-        return identity(item.course?.name, item.session?.code)
+        return (
+          <BusinessTableIdentityCell primary={item.course?.name} secondary={item.session?.code} />
+        )
       }
     },
     {
       prop: 'schedule',
       label: '开始时间',
       width: 160,
-      formatter: (row) =>
-        dayjs((row as Api.Hr.LearningEnrollment).session?.startAt).format('YYYY-MM-DD HH:mm')
+      formatter: (row) => formatTableDateTime((row as Api.Hr.LearningEnrollment).session?.startAt)
     },
     {
       prop: 'attendancePercent',
@@ -689,7 +740,12 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.LearningCertificate
-        return identity(item.certificateName, item.certificateNo)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.certificateName}
+            secondary={item.certificateNo}
+          />
+        )
       }
     },
     {
@@ -698,7 +754,12 @@
       minWidth: 180,
       formatter: (row) => {
         const item = row as Api.Hr.LearningCertificate
-        return identity(item.employee?.name, item.employee?.code)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.employee?.name}
+            secondary={item.employee?.code}
+          />
+        )
       }
     },
     {
@@ -1322,29 +1383,6 @@
         flex: 0 0 auto;
         margin-top: 2px;
         color: var(--theme-color);
-      }
-    }
-
-    &__identity {
-      display: grid;
-      gap: 3px;
-      min-width: 0;
-
-      strong,
-      small {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      strong {
-        font-weight: 650;
-        color: var(--art-text-gray-900);
-      }
-
-      small {
-        font-size: 12px;
-        color: var(--art-text-gray-600);
       }
     }
 

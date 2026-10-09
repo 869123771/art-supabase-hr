@@ -152,6 +152,8 @@
 </template>
 
 <script setup lang="tsx">
+  import { createDateTimeFormatter } from '@/utils/ui/format'
+
   import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import dayjs from 'dayjs'
   import { ElButton, ElProgress, ElTag, type TagProps } from 'element-plus'
@@ -189,6 +191,12 @@
     type HrEntityNavigationItem
   } from '@hr/views/shared/hr-entity-navigation.vue'
   import InternalMobilityDialog from './modules/internal-mobility-dialog.vue'
+
+  const formatTableDateTime = createDateTimeFormatter({
+    format: 'YYYY-MM-DD HH:mm',
+    emptyText: '--',
+    invalidText: '--'
+  })
 
   defineOptions({ name: 'HrInternalMobility' })
   type Entity = Api.Hr.InternalMobilityEntity
@@ -389,9 +397,7 @@
       </ElTag>
     )
   }
-  const identity = (title?: string | null, subtitle?: string | null, extra?: string | null) => (
-    <BusinessTableIdentityCell primary={title} secondary={subtitle} tertiary={extra} />
-  )
+
   const opportunityStatusOptions = useDictionaryOptions('hrMobilityOpportunityStatus')
   const applicationStatusOptions = useDictionaryOptions('hrMobilityApplicationStatus')
   const searchItems = computed<SearchFormItem[]>(() => {
@@ -463,7 +469,13 @@
       },
       formatter: (row) => {
         const item = row as Api.Hr.InternalMobilityOpportunity
-        return identity(item.opportunityTitle, item.opportunityCode, item.roleSummary)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.opportunityTitle}
+            secondary={item.opportunityCode}
+            tertiary={item.roleSummary}
+          />
+        )
       }
     },
     {
@@ -472,10 +484,12 @@
       minWidth: 190,
       formatter: (row) => {
         const item = row as Api.Hr.InternalMobilityOpportunity
-        return identity(
-          item.organizationName,
-          item.positionName || '不限定正式岗位',
-          item.hiringManagerName
+        return (
+          <BusinessTableIdentityCell
+            primary={item.organizationName}
+            secondary={item.positionName || '不限定正式岗位'}
+            tertiary={item.hiringManagerName}
+          />
         )
       }
     },
@@ -504,10 +518,12 @@
         const item = row as Api.Hr.InternalMobilityOpportunity
         const closingSoon =
           item.status === 'open' && dayjs(item.applicationCloseDate).diff(dayjs(), 'day') <= 7
-        return identity(
-          `${item.applicationOpenDate} → ${item.applicationCloseDate}`,
-          `预计 ${item.expectedStartDate} 开始`,
-          closingSoon ? '即将截止' : undefined
+        return (
+          <BusinessTableIdentityCell
+            primary={`${item.applicationOpenDate} → ${item.applicationCloseDate}`}
+            secondary={`预计 ${item.expectedStartDate} 开始`}
+            tertiary={closingSoon ? '即将截止' : undefined}
+          />
         )
       }
     },
@@ -556,7 +572,13 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.InternalMobilityApplication
-        return identity(item.employeeName, item.employeeNo, item.currentOrganizationName)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.employeeName}
+            secondary={item.employeeNo}
+            tertiary={item.currentOrganizationName}
+          />
+        )
       }
     },
     {
@@ -565,10 +587,12 @@
       minWidth: 220,
       formatter: (row) => {
         const item = row as Api.Hr.InternalMobilityApplication
-        return identity(
-          item.opportunityTitle,
-          item.opportunityCode,
-          `${item.targetOrganizationName || '--'} · ${item.targetPositionName || labels[item.opportunityType ?? ''] || '临时机会'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.opportunityTitle}
+            secondary={item.opportunityCode}
+            tertiary={`${item.targetOrganizationName || '--'} · ${item.targetPositionName || labels[item.opportunityType ?? ''] || '临时机会'}`}
+          />
         )
       }
     },
@@ -578,10 +602,12 @@
       minWidth: 175,
       formatter: (row) => {
         const item = row as Api.Hr.InternalMobilityApplication
-        return identity(
-          item.currentPositionName || '未分配岗位',
-          item.currentJobTitle || '未维护职务',
-          item.currentOrganizationName
+        return (
+          <BusinessTableIdentityCell
+            primary={item.currentPositionName || '未分配岗位'}
+            secondary={item.currentJobTitle || '未维护职务'}
+            tertiary={item.currentOrganizationName}
+          />
         )
       }
     },
@@ -597,9 +623,11 @@
       minWidth: 150,
       formatter: (row) => {
         const item = row as Api.Hr.InternalMobilityApplication
-        return identity(
-          item.assessmentScore == null ? '待评估' : `${item.assessmentScore} 分`,
-          item.assessmentNote || '尚无评估依据'
+        return (
+          <BusinessTableIdentityCell
+            primary={item.assessmentScore == null ? '待评估' : `${item.assessmentScore} 分`}
+            secondary={item.assessmentNote || '尚无评估依据'}
+          />
         )
       }
     },
@@ -614,7 +642,7 @@
       label: '最近更新',
       width: 145,
       formatter: (row) =>
-        dayjs((row as Api.Hr.InternalMobilityApplication).updateTime).format('YYYY-MM-DD HH:mm')
+        formatTableDateTime((row as Api.Hr.InternalMobilityApplication).updateTime)
     },
     {
       prop: 'action',
@@ -1401,37 +1429,6 @@
       color: var(--el-color-warning-dark-2);
       background: var(--el-color-warning-light-9);
       border-color: var(--el-color-warning-light-7);
-    }
-
-    &__identity {
-      display: grid;
-      min-width: 0;
-
-      strong,
-      small,
-      em {
-        display: block;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      strong {
-        color: var(--art-text-gray-900);
-      }
-
-      small {
-        margin-top: 3px;
-        font-size: 11px;
-        color: var(--art-text-gray-600);
-      }
-
-      em {
-        margin-top: 2px;
-        font-size: 10px;
-        font-style: normal;
-        color: var(--art-text-gray-500);
-      }
     }
 
     &__tag-stack {

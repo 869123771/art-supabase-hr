@@ -141,6 +141,9 @@
 </template>
 
 <script setup lang="tsx">
+  import { formatCurrencyCodeValue } from '@/utils/ui/format'
+  import { createDateTimeFormatter } from '@/utils/ui/format'
+
   import dayjs from 'dayjs'
   import { ElButton, ElTag, type TagProps } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
@@ -152,7 +155,7 @@
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
-  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
@@ -178,6 +181,12 @@
     type HrEntityNavigationItem
   } from '@hr/views/shared/hr-entity-navigation.vue'
   import ContingentWorkforceDialog from './modules/contingent-workforce-dialog.vue'
+
+  const formatTableDateTime = createDateTimeFormatter({
+    format: 'YYYY-MM-DD HH:mm',
+    emptyText: '--',
+    invalidText: '--'
+  })
 
   defineOptions({ name: 'HrContingentWorkforce' })
 
@@ -403,21 +412,6 @@
       {statusLabel(value)}
     </ElTag>
   )
-  const identity = (title?: string | null, subtitle?: string | null, extra?: string | null) => (
-    <BusinessTableIdentityCell primary={title} secondary={subtitle} tertiary={extra} />
-  )
-  const countBadge = (value: number, label: string, warning = false) => (
-    <span class={['contingent-page__count', warning && value ? 'is-warning' : '']}>
-      <b>{value}</b>
-      {label}
-    </span>
-  )
-  const money = (value?: Api.Hr.ProtectedAmount | null, currency = 'CNY'): string =>
-    typeof value === 'number'
-      ? `${currency} ${value.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`
-      : value == null
-        ? '--'
-        : String(value)
 
   const searchItems = computed<SearchFormItem[]>(() => {
     const statusOptions: Record<Entity, Array<{ label: string; value: string }>> = {
@@ -519,10 +513,12 @@
       },
       formatter: (row) => {
         const item = row as Api.Hr.ExternalEngagement
-        return identity(
-          item.workerName,
-          `${item.workerNo || '--'} · ${item.engagementNo}`,
-          item.serviceTitle
+        return (
+          <BusinessTableIdentityCell
+            primary={item.workerName}
+            secondary={`${item.workerNo || '--'} · ${item.engagementNo}`}
+            tertiary={item.serviceTitle}
+          />
         )
       }
     },
@@ -532,24 +528,31 @@
       minWidth: 180,
       formatter: (row) => {
         const item = row as Api.Hr.ExternalEngagement
-        return identity(item.organizationName, item.sponsorEmployeeName, item.positionName)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.organizationName}
+            secondary={item.sponsorEmployeeName}
+            tertiary={item.positionName}
+          />
+        )
       }
     },
     {
       prop: 'endDate',
       label: '服务与访问周期',
-      minWidth: 185,
+      minWidth: 220,
       formatter: (row) => {
         const item = row as Api.Hr.ExternalEngagement
         const accessRisk =
           item.status === 'active' && dayjs(item.accessExpiryDate).diff(dayjs(), 'day') <= 14
         return (
-          <div class="contingent-page__period">
-            <strong>
-              {item.startDate} → {item.endDate}
-            </strong>
-            <small class={accessRisk ? 'is-risk' : ''}>访问到期 {item.accessExpiryDate}</small>
-          </div>
+          <BusinessTableIdentityCell
+            primary={`${item.startDate} → ${item.endDate}`}
+            secondary={`访问到期 ${item.accessExpiryDate || '—'}`}
+            class={
+              accessRisk ? '[&_small]:font-bold [&_small]:text-[var(--el-color-warning)]!' : ''
+            }
+          />
         )
       }
     },
@@ -560,10 +563,15 @@
       align: 'center',
       formatter: (row) => {
         const item = row as Api.Hr.ExternalEngagement
-        return countBadge(
-          item.pendingControlCount ?? 0,
-          ` / ${item.controlCount ?? 0} 待完成`,
-          true
+        return (
+          <ElTag
+            size="small"
+            type={(item.pendingControlCount ?? 0) > 0 ? 'warning' : 'info'}
+            effect="light"
+          >
+            {item.pendingControlCount ?? 0}
+            {` / ${item.controlCount ?? 0} 待完成`}
+          </ElTag>
         )
       }
     },
@@ -576,7 +584,7 @@
         const item = row as Api.Hr.ExternalEngagement
         return item.billingRate == null
           ? '--'
-          : `${money(item.billingRate, item.currencyCode ?? 'CNY')}${item.billingUnit ? ` / ${billingUnitLabel(item.billingUnit)}` : ''}`
+          : `${formatCurrencyCodeValue(item.billingRate, item.currencyCode ?? 'CNY')}${item.billingUnit ? ` / ${billingUnitLabel(item.billingUnit)}` : ''}`
       }
     },
     {
@@ -608,7 +616,13 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.ExternalWorker
-        return identity(item.workerName, item.workerNo, workerTypeLabel(item.workerType))
+        return (
+          <BusinessTableIdentityCell
+            primary={item.workerName}
+            secondary={item.workerNo}
+            tertiary={workerTypeLabel(item.workerType)}
+          />
+        )
       }
     },
     {
@@ -617,7 +631,12 @@
       minWidth: 180,
       formatter: (row) => {
         const item = row as Api.Hr.ExternalWorker
-        return identity(item.vendorName || '独立外部人员', item.vendorWorkerNo)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.vendorName || '独立外部人员'}
+            secondary={item.vendorWorkerNo}
+          />
+        )
       }
     },
     {
@@ -631,8 +650,12 @@
       label: '在场任务',
       width: 105,
       align: 'center',
-      formatter: (row) =>
-        countBadge((row as Api.Hr.ExternalWorker).activeEngagementCount ?? 0, ' 项')
+      formatter: (row) => (
+        <ElTag size="small" type={'info'} effect="light">
+          {(row as Api.Hr.ExternalWorker).activeEngagementCount ?? 0}
+          {' 项'}
+        </ElTag>
+      )
     },
     {
       prop: 'nextEndDate',
@@ -646,7 +669,7 @@
       minWidth: 180,
       formatter: (row) => {
         const item = row as Api.Hr.ExternalWorker
-        return identity(item.phone, item.email)
+        return <BusinessTableIdentityCell primary={item.phone} secondary={item.email} />
       }
     },
     {
@@ -672,7 +695,13 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.ExternalVendor
-        return identity(item.vendorName, item.vendorCode, item.serviceScope)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.vendorName}
+            secondary={item.vendorCode}
+            tertiary={item.serviceScope}
+          />
+        )
       }
     },
     {
@@ -681,9 +710,11 @@
       minWidth: 190,
       formatter: (row) => {
         const item = row as Api.Hr.ExternalVendor
-        return identity(
-          item.contractNo,
-          `${item.contractStartDate || '--'} → ${item.contractEndDate || '--'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.contractNo}
+            secondary={`${item.contractStartDate || '--'} → ${item.contractEndDate || '--'}`}
+          />
         )
       }
     },
@@ -694,7 +725,7 @@
       formatter: (row) => {
         const item = row as Api.Hr.ExternalVendor
         return (
-          <div class="contingent-page__tags">
+          <div class="flex flex-wrap gap-1">
             {statusTag(item.complianceStatus)}
             {riskTag(item.riskLevel)}
           </div>
@@ -708,7 +739,12 @@
       align: 'center',
       formatter: (row) => {
         const item = row as Api.Hr.ExternalVendor
-        return identity(`${item.workerCount ?? 0} 人`, `${item.activeEngagementCount ?? 0} 项在场`)
+        return (
+          <BusinessTableIdentityCell
+            primary={`${item.workerCount ?? 0} 人`}
+            secondary={`${item.activeEngagementCount ?? 0} 项在场`}
+          />
+        )
       }
     },
     {
@@ -717,7 +753,13 @@
       minWidth: 180,
       formatter: (row) => {
         const item = row as Api.Hr.ExternalVendor
-        return identity(item.contactName, item.contactPhone, item.contactEmail)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.contactName}
+            secondary={item.contactPhone}
+            tertiary={item.contactEmail}
+          />
+        )
       }
     },
     {
@@ -743,10 +785,12 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.ExternalEngagementControl
-        return identity(
-          item.controlName,
-          controlTypeLabel(item.controlType),
-          item.required ? '必需项' : '可选项'
+        return (
+          <BusinessTableIdentityCell
+            primary={item.controlName}
+            secondary={controlTypeLabel(item.controlType)}
+            tertiary={item.required ? '必需项' : '可选项'}
+          />
         )
       }
     },
@@ -756,7 +800,13 @@
       minWidth: 190,
       formatter: (row) => {
         const item = row as Api.Hr.ExternalEngagementControl
-        return identity(item.workerName, item.engagementNo, statusLabel(item.engagementStatus))
+        return (
+          <BusinessTableIdentityCell
+            primary={item.workerName}
+            secondary={item.engagementNo}
+            tertiary={statusLabel(item.engagementStatus)}
+          />
+        )
       }
     },
     {
@@ -778,9 +828,11 @@
       minWidth: 170,
       formatter: (row) => {
         const item = row as Api.Hr.ExternalEngagementControl
-        return identity(
-          item.completedBy,
-          item.completedAt ? dayjs(item.completedAt).format('YYYY-MM-DD HH:mm') : null
+        return (
+          <BusinessTableIdentityCell
+            primary={item.completedBy}
+            secondary={item.completedAt ? formatTableDateTime(item.completedAt) : null}
+          />
         )
       }
     },
@@ -853,7 +905,7 @@
         color: 'var(--el-color-danger)'
       })
     return (
-      <HrTableActions>
+      <BusinessTableRowActions>
         <ArtButtonTable type="view" label="准入清单" onClick={() => focusControls(row)} />
         {actions.length ? (
           <ArtButtonMore
@@ -861,7 +913,7 @@
             onClick={(item: ButtonMoreItem) => void handleEngagementMore(item, row)}
           />
         ) : null}
-      </HrTableActions>
+      </BusinessTableRowActions>
     )
   }
 
@@ -965,7 +1017,7 @@
     hasAuth(permissionByEntity.control) ? (
       <ArtButtonTable type="edit" onClick={() => openDialog('control', row)} />
     ) : (
-      <span class="contingent-page__locked">只读</span>
+      <span class="text-xs text-[var(--art-gray-500)]">只读</span>
     )
 
   const billingUnitLabel = (value: NonNullable<Api.Hr.ExternalEngagement['billingUnit']>): string =>
@@ -1476,79 +1528,6 @@
       em {
         font-size: 10px;
       }
-    }
-
-    :deep(&__identity) {
-      display: grid;
-      min-width: 0;
-      line-height: 1.35;
-    }
-
-    :deep(&__identity strong) {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: 12px;
-      color: var(--art-text-gray-900);
-      white-space: nowrap;
-    }
-
-    :deep(&__identity small) {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: 11px;
-      color: var(--art-text-gray-550);
-      white-space: nowrap;
-    }
-
-    :deep(&__identity em) {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: 10px;
-      font-style: normal;
-      color: var(--art-text-gray-500);
-      white-space: nowrap;
-    }
-
-    :deep(&__period) {
-      display: grid;
-      line-height: 1.4;
-    }
-
-    :deep(&__period strong) {
-      font-size: 11px;
-      color: var(--art-text-gray-800);
-    }
-
-    :deep(&__period small) {
-      font-size: 10px;
-      color: var(--art-text-gray-500);
-    }
-
-    :deep(&__period small.is-risk) {
-      font-weight: 700;
-      color: var(--el-color-warning-dark-2);
-    }
-
-    :deep(&__count) {
-      display: inline-flex;
-      gap: 3px;
-      align-items: baseline;
-      font-size: 10px;
-      color: var(--art-text-gray-550);
-    }
-
-    :deep(&__count b) {
-      font-size: 14px;
-      color: var(--art-text-gray-900);
-    }
-
-    :deep(&__count.is-warning b) {
-      color: var(--el-color-warning-dark-2);
-    }
-
-    :deep(&__locked) {
-      font-size: 11px;
-      color: var(--art-text-gray-500);
     }
   }
 

@@ -81,6 +81,8 @@
 </template>
 
 <script setup lang="tsx">
+  import { createDateTimeFormatter } from '@/utils/ui/format'
+
   import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
   import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
@@ -98,7 +100,7 @@
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
-  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
     type BusinessWorkspaceTag
@@ -121,6 +123,17 @@
     type HrEntityNavigationItem
   } from '@hr/views/shared/hr-entity-navigation.vue'
   import AttendanceDialog from './modules/attendance-dialog.vue'
+
+  const formatTableDate = createDateTimeFormatter({
+    format: 'YYYY 年 MM 月',
+    emptyText: '--',
+    invalidText: '--'
+  })
+  const formatTableDateTime = createDateTimeFormatter({
+    format: 'MM-DD HH:mm',
+    emptyText: '--',
+    invalidText: '--'
+  })
 
   defineOptions({ name: 'HrAttendance' })
 
@@ -356,11 +369,6 @@
     return items
   })
 
-  const dictLabel = (code: string, value?: string | null) =>
-    getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
-  const identity = (title?: string | null, subtitle?: string | null) => (
-    <BusinessTableIdentityCell primary={title} secondary={subtitle} />
-  )
   const minuteText = (minutes?: number | null) => {
     const value = Number(minutes ?? 0)
     if (!value) return '0 分钟'
@@ -368,7 +376,11 @@
     const rest = value % 60
     return [hours ? `${hours} 小时` : '', rest ? `${rest} 分钟` : ''].filter(Boolean).join(' ')
   }
-  const timeText = (value?: string | null) => (value ? dayjs(value).format('MM-DD HH:mm') : '--')
+  const timeText = createDateTimeFormatter({
+    format: 'MM-DD HH:mm',
+    emptyText: '--',
+    invalidText: '--'
+  })
   const deviation = (item: Api.Hr.TimeAttendanceDailyRecord) => {
     const values = [
       item.lateMinutes ? `迟到 ${item.lateMinutes}` : '',
@@ -394,7 +406,12 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.TimeAttendanceDailyRecord
-        return identity(item.employee?.name, `${item.employee?.code ?? '--'} · ${item.workDate}`)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.employee?.name}
+            secondary={`${item.employee?.code ?? '--'} · ${item.workDate}`}
+          />
+        )
       }
     },
     {
@@ -403,7 +420,12 @@
       minWidth: 145,
       formatter: (row) => {
         const item = row as Api.Hr.TimeAttendanceDailyRecord
-        return identity(item.shift?.name ?? '未识别班次', item.shift?.code ?? '无计划规则')
+        return (
+          <BusinessTableIdentityCell
+            primary={item.shift?.name ?? '未识别班次'}
+            secondary={item.shift?.code ?? '无计划规则'}
+          />
+        )
       }
     },
     {
@@ -412,7 +434,12 @@
       minWidth: 175,
       formatter: (row) => {
         const item = row as Api.Hr.TimeAttendanceDailyRecord
-        return identity(timeText(item.clockInAt), `至 ${timeText(item.clockOutAt)}`)
+        return (
+          <BusinessTableIdentityCell
+            primary={timeText(item.clockInAt)}
+            secondary={`至 ${timeText(item.clockOutAt)}`}
+          />
+        )
       }
     },
     {
@@ -421,9 +448,11 @@
       minWidth: 185,
       formatter: (row) => {
         const item = row as Api.Hr.TimeAttendanceDailyRecord
-        return identity(
-          `${minuteText(item.scheduledMinutes)} / ${minuteText(item.workMinutes)}`,
-          `应付 ${minuteText(item.payableMinutes)}`
+        return (
+          <BusinessTableIdentityCell
+            primary={`${minuteText(item.scheduledMinutes)} / ${minuteText(item.workMinutes)}`}
+            secondary={`应付 ${minuteText(item.payableMinutes)}`}
+          />
         )
       }
     },
@@ -445,9 +474,17 @@
       minWidth: 125,
       formatter: (row) => {
         const item = row as Api.Hr.TimeAttendanceDailyRecord
-        return identity(
-          dictLabel('hrAttendanceSource', item.source),
-          item.lockedAt ? '已封账锁定' : item.pendingCorrection ? '修正审核中' : '可处理'
+        return (
+          <BusinessTableIdentityCell
+            primary={userStore.getDictLabelByValue(
+              'hrAttendanceSource',
+              item.source,
+              item.source ?? '--'
+            )}
+            secondary={
+              item.lockedAt ? '已封账锁定' : item.pendingCorrection ? '修正审核中' : '可处理'
+            }
+          />
         )
       }
     },
@@ -461,7 +498,12 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.TimeAttendanceAssignment
-        return identity(item.employee?.name, `${item.employee?.code ?? '--'} · ${item.workDate}`)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.employee?.name}
+            secondary={`${item.employee?.code ?? '--'} · ${item.workDate}`}
+          />
+        )
       }
     },
     {
@@ -470,9 +512,11 @@
       minWidth: 190,
       formatter: (row) => {
         const item = row as Api.Hr.TimeAttendanceAssignment
-        return identity(
-          item.shift?.name,
-          `${item.shift?.startTime ?? '--'} - ${item.shift?.endTime ?? '--'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.shift?.name}
+            secondary={`${item.shift?.startTime ?? '--'} - ${item.shift?.endTime ?? '--'}`}
+          />
         )
       }
     },
@@ -493,9 +537,11 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.TimeAttendanceCorrection
-        return identity(
-          item.correctionNo,
-          `${item.employee?.name ?? '--'} · ${item.record?.workDate ?? '--'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.correctionNo}
+            secondary={`${item.employee?.name ?? '--'} · ${item.record?.workDate ?? '--'}`}
+          />
         )
       }
     },
@@ -505,7 +551,12 @@
       minWidth: 165,
       formatter: (row) => {
         const item = row as Api.Hr.TimeAttendanceCorrection
-        return identity(timeText(item.record?.clockInAt), `至 ${timeText(item.record?.clockOutAt)}`)
+        return (
+          <BusinessTableIdentityCell
+            primary={timeText(item.record?.clockInAt)}
+            secondary={`至 ${timeText(item.record?.clockOutAt)}`}
+          />
+        )
       }
     },
     {
@@ -514,9 +565,11 @@
       minWidth: 165,
       formatter: (row) => {
         const item = row as Api.Hr.TimeAttendanceCorrection
-        return identity(
-          timeText(item.requestedClockInAt),
-          `至 ${timeText(item.requestedClockOutAt)}`
+        return (
+          <BusinessTableIdentityCell
+            primary={timeText(item.requestedClockInAt)}
+            secondary={`至 ${timeText(item.requestedClockOutAt)}`}
+          />
         )
       }
     },
@@ -537,9 +590,13 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.TimeAttendancePeriod
-        return identity(
-          dayjs(item.periodMonth).format('YYYY 年 MM 月'),
-          item.closedAt ? `封账 ${dayjs(item.closedAt).format('MM-DD HH:mm')}` : '等待期间结算'
+        return (
+          <BusinessTableIdentityCell
+            primary={formatTableDate(item.periodMonth)}
+            secondary={
+              item.closedAt ? `封账 ${formatTableDateTime(item.closedAt)}` : '等待期间结算'
+            }
+          />
         )
       }
     },
@@ -549,7 +606,12 @@
       minWidth: 145,
       formatter: (row) => {
         const item = row as Api.Hr.TimeAttendancePeriod
-        return identity(`${item.recordCount} 条日考勤`, `${item.exceptionCount} 条未清异常`)
+        return (
+          <BusinessTableIdentityCell
+            primary={`${item.recordCount} 条日考勤`}
+            secondary={`${item.exceptionCount} 条未清异常`}
+          />
+        )
       }
     },
     {
@@ -558,9 +620,11 @@
       minWidth: 190,
       formatter: (row) => {
         const item = row as Api.Hr.TimeAttendancePeriod
-        return identity(
-          minuteText(item.totalScheduledMinutes),
-          `应付 ${minuteText(item.totalPayableMinutes)}`
+        return (
+          <BusinessTableIdentityCell
+            primary={minuteText(item.totalScheduledMinutes)}
+            secondary={`应付 ${minuteText(item.totalPayableMinutes)}`}
+          />
         )
       }
     },
@@ -587,9 +651,11 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.TimeAttendanceShift
-        return identity(
-          item.shiftName,
-          `${item.shiftCode} · ${dictLabel('hrShiftType', item.shiftType)}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.shiftName}
+            secondary={`${item.shiftCode} · ${userStore.getDictLabelByValue('hrShiftType', item.shiftType, item.shiftType ?? '--')}`}
+          />
         )
       }
     },
@@ -599,9 +665,11 @@
       minWidth: 170,
       formatter: (row) => {
         const item = row as Api.Hr.TimeAttendanceShift
-        return identity(
-          `${item.startTime} - ${item.endTime}`,
-          `${item.crossDay ? '跨日' : '当日'} · 休息 ${item.breakMinutes} 分钟`
+        return (
+          <BusinessTableIdentityCell
+            primary={`${item.startTime} - ${item.endTime}`}
+            secondary={`${item.crossDay ? '跨日' : '当日'} · 休息 ${item.breakMinutes} 分钟`}
+          />
         )
       }
     },
@@ -611,9 +679,11 @@
       minWidth: 155,
       formatter: (row) => {
         const item = row as Api.Hr.TimeAttendanceShift
-        return identity(
-          `迟到 ${item.lateGraceMinutes} 分钟`,
-          `早退 ${item.earlyLeaveGraceMinutes} 分钟`
+        return (
+          <BusinessTableIdentityCell
+            primary={`迟到 ${item.lateGraceMinutes} 分钟`}
+            secondary={`早退 ${item.earlyLeaveGraceMinutes} 分钟`}
+          />
         )
       }
     },
@@ -761,7 +831,7 @@
     width: 112,
     fixed: 'right',
     formatter: (row) => (
-      <HrTableActions>
+      <BusinessTableRowActions>
         {canEdit(row) ? (
           <ArtButtonTable
             type="edit"
@@ -786,7 +856,7 @@
           ]}
           onClick={(item: ButtonMoreItem) => void handleMoreAction(item, row)}
         />
-      </HrTableActions>
+      </BusinessTableRowActions>
     )
   })
 
@@ -1159,25 +1229,6 @@
       font-size: 11px;
       line-height: 1.55;
       color: var(--art-gray-600);
-    }
-
-    &__identity strong,
-    &__identity small {
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    &__identity strong {
-      font-weight: 600;
-      color: var(--art-gray-900);
-    }
-
-    &__identity small {
-      margin-top: 3px;
-      font-size: 11px;
-      color: var(--art-gray-500);
     }
 
     &__actions {

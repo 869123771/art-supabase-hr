@@ -70,7 +70,7 @@
     ArtTableQueryProps
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
-  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
@@ -253,7 +253,7 @@
     width: 112,
     fixed: 'right',
     formatter: (row) => (
-      <HrTableActions>
+      <BusinessTableRowActions>
         <ArtButtonTable
           type="edit"
           permission={activeTab.value.editPermission}
@@ -264,7 +264,7 @@
           permission={activeTab.value.deletePermission}
           onClick={() => void handleDelete(row)}
         />
-      </HrTableActions>
+      </BusinessTableRowActions>
     )
   })
 

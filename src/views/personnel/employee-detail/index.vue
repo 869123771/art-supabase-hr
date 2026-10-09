@@ -161,7 +161,7 @@
   import EmployeeHistoryList from './modules/employee-history-list.vue'
   import { fetchEmployeeProfile } from '@hr/api'
   import { useUserStore } from '@/store/modules/user'
-  import { canViewField, getFieldAccess } from '@/utils/field-permission'
+  import { isReadableFieldAccess, canViewField, getFieldAccess } from '@/utils/field-permission'
 
   defineOptions({ name: 'HrEmployeeDetail' })
 
@@ -196,7 +196,7 @@
     canViewField(profile.value?.fieldAccess, 'maintenanceAudit')
   )
   const isPlaintextField = (field: Api.Hr.EmployeeFieldKey): boolean =>
-    ['read', 'edit'].includes(getFieldAccess(profile.value?.fieldAccess, field))
+    isReadableFieldAccess(getFieldAccess(profile.value?.fieldAccess, field))
   const limitedAccessSummary = computed(() => {
     if (!profile.value || profile.value.isRecordOwner) return ''
     const limitedCount = (
@@ -208,7 +208,7 @@
         'maintenanceAudit'
       ] as Api.Hr.EmployeeFieldKey[]
     ).filter(
-      (field) => !['read', 'edit'].includes(getFieldAccess(profile.value?.fieldAccess, field))
+      (field) => !isReadableFieldAccess(getFieldAccess(profile.value?.fieldAccess, field))
     ).length
     return limitedCount ? `${limitedCount} 组敏感信息已按你的字段权限隐藏或脱敏。` : ''
   })
@@ -322,10 +322,6 @@
       )
   )
 
-  const dictLabel = (code: string, value: unknown): string => {
-    const options = userStore.getDictMap[code] ?? []
-    return String(options.find((item) => String(item.value) === String(value))?.label ?? '')
-  }
   const historyPanelDefinitions = {
     contracts: createHistoryPanel(
       '劳动合同',
@@ -344,7 +340,8 @@
         item('remark', '备注', false, 3)
       ],
       (record, index) => String(read(record, 'contractNo') || `合同 ${index + 1}`),
-      (record) => dictLabel('hrContractStatus', read(record, 'contractStatus'))
+      (record) =>
+        userStore.getDictLabelByValue('hrContractStatus', String(read(record, 'contractStatus')))
     ),
     educations: createHistoryPanel(
       '教育背景',
@@ -361,7 +358,8 @@
         item('remark', '备注', false, 3)
       ],
       (record, index) => String(read(record, 'schoolName') || `教育经历 ${index + 1}`),
-      (record) => dictLabel('hrEducationLevel', read(record, 'educationLevel'))
+      (record) =>
+        userStore.getDictLabelByValue('hrEducationLevel', String(read(record, 'educationLevel')))
     ),
     workExperiences: createHistoryPanel(
       '工作经历',
@@ -397,7 +395,8 @@
         item('remark', '备注', false, 3)
       ],
       (record, index) => String(read(record, 'trainingName') || `培训经历 ${index + 1}`),
-      (record) => dictLabel('hrTrainingResult', read(record, 'trainingResult'))
+      (record) =>
+        userStore.getDictLabelByValue('hrTrainingResult', String(read(record, 'trainingResult')))
     ),
     rewards: createHistoryPanel(
       '奖惩经历',
@@ -413,7 +412,7 @@
         item('description', '详细说明', false, 3)
       ],
       (record, index) => String(read(record, 'title') || `奖惩记录 ${index + 1}`),
-      (record) => dictLabel('hrRewardType', read(record, 'recordType'))
+      (record) => userStore.getDictLabelByValue('hrRewardType', String(read(record, 'recordType')))
     )
   }
   const compensationKeys = new Set(['monthlySalary', 'cost', 'amount'])

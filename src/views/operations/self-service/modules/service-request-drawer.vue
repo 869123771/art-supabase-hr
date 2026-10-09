@@ -17,7 +17,13 @@
           </div>
           <div class="service-request-drawer__hero-status">
             <ElTag :type="statusType(request.status)" effect="light" round>
-              {{ dictLabel('hrServiceRequestStatus', request.status) }}
+              {{
+                userStore.getDictLabelByValue(
+                  'hrServiceRequestStatus',
+                  request.status,
+                  request.status ?? '--'
+                )
+              }}
             </ElTag>
             <ElTag :type="slaType(resolvedSlaStatus(request))" effect="plain" round>
               {{ slaLabel(resolvedSlaStatus(request)) }}
@@ -46,8 +52,20 @@
             </div>
             <div>
               <dt>优先级</dt>
-              <dd>{{ dictLabel('hrServicePriority', request.priority) }}</dd>
-              <small>{{ dictLabel('hrServiceChannel', request.channel) }}</small>
+              <dd>{{
+                userStore.getDictLabelByValue(
+                  'hrServicePriority',
+                  request.priority,
+                  request.priority ?? '--'
+                )
+              }}</dd>
+              <small>{{
+                userStore.getDictLabelByValue(
+                  'hrServiceChannel',
+                  request.channel,
+                  request.channel ?? '--'
+                )
+              }}</small>
             </div>
           </dl>
         </section>
@@ -143,10 +161,7 @@
   } = useDetailRecord(fetchServiceRequestDetail, '服务工单暂时无法加载，请重新加载')
   onBeforeUnmount(() => openDetail(''))
   const userStore = useUserStore()
-  const { getDictMap } = storeToRefs(userStore)
 
-  const dictLabel = (code: string, value?: string | null): string =>
-    getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
   const statusType = (status: Api.Hr.ServiceRequestStatus): TagProps['type'] =>
     ['resolved', 'closed'].includes(status)
       ? 'success'

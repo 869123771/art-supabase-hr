@@ -63,7 +63,12 @@
           <div class="workforce-page__budget-signal">
             <small>年度成本预测</small>
             <strong>{{
-              formatMoney(featuredPlan.plannedPayroll, featuredPlan.currencyCode)
+              formatSensitiveCurrencyValue(
+                featuredPlan.plannedPayroll,
+                featuredPlan.currencyCode,
+                'zh-CN',
+                0
+              )
             }}</strong>
             <span :class="{ 'is-over': Number(featuredPlan.budgetVariance ?? 0) < 0 }">{{
               budgetVarianceText
@@ -114,6 +119,7 @@
 </template>
 
 <script setup lang="tsx">
+  import { formatSensitiveCurrencyValue } from '@/utils/ui/format'
   import { toNameCodeOption } from '@/utils/form/option'
 
   import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
@@ -127,7 +133,7 @@
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
-  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import ArtDictDisplay from '@/components/core/base/art-dict-display/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import ArtEmptyState from '@/components/core/feedback/art-empty-state/index.vue'
@@ -248,20 +254,13 @@
   const tableOverview = reactive({ total: 0 })
 
   const featuredPlan = computed(() => overview.featuredPlan ?? null)
-  const formatMoney = (value?: number | null, currency = 'CNY'): string =>
-    value == null
-      ? '--'
-      : new Intl.NumberFormat('zh-CN', {
-          style: 'currency',
-          currency,
-          maximumFractionDigits: 0
-        }).format(value)
+
   const budgetVarianceText = computed(() => {
     if (featuredPlan.value?.budgetAmount == null) return '未设置预算上限'
     const variance = Number(featuredPlan.value.budgetVariance ?? 0)
     return variance >= 0
-      ? `预算余量 ${formatMoney(variance, featuredPlan.value.currencyCode)}`
-      : `超预算 ${formatMoney(Math.abs(variance), featuredPlan.value.currencyCode)}`
+      ? `预算余量 ${formatSensitiveCurrencyValue(variance, featuredPlan.value.currencyCode, 'zh-CN', 0)}`
+      : `超预算 ${formatSensitiveCurrencyValue(Math.abs(variance), featuredPlan.value.currencyCode, 'zh-CN', 0)}`
   })
   const workspaceTags: BusinessWorkspaceTag[] = [
     { label: '基线与场景规划', type: 'primary', effect: 'plain' },
@@ -352,9 +351,6 @@
     return items
   })
 
-  const identity = (title?: string | null, subtitle?: string | null) => (
-    <BusinessTableIdentityCell primary={title} secondary={subtitle} />
-  )
   const capacityCell = (baseline: number, hires: number, exits: number, target: number) => (
     <div class="workforce-page__capacity-cell">
       <span>{baseline}</span>
@@ -444,11 +440,15 @@
     fixed: 'right',
     formatter: (row) => {
       if (activeEntity.value === 'cycle')
-        return <HrTableActions>{cycleAction(row as Api.Hr.WorkforcePlanCycle)}</HrTableActions>
+        return (
+          <BusinessTableRowActions>
+            {cycleAction(row as Api.Hr.WorkforcePlanCycle)}
+          </BusinessTableRowActions>
+        )
       if (activeEntity.value === 'line') {
         const line = row as Api.Hr.WorkforcePlanLine
         return line.planStatus === 'draft' ? (
-          <HrTableActions>
+          <BusinessTableRowActions>
             <ArtButtonTable
               type="edit"
               permission="Hr:Headcount:Edit"
@@ -459,7 +459,7 @@
               permission="Hr:Headcount:Delete"
               onClick={() => handleDelete(row)}
             />
-          </HrTableActions>
+          </BusinessTableRowActions>
         ) : null
       }
       const item = row as Api.Hr.WorkforceEffectiveHeadcount
@@ -470,7 +470,7 @@
           </ElTag>
         )
       return (
-        <HrTableActions>
+        <BusinessTableRowActions>
           <ArtButtonTable
             type={item.effectiveFrom ? 'edit' : 'add'}
             label={item.effectiveFrom ? '编辑有效编制' : '核定有效编制'}
@@ -484,7 +484,7 @@
               onClick={() => handleDelete(row)}
             />
           ) : null}
-        </HrTableActions>
+        </BusinessTableRowActions>
       )
     }
   })
@@ -497,7 +497,12 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.WorkforcePlanCycle
-        return identity(item.planName, `${item.planNo} · ${item.periodStart} → ${item.periodEnd}`)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.planName}
+            secondary={`${item.planNo} · ${item.periodStart} → ${item.periodEnd}`}
+          />
+        )
       }
     },
     {
@@ -526,9 +531,11 @@
       minWidth: 185,
       formatter: (row) => {
         const item = row as Api.Hr.WorkforcePlanCycle
-        return identity(
-          formatMoney(item.budgetAmount, item.currencyCode),
-          `预测 ${formatMoney(item.plannedPayroll, item.currencyCode)}`
+        return (
+          <BusinessTableIdentityCell
+            primary={formatSensitiveCurrencyValue(item.budgetAmount, item.currencyCode, 'zh-CN', 0)}
+            secondary={`预测 ${formatSensitiveCurrencyValue(item.plannedPayroll, item.currencyCode, 'zh-CN', 0)}`}
+          />
         )
       }
     },
@@ -538,7 +545,12 @@
       minWidth: 175,
       formatter: (row) => {
         const item = row as Api.Hr.WorkforcePlanCycle
-        return identity(item.owner?.name ?? '未指定负责人', `${item.lineCount ?? 0} 个岗位需求`)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.owner?.name ?? '未指定负责人'}
+            secondary={`${item.lineCount ?? 0} 个岗位需求`}
+          />
+        )
       }
     },
     {
@@ -557,9 +569,11 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.WorkforcePlanLine
-        return identity(
-          item.position?.name,
-          `${item.organization?.name ?? '--'} · ${item.position?.code ?? '--'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.position?.name}
+            secondary={`${item.organization?.name ?? '--'} · ${item.position?.code ?? '--'}`}
+          />
         )
       }
     },
@@ -567,11 +581,12 @@
       prop: 'plan',
       label: '所属规划',
       minWidth: 190,
-      formatter: (row) =>
-        identity(
-          (row as Api.Hr.WorkforcePlanLine).plan?.name,
-          (row as Api.Hr.WorkforcePlanLine).plan?.code
-        )
+      formatter: (row) => (
+        <BusinessTableIdentityCell
+          primary={(row as Api.Hr.WorkforcePlanLine).plan?.name}
+          secondary={(row as Api.Hr.WorkforcePlanLine).plan?.code}
+        />
+      )
     },
     {
       prop: 'targetCount',
@@ -594,9 +609,13 @@
       formatter: (row) => {
         const item = row as Api.Hr.WorkforcePlanLine
         const gap = Number(item.forecastGap ?? 0)
-        return identity(
-          `${item.currentCount ?? 0} / ${item.targetCount} 人`,
-          gap > 0 ? `缺口 ${gap} 人` : gap < 0 ? `超目标 ${Math.abs(gap)} 人` : '目标已覆盖'
+        return (
+          <BusinessTableIdentityCell
+            primary={`${item.currentCount ?? 0} / ${item.targetCount} 人`}
+            secondary={
+              gap > 0 ? `缺口 ${gap} 人` : gap < 0 ? `超目标 ${Math.abs(gap)} 人` : '目标已覆盖'
+            }
+          />
         )
       }
     },
@@ -606,9 +625,11 @@
       width: 135,
       formatter: (row) => {
         const item = row as Api.Hr.WorkforcePlanLine
-        return identity(
-          `${item.recruitingCount ?? 0} 人在招`,
-          `${item.requisitionCount ?? 0} 个有效需求`
+        return (
+          <BusinessTableIdentityCell
+            primary={`${item.recruitingCount ?? 0} 人在招`}
+            secondary={`${item.requisitionCount ?? 0} 个有效需求`}
+          />
         )
       }
     },
@@ -634,9 +655,11 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.WorkforceEffectiveHeadcount
-        return identity(
-          item.position?.name,
-          `${item.organization?.name ?? '--'} · ${item.position?.code ?? '--'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.position?.name}
+            secondary={`${item.organization?.name ?? '--'} · ${item.position?.code ?? '--'}`}
+          />
         )
       }
     },
@@ -991,27 +1014,6 @@
         &.is-over {
           color: var(--el-color-danger);
         }
-      }
-    }
-
-    &__identity {
-      display: grid;
-      gap: 3px;
-      min-width: 0;
-
-      strong {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        color: var(--art-text-gray-900);
-        white-space: nowrap;
-      }
-
-      span {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-size: 12px;
-        color: var(--art-text-gray-600);
-        white-space: nowrap;
       }
     }
 

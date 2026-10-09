@@ -38,10 +38,9 @@
 
   defineProps<{ events: Api.Hr.EmployeeExperienceEvent[] }>()
   const userStore = useUserStore()
-  const { getDictMap } = storeToRefs(userStore)
   const statusLabel = (value: string): string => {
     for (const code of ['hrExperienceSurveyStatus', 'commonActionProgressStatus']) {
-      const label = getDictMap.value[code]?.find((item) => item.value === value)?.label
+      const label = userStore.getDictItemByValue(code, value)?.label
       if (label) return label
     }
     return value

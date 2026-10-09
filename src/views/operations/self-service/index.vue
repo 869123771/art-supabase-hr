@@ -101,7 +101,7 @@
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
-  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
@@ -281,11 +281,6 @@
     }
   ])
 
-  const dictLabel = (code: string, value?: string | null): string =>
-    getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
-  const identity = (primary?: string | null, secondary?: string | null) => (
-    <BusinessTableIdentityCell primary={primary} secondary={secondary} />
-  )
   const statusTone = (status: Api.Hr.ServiceRequestStatus) =>
     ['resolved', 'closed'].includes(status)
       ? 'success'
@@ -375,9 +370,11 @@
       },
       formatter: (row) => {
         const item = row as Api.Hr.ServiceRequest
-        return identity(
-          item.requestNo,
-          `${item.requester?.name ?? '--'} · ${item.requester?.code ?? '--'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.requestNo}
+            secondary={`${item.requester?.name ?? '--'} · ${item.requester?.code ?? '--'}`}
+          />
         )
       }
     },
@@ -387,7 +384,12 @@
       minWidth: 245,
       formatter: (row) => {
         const item = row as Api.Hr.ServiceRequest
-        return identity(item.title, item.service?.name ?? item.requestType)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.title}
+            secondary={item.service?.name ?? item.requestType}
+          />
+        )
       }
     },
     {
@@ -396,7 +398,12 @@
       minWidth: 155,
       formatter: (row) => {
         const item = row as Api.Hr.ServiceRequest
-        return identity(item.assignee?.name ?? '待分派', item.service?.routingGroup ?? 'HR 服务台')
+        return (
+          <BusinessTableIdentityCell
+            primary={item.assignee?.name ?? '待分派'}
+            secondary={item.service?.routingGroup ?? 'HR 服务台'}
+          />
+        )
       }
     },
     {
@@ -413,7 +420,11 @@
         const item = row as Api.Hr.ServiceRequest
         return (
           <ElTag type={statusTone(item.status)} effect="light">
-            {dictLabel('hrServiceRequestStatus', item.status)}
+            {userStore.getDictLabelByValue(
+              'hrServiceRequestStatus',
+              item.status,
+              item.status ?? '--'
+            )}
           </ElTag>
         )
       }
@@ -450,9 +461,11 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.ServiceCatalog
-        return identity(
-          item.serviceName,
-          `${item.serviceCode} · ${dictLabel('hrServiceCategory', item.category)}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.serviceName}
+            secondary={`${item.serviceCode} · ${userStore.getDictLabelByValue('hrServiceCategory', item.category, item.category ?? '--')}`}
+          />
         )
       }
     },
@@ -664,7 +677,7 @@
     formatter: (row) => {
       const item = row as Api.Hr.ServiceRequest
       return (
-        <HrTableActions>
+        <BusinessTableRowActions>
           <ArtButtonTable
             type="view"
             label="查看服务工单详情"
@@ -679,7 +692,7 @@
                 ?.run()
             }
           />
-        </HrTableActions>
+        </BusinessTableRowActions>
       )
     }
   })
@@ -691,7 +704,7 @@
     formatter: (row) => {
       const item = row as Api.Hr.ServiceCatalog
       return (
-        <HrTableActions>
+        <BusinessTableRowActions>
           <ArtButtonTable
             type="edit"
             label="编辑服务项目"
@@ -740,7 +753,7 @@
               if (action.key === 'open_route' && item.routePath) void router.push(item.routePath)
             }}
           />
-        </HrTableActions>
+        </BusinessTableRowActions>
       )
     }
   })
@@ -1040,28 +1053,6 @@
       font-size: 12px;
       line-height: 1.55;
       color: var(--art-text-gray-500);
-    }
-
-    &__identity {
-      display: grid;
-      min-width: 0;
-
-      strong,
-      span {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      strong {
-        color: var(--art-text-gray-900);
-      }
-
-      span {
-        margin-top: 3px;
-        font-size: 12px;
-        color: var(--art-text-gray-500);
-      }
     }
 
     &__actions {

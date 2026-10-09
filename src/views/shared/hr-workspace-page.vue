@@ -108,7 +108,7 @@
   } from '@hr/api'
   import WorkspaceRecordDialog from './workspace-record-dialog.vue'
   import PersonnelChangeDialog from '../personnel/personnel-change/modules/personnel-change-dialog.vue'
-  import HrTableActions from './hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
   import {
     hrWorkspaceDefinitions,
@@ -356,7 +356,7 @@
       width: 112,
       fixed: 'right',
       formatter: (row: Api.Hr.WorkspaceRecord) => (
-        <HrTableActions>
+        <BusinessTableRowActions>
           {canEditRow(row) && (
             <ArtButtonTable
               type="edit"
@@ -368,7 +368,7 @@
             list={() => rowMoreActions(row)}
             onClick={(item: ButtonMoreItem) => void handleRowMoreAction(item, row)}
           />
-        </HrTableActions>
+        </BusinessTableRowActions>
       )
     }
   ]

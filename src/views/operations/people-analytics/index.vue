@@ -173,7 +173,11 @@
                 <li v-for="item in employmentRows" :key="item.key">
                   <span>{{ item.label }}</span>
                   <strong>{{ item.headcount }} 人</strong>
-                  <small>{{ formatPercent(item.share) }}</small>
+                  <small>{{
+                    formatPercentValue(item.share || 0, {
+                      numberFormat: { maximumFractionDigits: 2 }
+                    })
+                  }}</small>
                 </li>
               </ul>
             </div>
@@ -241,7 +245,9 @@
                   :show-text="false"
                   :color="qualityColor(item.rate)"
                 />
-                <strong>{{ formatPercent(item.rate) }}</strong>
+                <strong>{{
+                  formatPercentValue(item.rate || 0, { numberFormat: { maximumFractionDigits: 2 } })
+                }}</strong>
               </article>
             </div>
           </ArtSectionCard>
@@ -277,6 +283,7 @@
 </template>
 
 <script setup lang="ts">
+  import { formatNumberValue, formatPercentValue } from '@/utils/ui/format'
   import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import { getFriendlySupabaseErrorMessage } from '@/utils/supabase'
   import dayjs from 'dayjs'
@@ -347,7 +354,7 @@
     {
       label: '期末人数',
       value: summary.value.endingHeadcount,
-      description: `${formatNumber(summary.value.endingFte)} FTE`,
+      description: `${formatNumberValue(summary.value.endingFte || 0, 'zh-CN', { maximumFractionDigits: 2 })} FTE`,
       icon: 'ri:team-line',
       tone: 'primary',
       loading: loading.value
@@ -370,8 +377,10 @@
     },
     {
       label: '数据完整度',
-      value: formatPercent(summary.value.dataCompletenessRate),
-      description: `平均任期 ${formatNumber(summary.value.averageTenureYears)} 年`,
+      value: formatPercentValue(summary.value.dataCompletenessRate || 0, {
+        numberFormat: { maximumFractionDigits: 2 }
+      }),
+      description: `平均任期 ${formatNumberValue(summary.value.averageTenureYears || 0, 'zh-CN', { maximumFractionDigits: 2 })} 年`,
       icon: 'ri:database-2-line',
       tone: summary.value.dataCompletenessRate >= 90 ? 'success' : 'warning',
       loading: loading.value
@@ -397,7 +406,7 @@
       key: 'exits',
       label: '离职流出',
       value: `−${summary.value.exits}`,
-      description: `离职率 ${formatPercent(summary.value.turnoverRate)}`,
+      description: `离职率 ${formatPercentValue(summary.value.turnoverRate || 0, { numberFormat: { maximumFractionDigits: 2 } })}`,
       tone: 'negative'
     },
     {
@@ -411,7 +420,7 @@
       key: 'ending',
       label: '期末存量',
       value: `${summary.value.endingHeadcount} 人`,
-      description: `${formatNumber(summary.value.endingFte)} FTE`,
+      description: `${formatNumberValue(summary.value.endingFte || 0, 'zh-CN', { maximumFractionDigits: 2 })} FTE`,
       tone: 'primary'
     }
   ])
@@ -479,13 +488,13 @@
         description: `本周期从 ${summary.value.openingHeadcount} 人变化至 ${summary.value.endingHeadcount} 人，净变化 ${formatSigned(summary.value.netChange)}。`
       },
       {
-        title: `期间离职率 ${formatPercent(summary.value.turnoverRate)}`,
+        title: `期间离职率 ${formatPercentValue(summary.value.turnoverRate || 0, { numberFormat: { maximumFractionDigits: 2 } })}`,
         description: `按期间离职 ${summary.value.exits} 人除以期初、期末平均人数计算，建议结合业务周期持续观察。`
       },
       largestOrganization
         ? {
             title: `${largestOrganization.name} 为最大可见组织`,
-            description: `占期末人数 ${formatPercent(largestOrganization.share)}；小于 ${privacyThreshold.value} 人的组织已合并保护。`
+            description: `占期末人数 ${formatPercentValue(largestOrganization.share || 0, { numberFormat: { maximumFractionDigits: 2 } })}；小于 ${privacyThreshold.value} 人的组织已合并保护。`
           }
         : {
             title: '组织分布已启用小样本保护',
@@ -498,19 +507,11 @@
             : '关键字段维护完整',
         description:
           worstQuality && worstQuality.rate < 100
-            ? `当前完整度 ${formatPercent(worstQuality.rate)}，缺失数据会进入对账差异而不会被系统猜测。`
+            ? `当前完整度 ${formatPercentValue(worstQuality.rate || 0, { numberFormat: { maximumFractionDigits: 2 } })}，缺失数据会进入对账差异而不会被系统猜测。`
             : '当前分析范围内的入职日期、组织、岗位和用工类型均已维护。'
       }
     ]
   })
-
-  function formatNumber(value: number): string {
-    return Number(value || 0).toLocaleString('zh-CN', { maximumFractionDigits: 2 })
-  }
-
-  function formatPercent(value: number): string {
-    return `${formatNumber(value)}%`
-  }
 
   function formatSigned(value: number): string {
     if (value > 0) return `+${value}`

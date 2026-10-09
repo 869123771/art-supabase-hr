@@ -127,8 +127,8 @@
 </template>
 
 <script setup lang="tsx">
+  import { createDateTimeFormatter } from '@/utils/ui/format'
   import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
-  import dayjs from 'dayjs'
   import { ElProgress, ElTag, type TagProps } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
@@ -140,7 +140,7 @@
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
-  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import ArtSectionCard from '@/components/core/surfaces/art-section-card/index.vue'
   import BusinessWorkspaceHeader, {
@@ -411,13 +411,12 @@
     return items
   })
 
-  const dictLabel = (code: string, value?: string | null): string =>
-    getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
-  const dateText = (value?: string | null): string =>
-    value ? dayjs(value).format('YYYY-MM-DD') : '--'
-  const identity = (title?: string | null, subtitle?: string | null) => (
-    <BusinessTableIdentityCell primary={title} secondary={subtitle} />
-  )
+  const dateText = createDateTimeFormatter({
+    format: 'YYYY-MM-DD',
+    emptyText: '--',
+    invalidText: '--'
+  })
+
   const availabilityMetaMap: Record<
     Api.Hr.EmployeeExperienceAvailability,
     { label: string; type: TagProps['type'] }
@@ -469,7 +468,7 @@
       },
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeExperienceMySurvey
-        return identity(item.surveyName, item.surveyCode)
+        return <BusinessTableIdentityCell primary={item.surveyName} secondary={item.surveyCode} />
       }
     },
     {
@@ -484,7 +483,12 @@
       minWidth: 180,
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeExperienceMySurvey
-        return identity(dateText(item.startDate), `至 ${dateText(item.endDate)}`)
+        return (
+          <BusinessTableIdentityCell
+            primary={dateText(item.startDate)}
+            secondary={`至 ${dateText(item.endDate)}`}
+          />
+        )
       }
     },
     {
@@ -518,7 +522,7 @@
       link: { permission: 'Hr:Experience:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeExperienceSurvey
-        return identity(item.surveyName, item.surveyCode)
+        return <BusinessTableIdentityCell primary={item.surveyName} secondary={item.surveyCode} />
       }
     },
     {
@@ -527,9 +531,19 @@
       minWidth: 160,
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeExperienceSurvey
-        return identity(
-          dictLabel('hrExperienceSurveyType', item.surveyType),
-          dictLabel('hrExperienceCadence', item.cadence)
+        return (
+          <BusinessTableIdentityCell
+            primary={userStore.getDictLabelByValue(
+              'hrExperienceSurveyType',
+              item.surveyType,
+              item.surveyType ?? '--'
+            )}
+            secondary={userStore.getDictLabelByValue(
+              'hrExperienceCadence',
+              item.cadence,
+              item.cadence ?? '--'
+            )}
+          />
         )
       }
     },
@@ -539,9 +553,15 @@
       minWidth: 180,
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeExperienceSurvey
-        return identity(
-          dictLabel('hrExperienceAudienceType', item.audienceType),
-          item.audienceOrganizationName || `匿名阈值 ${item.minimumGroupSize} 人`
+        return (
+          <BusinessTableIdentityCell
+            primary={userStore.getDictLabelByValue(
+              'hrExperienceAudienceType',
+              item.audienceType,
+              item.audienceType ?? '--'
+            )}
+            secondary={item.audienceOrganizationName || `匿名阈值 ${item.minimumGroupSize} 人`}
+          />
         )
       }
     },
@@ -551,7 +571,12 @@
       minWidth: 175,
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeExperienceSurvey
-        return identity(dateText(item.startDate), `至 ${dateText(item.endDate)}`)
+        return (
+          <BusinessTableIdentityCell
+            primary={dateText(item.startDate)}
+            secondary={`至 ${dateText(item.endDate)}`}
+          />
+        )
       }
     },
     {
@@ -560,9 +585,11 @@
       minWidth: 155,
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeExperienceSurvey
-        return identity(
-          `${item.completedCount ?? 0} / ${item.participantCount ?? 0}（${item.responseRate ?? 0}%）`,
-          `${item.questionCount ?? 0} 道启用题目`
+        return (
+          <BusinessTableIdentityCell
+            primary={`${item.completedCount ?? 0} / ${item.participantCount ?? 0}（${item.responseRate ?? 0}%）`}
+            secondary={`${item.questionCount ?? 0} 道启用题目`}
+          />
         )
       }
     },
@@ -583,9 +610,11 @@
       link: { permission: 'Hr:Experience:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeExperienceInsight
-        return identity(
-          item.surveyName,
-          `${item.surveyCode} · ${dictLabel('hrExperienceDimension', item.dimension)}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.surveyName}
+            secondary={`${item.surveyCode} · ${userStore.getDictLabelByValue('hrExperienceDimension', item.dimension, item.dimension ?? '--')}`}
+          />
         )
       }
     },
@@ -624,7 +653,12 @@
       align: 'center',
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeExperienceInsight
-        return identity(`${item.respondentCount} 人`, `阈值 ${item.minimumGroupSize} 人`)
+        return (
+          <BusinessTableIdentityCell
+            primary={`${item.respondentCount} 人`}
+            secondary={`阈值 ${item.minimumGroupSize} 人`}
+          />
+        )
       }
     },
     {
@@ -665,7 +699,12 @@
       link: { permission: 'Hr:Experience:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeExperienceAction
-        return identity(item.title, item.surveyName || item.surveyCode)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.title}
+            secondary={item.surveyName || item.surveyCode}
+          />
+        )
       }
     },
     {
@@ -680,7 +719,12 @@
       minWidth: 165,
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeExperienceAction
-        return identity(item.ownerEmployeeName, item.ownerEmployeeNo)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.ownerEmployeeName}
+            secondary={item.ownerEmployeeNo}
+          />
+        )
       }
     },
     {
@@ -740,7 +784,7 @@
         )
       }
       return (
-        <HrTableActions>
+        <BusinessTableRowActions>
           <ArtButtonTable
             type="view"
             permission="Hr:Experience:View"
@@ -751,7 +795,7 @@
             list={() => rowActions(row)}
             onClick={(item: ButtonMoreItem) => void handleRowAction(item, row)}
           />
-        </HrTableActions>
+        </BusinessTableRowActions>
       )
     }
   })
@@ -1402,27 +1446,6 @@
         flex: 0 0 auto;
         margin-top: 1px;
         color: var(--theme-color);
-      }
-    }
-
-    &__identity {
-      display: grid;
-      min-width: 0;
-
-      strong,
-      small {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      strong {
-        color: var(--art-text-gray-900);
-      }
-
-      small {
-        margin-top: 4px;
-        color: var(--art-text-gray-600);
       }
     }
 

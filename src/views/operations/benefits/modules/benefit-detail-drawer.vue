@@ -62,8 +62,14 @@
                   ><ElTag size="small" effect="plain">{{ option.optionCode }}</ElTag></div
                 >
                 <p
-                  >{{ dictLabel('hrBenefitCoverageLevel', option.coverageLevel) }} ·
-                  {{ contributionText(option) }}</p
+                  >{{
+                    userStore.getDictLabelByValue(
+                      'hrBenefitCoverageLevel',
+                      option.coverageLevel,
+                      option.coverageLevel ?? '--'
+                    )
+                  }}
+                  · {{ contributionText(option) }}</p
                 >
                 <small>{{ option.description || '未填写方案说明' }}</small>
               </div>
@@ -101,7 +107,11 @@
             <div
               ><dt>薪资同步</dt
               ><dd>{{
-                dictLabel('hrBenefitPayrollSyncStatus', enrollmentRecord.payrollSyncStatus)
+                userStore.getDictLabelByValue(
+                  'hrBenefitPayrollSyncStatus',
+                  enrollmentRecord.payrollSyncStatus,
+                  enrollmentRecord.payrollSyncStatus ?? '--'
+                )
               }}</dd></div
             >
             <div
@@ -151,7 +161,11 @@
               <strong>{{ item.planName }}</strong
               ><span>{{ item.optionName }}</span>
               <ElTag size="small" effect="plain">{{
-                dictLabel('hrBenefitEnrollmentStatus', item.status)
+                userStore.getDictLabelByValue(
+                  'hrBenefitEnrollmentStatus',
+                  item.status,
+                  item.status ?? '--'
+                )
               }}</ElTag>
             </article>
           </div>
@@ -200,6 +214,7 @@
 </template>
 
 <script setup lang="ts">
+  import { formatCurrencyCodeValue } from '@/utils/ui/format'
   import ArtAsyncState from '@/components/core/feedback/art-async-state/index.vue'
   import { useDetailRecord } from '@/hooks/core/useDetailRecord'
   import type { TimelineItemProps } from 'element-plus'
@@ -238,7 +253,6 @@
   onBeforeUnmount(() => openDetail(''))
   const activeEntity = ref<Api.Hr.BenefitEntity>('plan')
   const userStore = useUserStore()
-  const { getDictMap } = storeToRefs(userStore)
 
   const isPlan = computed(() => activeEntity.value === 'plan')
   const isEnrollment = computed(() => activeEntity.value === 'enrollment')
@@ -247,13 +261,8 @@
   const enrollmentRecord = computed(() => record.value as Api.Hr.BenefitEnrollment)
   const lifeEventRecord = computed(() => record.value as Api.Hr.BenefitLifeEvent)
   const auditEvents = computed(() => record.value?.events ?? [])
-  const dictLabel = (code: string, value?: string | null): string =>
-    getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
+
   const formatDate = createDateTimeFormatter({ format: 'YYYY-MM-DD' })
-  const money = (value?: number | null, currency = 'CNY'): string =>
-    value == null
-      ? '权限受限'
-      : `${currency} ${Number(value).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`
 
   const hero = computed(() => {
     if (isPlan.value)
@@ -262,7 +271,11 @@
         eyebrow: planRecord.value.planCode,
         title: planRecord.value.planName,
         subtitle: planRecord.value.providerName || '未维护服务机构',
-        status: dictLabel('hrBenefitPlanStatus', planRecord.value.status)
+        status: userStore.getDictLabelByValue(
+          'hrBenefitPlanStatus',
+          planRecord.value.status,
+          planRecord.value.status ?? '--'
+        )
       }
     if (isEnrollment.value)
       return {
@@ -270,14 +283,26 @@
         eyebrow: enrollmentRecord.value.enrollmentNo,
         title: enrollmentRecord.value.employee?.employeeName || '员工参保',
         subtitle: `${enrollmentRecord.value.plan?.planName || '--'} · ${enrollmentRecord.value.option?.optionName || '--'}`,
-        status: dictLabel('hrBenefitEnrollmentStatus', enrollmentRecord.value.status)
+        status: userStore.getDictLabelByValue(
+          'hrBenefitEnrollmentStatus',
+          enrollmentRecord.value.status,
+          enrollmentRecord.value.status ?? '--'
+        )
       }
     return {
       icon: 'ri:calendar-event-line',
       eyebrow: formatDate(lifeEventRecord.value.eventDate),
-      title: dictLabel('hrBenefitLifeEventType', lifeEventRecord.value.eventType),
+      title: userStore.getDictLabelByValue(
+        'hrBenefitLifeEventType',
+        lifeEventRecord.value.eventType,
+        lifeEventRecord.value.eventType ?? '--'
+      ),
       subtitle: `${lifeEventRecord.value.employee?.employeeName || '--'} · 窗口截至 ${formatDate(lifeEventRecord.value.enrollmentWindowEnd)}`,
-      status: dictLabel('hrBenefitLifeEventStatus', lifeEventRecord.value.status)
+      status: userStore.getDictLabelByValue(
+        'hrBenefitLifeEventStatus',
+        lifeEventRecord.value.status,
+        lifeEventRecord.value.status ?? '--'
+      )
     }
   })
 
@@ -301,8 +326,16 @@
       return [
         {
           label: '计划类型',
-          value: dictLabel('hrBenefitPlanType', planRecord.value.planType),
-          hint: dictLabel('hrBenefitEnrollmentMethod', planRecord.value.enrollmentMethod)
+          value: userStore.getDictLabelByValue(
+            'hrBenefitPlanType',
+            planRecord.value.planType,
+            planRecord.value.planType ?? '--'
+          ),
+          hint: userStore.getDictLabelByValue(
+            'hrBenefitEnrollmentMethod',
+            planRecord.value.enrollmentMethod,
+            planRecord.value.enrollmentMethod ?? '--'
+          )
         },
         {
           label: '有效期',
@@ -334,7 +367,7 @@
         },
         {
           label: '员工缴费',
-          value: money(
+          value: formatCurrencyCodeValue(
             enrollmentRecord.value.employeeContribution,
             enrollmentRecord.value.currencyCode
           ),
@@ -342,7 +375,7 @@
         },
         {
           label: '雇主缴费',
-          value: money(
+          value: formatCurrencyCodeValue(
             enrollmentRecord.value.employerContribution,
             enrollmentRecord.value.currencyCode
           ),
@@ -358,7 +391,11 @@
       {
         label: '事件日期',
         value: formatDate(lifeEventRecord.value.eventDate),
-        hint: dictLabel('hrBenefitLifeEventType', lifeEventRecord.value.eventType)
+        hint: userStore.getDictLabelByValue(
+          'hrBenefitLifeEventType',
+          lifeEventRecord.value.eventType,
+          lifeEventRecord.value.eventType ?? '--'
+        )
       },
       {
         label: '窗口截止',
@@ -374,7 +411,7 @@
   })
   const lifeEventText = computed(() =>
     enrollmentRecord.value.lifeEvent
-      ? `${dictLabel('hrBenefitLifeEventType', enrollmentRecord.value.lifeEvent.eventType)} · ${formatDate(enrollmentRecord.value.lifeEvent.eventDate)}`
+      ? `${userStore.getDictLabelByValue('hrBenefitLifeEventType', enrollmentRecord.value.lifeEvent.eventType, enrollmentRecord.value.lifeEvent.eventType ?? '--')} · ${formatDate(enrollmentRecord.value.lifeEvent.eventDate)}`
       : '未关联人生事件'
   )
   const contributionText = (option: Api.Hr.BenefitOption): string => {
@@ -382,7 +419,7 @@
     if (option.contributionType === 'salary_rate') {
       return `员工 ${(Number(option.employeeRate || 0) * 100).toFixed(2)}% · 雇主 ${(Number(option.employerRate || 0) * 100).toFixed(2)}%`
     }
-    return `员工 ${money(option.employeeContribution, planRecord.value.currencyCode)} · 雇主 ${money(option.employerContribution, planRecord.value.currencyCode)}`
+    return `员工 ${formatCurrencyCodeValue(option.employeeContribution, planRecord.value.currencyCode)} · 雇主 ${formatCurrencyCodeValue(option.employerContribution, planRecord.value.currencyCode)}`
   }
   const eventTone = (type: string): TimelineItemProps['type'] =>
     ['activated', 'approved', 'processed'].includes(type)

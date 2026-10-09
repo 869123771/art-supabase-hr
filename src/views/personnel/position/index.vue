@@ -110,7 +110,7 @@
     ArtTableQueryProps
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
-  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import ArtDrawer from '@/components/core/drawers/art-drawer/index.vue'
   import type { ArtDrawerExpose } from '@/components/core/drawers/art-drawer/types'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
@@ -343,7 +343,7 @@
       width: 120,
       fixed: 'right',
       formatter: (row) => (
-        <HrTableActions>
+        <BusinessTableRowActions>
           <ArtButtonTable
             type="edit"
             permission="Hr:Position:Edit"
@@ -355,7 +355,7 @@
             disabled={deleteBusy.value}
             onClick={() => void handleDelete(row)}
           />
-        </HrTableActions>
+        </BusinessTableRowActions>
       )
     }
   ]

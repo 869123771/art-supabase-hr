@@ -114,11 +114,11 @@
 </template>
 
 <script setup lang="tsx">
+  import { createDateTimeFormatter } from '@/utils/ui/format'
   import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
   import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
   import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
-  import dayjs from 'dayjs'
   import { ElTag, type TagProps } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
@@ -130,7 +130,7 @@
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
-  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
@@ -382,11 +382,6 @@
     return items
   })
 
-  const dictLabel = (code: string, value?: string | null): string =>
-    getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
-  const identity = (title?: string | null, subtitle?: string | null) => (
-    <BusinessTableIdentityCell primary={title} secondary={subtitle} />
-  )
   const severityTone = (severity?: string | null): TagProps['type'] =>
     severity === 'critical'
       ? 'danger'
@@ -407,8 +402,11 @@
     ({ clear: '暂无时限', on_track: '计划内', due_soon: '临近到期', overdue: '已逾期' })[
       status ?? 'clear'
     ]
-  const dateText = (value?: string | null): string =>
-    value ? dayjs(value).format('YYYY-MM-DD') : '--'
+  const dateText = createDateTimeFormatter({
+    format: 'YYYY-MM-DD',
+    emptyText: '--',
+    invalidText: '--'
+  })
 
   const columnsFactory = (): ColumnOption<RecordItem>[] =>
     activeEntity.value === 'case' ? caseColumns() : actionColumns()
@@ -421,7 +419,7 @@
       link: { permission: 'Hr:EmployeeRelations:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeRelationCase
-        return identity(item.title, item.caseNo)
+        return <BusinessTableIdentityCell primary={item.title} secondary={item.caseNo} />
       }
     },
     {
@@ -430,9 +428,11 @@
       minWidth: 210,
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeRelationCase
-        return identity(
-          item.subjectEmployee?.employeeName,
-          `${item.subjectEmployee?.employeeNo || '--'} · ${item.subjectEmployee?.positionName || item.subjectEmployee?.jobTitle || '未维护岗位'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.subjectEmployee?.employeeName}
+            secondary={`${item.subjectEmployee?.employeeNo || '--'} · ${item.subjectEmployee?.positionName || item.subjectEmployee?.jobTitle || '未维护岗位'}`}
+          />
         )
       }
     },
@@ -444,9 +444,19 @@
         const item = row as Api.Hr.EmployeeRelationCase
         return (
           <div class="employee-relations-page__tag-stack">
-            <span>{dictLabel('hrEmployeeRelationCaseType', item.caseType)}</span>
+            <span>
+              {userStore.getDictLabelByValue(
+                'hrEmployeeRelationCaseType',
+                item.caseType,
+                item.caseType ?? '--'
+              )}
+            </span>
             <ElTag type={severityTone(item.severity)} effect="light" size="small" round>
-              {dictLabel('hrEmployeeRelationSeverity', item.severity)}
+              {userStore.getDictLabelByValue(
+                'hrEmployeeRelationSeverity',
+                item.severity,
+                item.severity ?? '--'
+              )}
             </ElTag>
           </div>
         )
@@ -458,9 +468,15 @@
       minWidth: 165,
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeRelationCase
-        return identity(
-          item.ownerEmployee?.employeeName || '尚未分派',
-          dictLabel('hrEmployeeRelationCaseStatus', item.status)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.ownerEmployee?.employeeName || '尚未分派'}
+            secondary={userStore.getDictLabelByValue(
+              'hrEmployeeRelationCaseStatus',
+              item.status,
+              item.status ?? '--'
+            )}
+          />
         )
       }
     },
@@ -503,7 +519,16 @@
       link: { permission: 'Hr:EmployeeRelations:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeRelationAction
-        return identity(item.title, dictLabel('hrEmployeeRelationActionType', item.actionType))
+        return (
+          <BusinessTableIdentityCell
+            primary={item.title}
+            secondary={userStore.getDictLabelByValue(
+              'hrEmployeeRelationActionType',
+              item.actionType,
+              item.actionType ?? '--'
+            )}
+          />
+        )
       }
     },
     {
@@ -512,7 +537,12 @@
       minWidth: 205,
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeRelationAction
-        return identity(item.relationCase?.title, item.relationCase?.caseNo)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.relationCase?.title}
+            secondary={item.relationCase?.caseNo}
+          />
+        )
       }
     },
     {
@@ -521,7 +551,12 @@
       minWidth: 155,
       formatter: (row) => {
         const item = row as Api.Hr.EmployeeRelationAction
-        return identity(item.ownerEmployee?.employeeName, item.ownerEmployee?.jobTitle)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.ownerEmployee?.employeeName}
+            secondary={item.ownerEmployee?.jobTitle}
+          />
+        )
       }
     },
     {
@@ -556,7 +591,7 @@
     width: 112,
     fixed: 'right',
     formatter: (row) => (
-      <HrTableActions>
+      <BusinessTableRowActions>
         <ArtButtonTable
           type="view"
           permission="Hr:EmployeeRelations:View"
@@ -567,7 +602,7 @@
           list={() => rowActions(row)}
           onClick={(item: ButtonMoreItem) => void handleRowAction(item, row)}
         />
-      </HrTableActions>
+      </BusinessTableRowActions>
     )
   })
 
@@ -1259,27 +1294,6 @@
         margin-top: 1px;
         font-size: 14px;
         color: var(--theme-color);
-      }
-    }
-
-    &__identity {
-      display: grid;
-      min-width: 0;
-
-      strong,
-      small {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      strong {
-        color: var(--art-text-gray-900);
-      }
-
-      small {
-        margin-top: 4px;
-        color: var(--art-text-gray-600);
       }
     }
 

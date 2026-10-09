@@ -90,7 +90,7 @@
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
-  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
@@ -340,11 +340,6 @@
     return items
   })
 
-  const dictLabel = (code: string, value?: string | null) =>
-    getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
-  const identity = (title?: string | null, subtitle?: string | null) => (
-    <BusinessTableIdentityCell primary={title} secondary={subtitle} />
-  )
   const progress = (closed = 0, total = 0, overdue = 0) => {
     const rate = Math.round((closed / Math.max(total, 1)) * 100)
     return (
@@ -398,7 +393,12 @@
       },
       formatter: (row) => {
         const item = row as Api.Hr.LifecycleCase
-        return identity(item.employee?.name, `${item.employee?.code ?? '--'} · ${item.caseNo}`)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.employee?.name}
+            secondary={`${item.employee?.code ?? '--'} · ${item.caseNo}`}
+          />
+        )
       }
     },
     {
@@ -413,9 +413,11 @@
       minWidth: 190,
       formatter: (row) => {
         const item = row as Api.Hr.LifecycleCase
-        return identity(
-          item.organization?.name ?? '未指定组织',
-          item.position?.name ?? '未指定岗位'
+        return (
+          <BusinessTableIdentityCell
+            primary={item.organization?.name ?? '未指定组织'}
+            secondary={item.position?.name ?? '未指定岗位'}
+          />
         )
       }
     },
@@ -425,7 +427,16 @@
       minWidth: 150,
       formatter: (row) => {
         const item = row as Api.Hr.LifecycleCase
-        return identity(item.plannedEffectiveDate, dictLabel('hrLifecyclePriority', item.priority))
+        return (
+          <BusinessTableIdentityCell
+            primary={item.plannedEffectiveDate}
+            secondary={userStore.getDictLabelByValue(
+              'hrLifecyclePriority',
+              item.priority,
+              item.priority ?? '--'
+            )}
+          />
+        )
       }
     },
     {
@@ -459,9 +470,11 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.LifecycleTask
-        return identity(
-          item.taskName,
-          `${item.case?.code ?? '--'} · ${item.employee?.name ?? '--'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.taskName}
+            secondary={`${item.case?.code ?? '--'} · ${item.employee?.name ?? '--'}`}
+          />
         )
       }
     },
@@ -477,9 +490,15 @@
       minWidth: 155,
       formatter: (row) => {
         const item = row as Api.Hr.LifecycleTask
-        return identity(
-          dictLabel('hrLifecycleOwnerRole', item.ownerRole),
-          item.owner?.name ?? '待指派'
+        return (
+          <BusinessTableIdentityCell
+            primary={userStore.getDictLabelByValue(
+              'hrLifecycleOwnerRole',
+              item.ownerRole,
+              item.ownerRole ?? '--'
+            )}
+            secondary={item.owner?.name ?? '待指派'}
+          />
         )
       }
     },
@@ -521,7 +540,9 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.LifecycleTemplate
-        return identity(item.templateName, item.templateCode)
+        return (
+          <BusinessTableIdentityCell primary={item.templateName} secondary={item.templateCode} />
+        )
       }
     },
     {
@@ -536,7 +557,12 @@
       minWidth: 160,
       formatter: (row) => {
         const item = row as Api.Hr.LifecycleTemplate
-        return identity(`${item.taskCount ?? 0} 项任务`, `${item.usageCount ?? 0} 个事项已应用`)
+        return (
+          <BusinessTableIdentityCell
+            primary={`${item.taskCount ?? 0} 项任务`}
+            secondary={`${item.usageCount ?? 0} 个事项已应用`}
+          />
+        )
       }
     },
     {
@@ -562,7 +588,16 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.LifecycleTemplateTask
-        return identity(item.taskName, dictLabel('hrLifecycleTaskType', item.taskType))
+        return (
+          <BusinessTableIdentityCell
+            primary={item.taskName}
+            secondary={userStore.getDictLabelByValue(
+              'hrLifecycleTaskType',
+              item.taskType,
+              item.taskType ?? '--'
+            )}
+          />
+        )
       }
     },
     {
@@ -571,7 +606,12 @@
       minWidth: 210,
       formatter: (row) => {
         const item = row as Api.Hr.LifecycleTemplateTask
-        return identity(item.template?.name, item.template?.code)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.template?.name}
+            secondary={item.template?.code}
+          />
+        )
       }
     },
     {
@@ -751,7 +791,7 @@
     width: 112,
     fixed: 'right',
     formatter: (row) => (
-      <HrTableActions>
+      <BusinessTableRowActions>
         {canEdit(row) ? (
           <ArtButtonTable
             type="edit"
@@ -776,7 +816,7 @@
           ]}
           onClick={(item: ButtonMoreItem) => void handleMoreAction(item, row)}
         />
-      </HrTableActions>
+      </BusinessTableRowActions>
     )
   })
   const handleMoreAction = async (item: ButtonMoreItem, row: RecordItem): Promise<void> => {
@@ -1172,29 +1212,6 @@
       line-height: 1.6;
       color: var(--art-gray-600);
       border-top: 1px dashed var(--art-border-color);
-    }
-
-    &__identity {
-      min-width: 0;
-
-      strong,
-      small {
-        display: block;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      strong {
-        font-weight: 600;
-        color: var(--art-gray-900);
-      }
-
-      small {
-        margin-top: 3px;
-        font-size: 12px;
-        color: var(--art-gray-600);
-      }
     }
 
     &__progress {

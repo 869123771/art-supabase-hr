@@ -112,8 +112,9 @@
 </template>
 
 <script setup lang="tsx">
+  import { formatCurrencyCodeValue } from '@/utils/ui/format'
+  import { createDateTimeFormatter } from '@/utils/ui/format'
   import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
-  import dayjs from 'dayjs'
   import { ElTag, type TagProps } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
@@ -126,7 +127,7 @@
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
-  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import BusinessWorkspaceHeader, {
     type BusinessWorkspaceMetric,
     type BusinessWorkspaceTag
@@ -260,7 +261,9 @@
     },
     {
       label: '雇主月成本',
-      value: overview.amountVisible ? money(overview.monthlyEmployerContribution) : '--',
+      value: overview.amountVisible
+        ? formatCurrencyCodeValue(overview.monthlyEmployerContribution)
+        : '--',
       description: overview.amountVisible ? '生效参保缴费快照合计' : '当前权限不可查看金额',
       icon: overview.amountVisible ? 'ri:money-cny-circle-line' : 'ri:lock-2-line',
       tone: 'info'
@@ -369,17 +372,12 @@
     return items
   })
 
-  const dictLabel = (code: string, value?: string | null): string =>
-    getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
-  const money = (value?: number | null, currency = 'CNY'): string =>
-    value == null
-      ? '--'
-      : `${currency} ${Number(value).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`
-  const dateText = (value?: string | null): string =>
-    value ? dayjs(value).format('YYYY-MM-DD') : '--'
-  const identity = (title?: string | null, subtitle?: string | null) => (
-    <BusinessTableIdentityCell primary={title} secondary={subtitle} />
-  )
+  const dateText = createDateTimeFormatter({
+    format: 'YYYY-MM-DD',
+    emptyText: '--',
+    invalidText: '--'
+  })
+
   const dueTone = (status?: Api.Hr.BenefitDueStatus): TagProps['type'] =>
     status === 'expired'
       ? 'danger'
@@ -406,7 +404,7 @@
       link: { permission: 'Hr:Benefits:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.BenefitPlan
-        return identity(item.planName, item.planCode)
+        return <BusinessTableIdentityCell primary={item.planName} secondary={item.planCode} />
       }
     },
     {
@@ -421,9 +419,19 @@
       minWidth: 160,
       formatter: (row) => {
         const item = row as Api.Hr.BenefitPlan
-        return identity(
-          dictLabel('hrBenefitEnrollmentMethod', item.enrollmentMethod),
-          dictLabel('hrBenefitCoverageScope', item.coverageScope)
+        return (
+          <BusinessTableIdentityCell
+            primary={userStore.getDictLabelByValue(
+              'hrBenefitEnrollmentMethod',
+              item.enrollmentMethod,
+              item.enrollmentMethod ?? '--'
+            )}
+            secondary={userStore.getDictLabelByValue(
+              'hrBenefitCoverageScope',
+              item.coverageScope,
+              item.coverageScope ?? '--'
+            )}
+          />
         )
       }
     },
@@ -433,7 +441,12 @@
       minWidth: 175,
       formatter: (row) => {
         const item = row as Api.Hr.BenefitPlan
-        return identity(dateText(item.effectiveFrom), `至 ${dateText(item.effectiveTo)}`)
+        return (
+          <BusinessTableIdentityCell
+            primary={dateText(item.effectiveFrom)}
+            secondary={`至 ${dateText(item.effectiveTo)}`}
+          />
+        )
       }
     },
     {
@@ -443,7 +456,12 @@
       align: 'center',
       formatter: (row) => {
         const item = row as Api.Hr.BenefitPlan
-        return identity(`${item.optionCount ?? 0} 项`, `${item.activeEnrollmentCount ?? 0} 人在保`)
+        return (
+          <BusinessTableIdentityCell
+            primary={`${item.optionCount ?? 0} 项`}
+            secondary={`${item.activeEnrollmentCount ?? 0} 人在保`}
+          />
+        )
       }
     },
     {
@@ -463,9 +481,11 @@
       link: { permission: 'Hr:Benefits:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.BenefitEnrollment
-        return identity(
-          item.employee?.employeeName,
-          `${item.employee?.employeeNo || '--'} · ${item.employee?.positionName || item.employee?.jobTitle || '未维护岗位'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.employee?.employeeName}
+            secondary={`${item.employee?.employeeNo || '--'} · ${item.employee?.positionName || item.employee?.jobTitle || '未维护岗位'}`}
+          />
         )
       }
     },
@@ -475,7 +495,12 @@
       minWidth: 220,
       formatter: (row) => {
         const item = row as Api.Hr.BenefitEnrollment
-        return identity(item.plan?.planName, item.option?.optionName)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.plan?.planName}
+            secondary={item.option?.optionName}
+          />
+        )
       }
     },
     {
@@ -484,7 +509,12 @@
       minWidth: 175,
       formatter: (row) => {
         const item = row as Api.Hr.BenefitEnrollment
-        return identity(dateText(item.coverageFrom), `至 ${dateText(item.coverageTo)}`)
+        return (
+          <BusinessTableIdentityCell
+            primary={dateText(item.coverageFrom)}
+            secondary={`至 ${dateText(item.coverageTo)}`}
+          />
+        )
       }
     },
     {
@@ -494,9 +524,11 @@
       align: 'right',
       formatter: (row) => {
         const item = row as Api.Hr.BenefitEnrollment
-        return identity(
-          money(item.employeeContribution, item.currencyCode),
-          `雇主 ${money(item.employerContribution, item.currencyCode)}`
+        return (
+          <BusinessTableIdentityCell
+            primary={formatCurrencyCodeValue(item.employeeContribution, item.currencyCode)}
+            secondary={`雇主 ${formatCurrencyCodeValue(item.employerContribution, item.currencyCode)}`}
+          />
         )
       }
     },
@@ -523,9 +555,11 @@
       link: { permission: 'Hr:Benefits:View', onClick: openDetail },
       formatter: (row) => {
         const item = row as Api.Hr.BenefitLifeEvent
-        return identity(
-          item.employee?.employeeName,
-          `${item.employee?.employeeNo || '--'} · ${item.employee?.organizationName || '未维护组织'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.employee?.employeeName}
+            secondary={`${item.employee?.employeeNo || '--'} · ${item.employee?.organizationName || '未维护组织'}`}
+          />
         )
       }
     },
@@ -572,7 +606,7 @@
     fixed: 'right',
     align: 'center',
     formatter: (row) => (
-      <HrTableActions>
+      <BusinessTableRowActions>
         <ArtButtonTable
           type="view"
           permission="Hr:Benefits:View"
@@ -583,7 +617,7 @@
           list={() => rowActions(row)}
           onClick={(item: ButtonMoreItem) => void handleRowAction(item, row)}
         />
-      </HrTableActions>
+      </BusinessTableRowActions>
     )
   })
 
@@ -1104,28 +1138,6 @@
       font-size: 11px;
       line-height: 1.55;
       color: var(--art-text-gray-600);
-    }
-
-    &__identity {
-      display: grid;
-      min-width: 0;
-      text-align: left;
-    }
-
-    &__identity strong {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: var(--art-text-gray-900);
-      white-space: nowrap;
-    }
-
-    &__identity small {
-      margin-top: 3px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: 11px;
-      color: var(--art-text-gray-600);
-      white-space: nowrap;
     }
 
     &__operations {

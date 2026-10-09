@@ -28,10 +28,16 @@
             ><dt>职级</dt><dd>{{ formModel.gradeName || '--' }}</dd></div
           >
           <div
-            ><dt>当前基本工资</dt><dd>{{ money(formModel.currentBaseAmount) }}</dd></div
+            ><dt>当前基本工资</dt
+            ><dd>{{
+              formatCurrencyCodeValue(formModel.currentBaseAmount, formModel.currencyCode)
+            }}</dd></div
           >
           <div
-            ><dt>当前建议</dt><dd>{{ money(formModel.proposedBaseAmount) }}</dd></div
+            ><dt>当前建议</dt
+            ><dd>{{
+              formatCurrencyCodeValue(formModel.proposedBaseAmount, formModel.currencyCode)
+            }}</dd></div
           >
         </dl>
       </section>
@@ -52,6 +58,7 @@
 </template>
 
 <script setup lang="ts">
+  import { formatCurrencyCodeValue } from '@/utils/ui/format'
   import { hrTenantScopedFormItems } from '@hr/views/shared/hr-tenant-scoped-form-items'
   import { notifyFriendlyError } from '@/hooks/core/useArtFeedback'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
@@ -461,13 +468,6 @@
           recommendationReason: [required('请输入经理建议依据')]
         }
   })
-
-  const money = (value?: Api.Hr.ProtectedAmount): string =>
-    typeof value === 'number'
-      ? `CNY ${value.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`
-      : value == null
-        ? '--'
-        : String(value)
 
   const setFromRecord = (record: RecordItem): void => {
     Object.assign(formModel, record)

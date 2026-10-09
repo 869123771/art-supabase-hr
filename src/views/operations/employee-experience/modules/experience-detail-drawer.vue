@@ -71,8 +71,22 @@
                     >
                   </div>
                   <p>
-                    {{ dictLabel('hrExperienceDimension', question.dimension) }} ·
-                    {{ dictLabel('hrExperienceAnswerType', question.answerType) }} ·
+                    {{
+                      userStore.getDictLabelByValue(
+                        'hrExperienceDimension',
+                        question.dimension,
+                        question.dimension ?? '--'
+                      )
+                    }}
+                    ·
+                    {{
+                      userStore.getDictLabelByValue(
+                        'hrExperienceAnswerType',
+                        question.answerType,
+                        question.answerType ?? '--'
+                      )
+                    }}
+                    ·
                     {{ question.required ? '必答' : '选答' }}
                   </p>
                 </div>
@@ -112,7 +126,13 @@
             </div>
             <div>
               <small>AGGREGATED DIMENSION SCORE</small>
-              <h4>{{ dictLabel('hrExperienceDimension', insightDetail.dimension) }}</h4>
+              <h4>{{
+                userStore.getDictLabelByValue(
+                  'hrExperienceDimension',
+                  insightDetail.dimension,
+                  insightDetail.dimension ?? '--'
+                )
+              }}</h4>
               <p>
                 本主题由 {{ insightDetail.respondentCount }} 名匿名答卷贡献，达到
                 {{ insightDetail.minimumGroupSize }} 人阈值。分数只用于识别组织改善方向。
@@ -237,7 +257,11 @@
                   <div
                     ><strong>{{ action.title }}</strong
                     ><ElTag effect="plain" size="small">{{
-                      dictLabel('commonActionProgressStatus', action.status)
+                      userStore.getDictLabelByValue(
+                        'commonActionProgressStatus',
+                        action.status,
+                        action.status ?? '--'
+                      )
                     }}</ElTag></div
                   >
                   <p>计划完成日 {{ formatDate(action.dueDate) }}</p>
@@ -315,8 +339,20 @@
             <dl>
               <div
                 ><dt>调查类型</dt
-                ><dd>{{ dictLabel('hrExperienceSurveyType', myDetail.surveyType) }}</dd
-                ><small>{{ dictLabel('hrExperienceCadence', myDetail.cadence) }}</small></div
+                ><dd>{{
+                  userStore.getDictLabelByValue(
+                    'hrExperienceSurveyType',
+                    myDetail.surveyType,
+                    myDetail.surveyType ?? '--'
+                  )
+                }}</dd
+                ><small>{{
+                  userStore.getDictLabelByValue(
+                    'hrExperienceCadence',
+                    myDetail.cadence,
+                    myDetail.cadence ?? '--'
+                  )
+                }}</small></div
               >
               <div
                 ><dt>开放周期</dt><dd>{{ formatDate(myDetail.startDate) }}</dd
@@ -375,7 +411,6 @@
   }>()
   const drawerRef = ref<ArtDrawerExpose>()
   const userStore = useUserStore()
-  const { getDictMap } = storeToRefs(userStore)
   const entity = ref<Api.Hr.EmployeeExperienceEntity>('survey')
   const dimension = ref<string>()
   const {
@@ -411,8 +446,7 @@
   const myDetail = computed(() =>
     entity.value === 'my' ? (record.value as Api.Hr.EmployeeExperienceMySurvey) : undefined
   )
-  const dictLabel = (code: string, value?: string | null): string =>
-    getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
+
   const formatDate = createDateTimeFormatter({ format: 'YYYY-MM-DD' })
   const statusTone = (status?: string): TagProps['type'] =>
     ['open', 'completed', 'closed'].includes(status || '')
@@ -437,7 +471,11 @@
         eyebrow: surveyDetail.value.surveyCode,
         title: surveyDetail.value.surveyName,
         description: surveyDetail.value.description || '员工体验调查设置、题目、参与进度与审计轨迹',
-        status: dictLabel('hrExperienceSurveyStatus', surveyDetail.value.status),
+        status: userStore.getDictLabelByValue(
+          'hrExperienceSurveyStatus',
+          surveyDetail.value.status,
+          surveyDetail.value.status ?? '--'
+        ),
         tone: statusTone(surveyDetail.value.status),
         icon: 'ri:survey-line'
       }
@@ -446,7 +484,7 @@
       return {
         eyebrow: `${insightDetail.value.surveyCode} · AGGREGATE INSIGHT`,
         title: insightDetail.value.surveyName,
-        description: `${dictLabel('hrExperienceDimension', insightDetail.value.dimension)}主题的阈值安全聚合洞察`,
+        description: `${userStore.getDictLabelByValue('hrExperienceDimension', insightDetail.value.dimension, insightDetail.value.dimension ?? '--')}主题的阈值安全聚合洞察`,
         status: `${insightDetail.value.respondentCount} 人安全样本`,
         tone: 'success',
         icon: 'ri:radar-line'
@@ -456,8 +494,12 @@
       return {
         eyebrow: actionDetail.value.survey?.surveyName || 'EMPLOYEE EXPERIENCE ACTION',
         title: actionDetail.value.title,
-        description: `${dictLabel('hrExperienceDimension', actionDetail.value.dimension)} · ${actionDetail.value.organization?.organizationName || '全组织行动'}`,
-        status: dictLabel('commonActionProgressStatus', actionDetail.value.status),
+        description: `${userStore.getDictLabelByValue('hrExperienceDimension', actionDetail.value.dimension, actionDetail.value.dimension ?? '--')} · ${actionDetail.value.organization?.organizationName || '全组织行动'}`,
+        status: userStore.getDictLabelByValue(
+          'commonActionProgressStatus',
+          actionDetail.value.status,
+          actionDetail.value.status ?? '--'
+        ),
         tone: statusTone(actionDetail.value.status),
         icon: 'ri:route-line'
       }
@@ -474,14 +516,26 @@
   const surveySummary = computed<DisplayItem[]>(() => [
     {
       label: '调查类型',
-      value: dictLabel('hrExperienceSurveyType', surveyDetail.value?.surveyType),
-      hint: dictLabel('hrExperienceCadence', surveyDetail.value?.cadence)
+      value: userStore.getDictLabelByValue(
+        'hrExperienceSurveyType',
+        surveyDetail.value?.surveyType,
+        surveyDetail.value?.surveyType ?? '--'
+      ),
+      hint: userStore.getDictLabelByValue(
+        'hrExperienceCadence',
+        surveyDetail.value?.cadence,
+        surveyDetail.value?.cadence ?? '--'
+      )
     },
     {
       label: '覆盖范围',
       value:
         surveyDetail.value?.audienceOrganization?.organizationName ||
-        dictLabel('hrExperienceAudienceType', surveyDetail.value?.audienceType),
+        userStore.getDictLabelByValue(
+          'hrExperienceAudienceType',
+          surveyDetail.value?.audienceType,
+          surveyDetail.value?.audienceType ?? '--'
+        ),
       hint: `最小匿名阈值 ${surveyDetail.value?.minimumGroupSize ?? 5} 人`
     },
     {
@@ -508,7 +562,11 @@
     },
     {
       label: '改善主题',
-      value: dictLabel('hrExperienceDimension', actionDetail.value?.dimension),
+      value: userStore.getDictLabelByValue(
+        'hrExperienceDimension',
+        actionDetail.value?.dimension,
+        actionDetail.value?.dimension ?? '--'
+      ),
       hint: actionDetail.value?.organization?.organizationName || '全组织范围'
     },
     {

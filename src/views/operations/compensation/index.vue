@@ -78,6 +78,7 @@
 </template>
 
 <script setup lang="tsx">
+  import { formatNumberValue } from '@/utils/ui/format'
   import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
   import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
@@ -94,7 +95,7 @@
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
-  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import ArtDictDisplay from '@/components/core/base/art-dict-display/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
@@ -290,11 +291,11 @@
     if (value === '***') return '••••••'
     const amount = Number(value)
     if (!Number.isFinite(amount)) return '—'
-    return new Intl.NumberFormat('zh-CN', {
+    return formatNumberValue(amount, 'zh-CN', {
       style: 'currency',
       currency,
       minimumFractionDigits: 2
-    }).format(amount)
+    })
   }
 
   const tenantColumn = (): ColumnOption<RecordItem>[] =>
@@ -353,7 +354,7 @@
           ? 'Hr:Compensation:Record:Delete'
           : 'Hr:Compensation:Policy:Delete'
       return (
-        <HrTableActions>
+        <BusinessTableRowActions>
           {canEditRow(row) && (
             <ArtButtonTable
               type="edit"
@@ -409,7 +410,7 @@
               if (item.key === 'delete') void handleDelete(row)
             }}
           />
-        </HrTableActions>
+        </BusinessTableRowActions>
       )
     }
   })

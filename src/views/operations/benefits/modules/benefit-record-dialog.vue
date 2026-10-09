@@ -170,7 +170,7 @@
     benefitOptions.value
       .filter((item) => item.planId === formModel.planId)
       .map((item) => ({
-        label: `${item.optionName} · ${dictLabel('hrBenefitCoverageLevel', item.coverageLevel)}`,
+        label: `${item.optionName} · ${userStore.getDictLabelByValue('hrBenefitCoverageLevel', item.coverageLevel, item.coverageLevel ?? '--')}`,
         value: item.id!
       }))
   )
@@ -178,12 +178,10 @@
     lifeEvents.value
       .filter((item) => item.employeeId === formModel.employeeId)
       .map((item) => ({
-        label: `${dictLabel('hrBenefitLifeEventType', item.eventType)} · ${item.eventDate}`,
+        label: `${userStore.getDictLabelByValue('hrBenefitLifeEventType', item.eventType, item.eventType ?? '--')} · ${item.eventDate}`,
         value: item.id!
       }))
   )
-  const dictLabel = (code: string, value?: string | null): string =>
-    getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
 
   const commonTenantItems = (): FormItem[] =>
     isPlatformSuper.value

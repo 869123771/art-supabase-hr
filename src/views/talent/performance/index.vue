@@ -115,7 +115,6 @@
 
   import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
-  import dayjs from 'dayjs'
   import { ElButton, ElProgress, ElTag } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
@@ -126,7 +125,7 @@
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
-  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import ArtEmptyState from '@/components/core/feedback/art-empty-state/index.vue'
   import BusinessWorkspaceHeader, {
@@ -161,6 +160,12 @@
     type HrEntityNavigationItem
   } from '@hr/views/shared/hr-entity-navigation.vue'
   import PerformanceDialog from './modules/performance-dialog.vue'
+
+  const formatTableDateTime = createDateTimeFormatter({
+    format: 'YYYY-MM-DD HH:mm',
+    emptyText: '--',
+    invalidText: '--'
+  })
 
   defineOptions({ name: 'HrPerformance' })
   type Entity = Api.Hr.PerformanceEntity
@@ -410,8 +415,6 @@
     return items
   })
 
-  const dictLabel = (code: string, value?: string | null): string =>
-    getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
   const statusTone = (
     value?: string | null
   ): 'success' | 'warning' | 'danger' | 'info' | 'primary' =>
@@ -426,12 +429,10 @@
             : 'info'
   const statusTag = (dictionary: string, value?: string | null) => (
     <ElTag type={statusTone(value)} effect="light" round>
-      {dictLabel(dictionary, value)}
+      {userStore.getDictLabelByValue(dictionary, value, value ?? '--')}
     </ElTag>
   )
-  const identity = (title?: string | null, subtitle?: string | null) => (
-    <BusinessTableIdentityCell primary={title} secondary={subtitle} />
-  )
+
   const score = (value?: number | null, level?: string | null) => (
     <div class="performance-page__score">
       <strong>{value == null ? '--' : Number(value).toFixed(1)}</strong>
@@ -468,7 +469,7 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.PerformanceCycle
-        return identity(item.cycleName, item.cycleCode)
+        return <BusinessTableIdentityCell primary={item.cycleName} secondary={item.cycleCode} />
       }
     },
     {
@@ -477,9 +478,11 @@
       minWidth: 225,
       formatter: (row) => {
         const item = row as Api.Hr.PerformanceCycle
-        return identity(
-          `${formatDate(item.startDate)} → ${formatDate(item.endDate)}`,
-          `自评 ${formatDate(item.selfReviewDueDate)} · 校准 ${formatDate(item.calibrationDueDate)}`
+        return (
+          <BusinessTableIdentityCell
+            primary={`${formatDate(item.startDate)} → ${formatDate(item.endDate)}`}
+            secondary={`自评 ${formatDate(item.selfReviewDueDate)} · 校准 ${formatDate(item.calibrationDueDate)}`}
+          />
         )
       }
     },
@@ -489,11 +492,15 @@
       minWidth: 175,
       formatter: (row) => {
         const item = row as Api.Hr.PerformanceCycle
-        return identity(
-          item.owner?.name ?? '未指定负责人',
-          Number.isFinite(item.checkInFrequencyDays) && item.checkInFrequencyDays > 0
-            ? `每 ${item.checkInFrequencyDays} 天沟通`
-            : '未设置沟通节奏'
+        return (
+          <BusinessTableIdentityCell
+            primary={item.owner?.name ?? '未指定负责人'}
+            secondary={
+              Number.isFinite(item.checkInFrequencyDays) && item.checkInFrequencyDays > 0
+                ? `每 ${item.checkInFrequencyDays} 天沟通`
+                : '未设置沟通节奏'
+            }
+          />
         )
       }
     },
@@ -532,9 +539,11 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.PerformanceReview
-        return identity(
-          item.employee?.name,
-          `${item.employee?.code ?? '--'} · ${item.organization?.name ?? '未归属组织'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.employee?.name}
+            secondary={`${item.employee?.code ?? '--'} · ${item.organization?.name ?? '未归属组织'}`}
+          />
         )
       }
     },
@@ -544,7 +553,12 @@
       minWidth: 210,
       formatter: (row) => {
         const item = row as Api.Hr.PerformanceReview
-        return identity(item.cycle?.name, `评价主管：${item.reviewer?.name ?? '未指定'}`)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.cycle?.name}
+            secondary={`评价主管：${item.reviewer?.name ?? '未指定'}`}
+          />
+        )
       }
     },
     {
@@ -562,12 +576,18 @@
       minWidth: 155,
       formatter: (row) => {
         const item = row as Api.Hr.PerformanceReview
-        return item.lastCheckInDate
-          ? identity(
-              item.lastCheckInDate,
-              dictLabel('hrPerformanceCheckInRisk', item.latestRiskStatus)
-            )
-          : '暂无沟通记录'
+        return item.lastCheckInDate ? (
+          <BusinessTableIdentityCell
+            primary={item.lastCheckInDate}
+            secondary={userStore.getDictLabelByValue(
+              'hrPerformanceCheckInRisk',
+              item.latestRiskStatus,
+              item.latestRiskStatus ?? '--'
+            )}
+          />
+        ) : (
+          '暂无沟通记录'
+        )
       }
     },
     {
@@ -599,9 +619,11 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.PerformanceGoal
-        return identity(
-          item.goalName,
-          `${dictLabel('hrPerformanceGoalType', item.goalType)} · ${item.employee?.name ?? '--'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.goalName}
+            secondary={`${userStore.getDictLabelByValue('hrPerformanceGoalType', item.goalType, item.goalType ?? '--')} · ${item.employee?.name ?? '--'}`}
+          />
         )
       }
     },
@@ -655,9 +677,11 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.PerformanceCheckIn
-        return identity(
-          item.employee?.name,
-          `${item.employee?.code ?? '--'} · ${item.cycle?.name ?? '--'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.employee?.name}
+            secondary={`${item.employee?.code ?? '--'} · ${item.cycle?.name ?? '--'}`}
+          />
         )
       }
     },
@@ -696,7 +720,7 @@
       },
       formatter: (row) => {
         const item = row as Api.Hr.PerformanceCalibrationSession
-        return identity(item.sessionName, item.sessionNo)
+        return <BusinessTableIdentityCell primary={item.sessionName} secondary={item.sessionNo} />
       }
     },
     {
@@ -705,7 +729,12 @@
       minWidth: 205,
       formatter: (row) => {
         const item = row as Api.Hr.PerformanceCalibrationSession
-        return identity(item.cycle?.name, item.organization?.name ?? '整个周期')
+        return (
+          <BusinessTableIdentityCell
+            primary={item.cycle?.name}
+            secondary={item.organization?.name ?? '整个周期'}
+          />
+        )
       }
     },
     {
@@ -714,9 +743,11 @@
       minWidth: 185,
       formatter: (row) => {
         const item = row as Api.Hr.PerformanceCalibrationSession
-        return identity(
-          dayjs(item.scheduledAt).format('YYYY-MM-DD HH:mm'),
-          item.facilitator?.name ?? '未指定主持人'
+        return (
+          <BusinessTableIdentityCell
+            primary={formatTableDateTime(item.scheduledAt)}
+            secondary={item.facilitator?.name ?? '未指定主持人'}
+          />
         )
       }
     },
@@ -749,9 +780,11 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.PerformanceCalibrationItem
-        return identity(
-          item.employee?.name,
-          `${item.employee?.code ?? '--'} · ${item.cycle?.name ?? '--'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.employee?.name}
+            secondary={`${item.employee?.code ?? '--'} · ${item.cycle?.name ?? '--'}`}
+          />
         )
       }
     },
@@ -761,7 +794,9 @@
       minWidth: 200,
       formatter: (row) => {
         const item = row as Api.Hr.PerformanceCalibrationItem
-        return identity(item.session?.name, item.session?.code)
+        return (
+          <BusinessTableIdentityCell primary={item.session?.name} secondary={item.session?.code} />
+        )
       }
     },
     {
@@ -902,7 +937,7 @@
     width: 112,
     fixed: 'right',
     formatter: (row) => (
-      <HrTableActions>
+      <BusinessTableRowActions>
         {activeEntity.value === 'calibration_item' && row.id ? (
           <ArtButtonTable
             type="edit"
@@ -933,7 +968,7 @@
           ]}
           onClick={(item: ButtonMoreItem) => void handleMoreAction(item, row)}
         />
-      </HrTableActions>
+      </BusinessTableRowActions>
     )
   })
   const handleMoreAction = async (item: ButtonMoreItem, row: RecordItem): Promise<void> => {
@@ -1414,7 +1449,6 @@
       }
     }
 
-    &__identity,
     &__score {
       display: grid;
       gap: 3px;

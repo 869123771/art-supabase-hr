@@ -80,6 +80,7 @@
 </template>
 
 <script setup lang="tsx">
+  import { formatNumberValue } from '@/utils/ui/format'
   import dayjs from 'dayjs'
   import { ElProgress } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
@@ -92,7 +93,7 @@
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import BusinessTableIdentityCell from '@/components/business/business-table-identity-cell/index.vue'
-  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import ArtDictDisplay from '@/components/core/base/art-dict-display/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
@@ -326,15 +327,10 @@
     }
   ])
 
-  const dictLabel = (code: string, value?: string | null): string =>
-    getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
   const dict = (code: string, value?: string | null) => (
     <ArtDictDisplay dictCode={code} value={String(value ?? '')} display="auto" />
   )
-  const identity = (primary?: string | null, secondary?: string | null) => (
-    <BusinessTableIdentityCell primary={primary} secondary={secondary} />
-  )
-  const actionWrap = (children: unknown) => <HrTableActions>{children}</HrTableActions>
+
   interface RecruitmentMoreAction extends ButtonMoreItem {
     run: () => void
   }
@@ -353,18 +349,15 @@
     icon: string,
     color?: string
   ): RecruitmentMoreAction => ({ key, label, auth: permission, run, icon, color })
-  const renderActions = (primary: unknown, actions: RecruitmentMoreAction[]) =>
-    actionWrap(
-      <>
-        {primary}
-        <ArtButtonMore
-          list={actions}
-          onClick={(item: ButtonMoreItem) =>
-            actions.find((action) => action.key === item.key)?.run()
-          }
-        />
-      </>
-    )
+  const renderActions = (primary: import('vue').VNodeChild, actions: RecruitmentMoreAction[]) => (
+    <BusinessTableRowActions>
+      {primary}
+      <ArtButtonMore
+        list={actions}
+        onClick={(item: ButtonMoreItem) => actions.find((action) => action.key === item.key)?.run()}
+      />
+    </BusinessTableRowActions>
+  )
 
   const requisitionActions = (row: Api.Hr.RecruitmentRequisition) => {
     const editable = ['draft', 'rejected'].includes(row.status)
@@ -632,7 +625,16 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentRequisition
-        return identity(item.requisitionNo, dictLabel('hrEmploymentType', item.employmentType))
+        return (
+          <BusinessTableIdentityCell
+            primary={item.requisitionNo}
+            secondary={userStore.getDictLabelByValue(
+              'hrEmploymentType',
+              item.employmentType,
+              item.employmentType ?? '--'
+            )}
+          />
+        )
       }
     },
     {
@@ -641,7 +643,12 @@
       minWidth: 190,
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentRequisition
-        return identity(item.position?.name, item.organization?.name)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.position?.name}
+            secondary={item.organization?.name}
+          />
+        )
       }
     },
     {
@@ -697,7 +704,12 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentCandidate
-        return identity(item.candidateName, item.requisition?.positionName)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.candidateName}
+            secondary={item.requisition?.positionName}
+          />
+        )
       }
     },
     {
@@ -706,7 +718,12 @@
       minWidth: 160,
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentCandidate
-        return identity(item.requisition?.code, item.requisition?.organizationName)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.requisition?.code}
+            secondary={item.requisition?.organizationName}
+          />
+        )
       }
     },
     {
@@ -715,7 +732,11 @@
       minWidth: 175,
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentCandidate
-        return canViewSensitive.value ? identity(item.phone, item.email) : masked()
+        return canViewSensitive.value ? (
+          <BusinessTableIdentityCell primary={item.phone} secondary={item.email} />
+        ) : (
+          masked()
+        )
       }
     },
     {
@@ -730,11 +751,15 @@
       minWidth: 150,
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentCandidate
-        return identity(
-          `${item.interviewCount ?? 0} 次面试`,
-          item.latestOfferStatus
-            ? `Offer：${dictLabel('hrOfferStatus', item.latestOfferStatus)}`
-            : '尚未创建 Offer'
+        return (
+          <BusinessTableIdentityCell
+            primary={`${item.interviewCount ?? 0} 次面试`}
+            secondary={
+              item.latestOfferStatus
+                ? `Offer：${userStore.getDictLabelByValue('hrOfferStatus', item.latestOfferStatus, item.latestOfferStatus ?? '--')}`
+                : '尚未创建 Offer'
+            }
+          />
         )
       }
     },
@@ -760,7 +785,12 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentInterview
-        return identity(item.candidate?.name, item.candidate?.positionName)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.candidate?.name}
+            secondary={item.candidate?.positionName}
+          />
+        )
       }
     },
     {
@@ -769,7 +799,16 @@
       minWidth: 135,
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentInterview
-        return identity(`第 ${item.roundNo} 轮`, dictLabel('hrInterviewType', item.interviewType))
+        return (
+          <BusinessTableIdentityCell
+            primary={`第 ${item.roundNo} 轮`}
+            secondary={userStore.getDictLabelByValue(
+              'hrInterviewType',
+              item.interviewType,
+              item.interviewType ?? '--'
+            )}
+          />
+        )
       }
     },
     {
@@ -778,9 +817,11 @@
       minWidth: 185,
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentInterview
-        return identity(
-          formatWithDayjs(item.scheduledStartAt, 'MM-DD HH:mm'),
-          `${formatWithDayjs(item.scheduledEndAt, 'HH:mm')} · ${item.location || '地点待确认'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={formatWithDayjs(item.scheduledStartAt, 'MM-DD HH:mm')}
+            secondary={`${formatWithDayjs(item.scheduledEndAt, 'HH:mm')} · ${item.location || '地点待确认'}`}
+          />
         )
       }
     },
@@ -790,7 +831,12 @@
       minWidth: 150,
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentInterview
-        return identity(item.interviewer?.name, item.interviewer?.code)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.interviewer?.name}
+            secondary={item.interviewer?.code}
+          />
+        )
       }
     },
     {
@@ -800,10 +846,14 @@
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentInterview
         return item.status === 'completed' ? (
-          identity(
-            `${item.score ?? 0} 分`,
-            dictLabel('hrInterviewRecommendation', item.recommendation)
-          )
+          <BusinessTableIdentityCell
+            primary={`${item.score ?? 0} 分`}
+            secondary={userStore.getDictLabelByValue(
+              'hrInterviewRecommendation',
+              item.recommendation,
+              item.recommendation ?? '--'
+            )}
+          />
         ) : (
           <span class="recruitment-page__muted">等待面试评价</span>
         )
@@ -831,7 +881,9 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentOffer
-        return identity(item.offerNo, `版本 V${item.versionNo}`)
+        return (
+          <BusinessTableIdentityCell primary={item.offerNo} secondary={`版本 V${item.versionNo}`} />
+        )
       }
     },
     {
@@ -840,7 +892,12 @@
       minWidth: 175,
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentOffer
-        return identity(item.candidate?.name, item.candidate?.positionName)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.candidate?.name}
+            secondary={item.candidate?.positionName}
+          />
+        )
       }
     },
     {
@@ -849,12 +906,14 @@
       minWidth: 165,
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentOffer
-        return canViewSensitive.value
-          ? identity(
-              `${item.currency} ${Number(item.monthlySalary ?? 0).toLocaleString()}/月`,
-              `目标奖金 ${Number(item.targetBonus ?? 0).toLocaleString()}`
-            )
-          : masked()
+        return canViewSensitive.value ? (
+          <BusinessTableIdentityCell
+            primary={`${item.currency} ${formatNumberValue(item.monthlySalary ?? 0)}/月`}
+            secondary={`目标奖金 ${formatNumberValue(item.targetBonus ?? 0)}`}
+          />
+        ) : (
+          masked()
+        )
       }
     },
     {
@@ -863,7 +922,12 @@
       minWidth: 145,
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentOffer
-        return identity(item.proposedOnboardDate, `有效至 ${item.expiresOn}`)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.proposedOnboardDate}
+            secondary={`有效至 ${item.expiresOn}`}
+          />
+        )
       }
     },
     {
@@ -888,7 +952,9 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentHandoff
-        return identity(item.candidate?.name, item.offer?.code)
+        return (
+          <BusinessTableIdentityCell primary={item.candidate?.name} secondary={item.offer?.code} />
+        )
       }
     },
     {
@@ -897,7 +963,12 @@
       minWidth: 180,
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentHandoff
-        return identity(item.position?.name, item.organization?.name)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.position?.name}
+            secondary={item.organization?.name}
+          />
+        )
       }
     },
     {
@@ -927,7 +998,7 @@
       minWidth: 145,
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentHandoff
-        return identity(item.owner?.name, item.owner?.code)
+        return <BusinessTableIdentityCell primary={item.owner?.name} secondary={item.owner?.code} />
       }
     },
     {
@@ -953,7 +1024,16 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentTask
-        return identity(item.taskTitle, dictLabel('hrOnboardingTaskCategory', item.taskCategory))
+        return (
+          <BusinessTableIdentityCell
+            primary={item.taskTitle}
+            secondary={userStore.getDictLabelByValue(
+              'hrOnboardingTaskCategory',
+              item.taskCategory,
+              item.taskCategory ?? '--'
+            )}
+          />
+        )
       }
     },
     {
@@ -962,7 +1042,12 @@
       minWidth: 165,
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentTask
-        return identity(item.handoff?.name, item.handoff?.plannedOnboardDate)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.handoff?.name}
+            secondary={item.handoff?.plannedOnboardDate}
+          />
+        )
       }
     },
     {
@@ -971,7 +1056,7 @@
       minWidth: 145,
       formatter: (row) => {
         const item = row as Api.Hr.RecruitmentTask
-        return identity(item.owner?.name, item.owner?.code)
+        return <BusinessTableIdentityCell primary={item.owner?.name} secondary={item.owner?.code} />
       }
     },
     {
@@ -1287,27 +1372,6 @@
       font-size: 11px;
       font-weight: 400;
       color: var(--art-gray-500);
-    }
-
-    &__identity {
-      display: grid;
-      gap: 3px;
-      min-width: 0;
-    }
-
-    &__identity strong,
-    &__identity small {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    &__identity strong {
-      color: var(--art-gray-900);
-    }
-
-    &__identity small {
-      color: var(--art-gray-600);
     }
 
     &__funnel {

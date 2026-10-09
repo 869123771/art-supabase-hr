@@ -93,7 +93,7 @@
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import type { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
-  import HrTableActions from '@hr/views/shared/hr-table-actions.vue'
+  import BusinessTableRowActions from '@/components/business/business-table-row-actions/index.vue'
   import ArtDictDisplay from '@/components/core/base/art-dict-display/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
   import BusinessWorkspaceHeader, {
@@ -398,7 +398,7 @@
       const status = 'status' in row ? String(row.status ?? '') : ''
       const canEdit = activeEntity.value !== 'request' || status === 'draft'
       return (
-        <HrTableActions>
+        <BusinessTableRowActions>
           {canEdit ? (
             <ArtButtonTable
               type="edit"
@@ -414,7 +414,7 @@
             list={() => rowMoreActions(status, canEdit)}
             onClick={(item: ButtonMoreItem) => void handleMoreAction(item, row)}
           />
-        </HrTableActions>
+        </BusinessTableRowActions>
       )
     }
   })

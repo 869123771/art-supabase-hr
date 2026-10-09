@@ -91,7 +91,6 @@
 
   const emit = defineEmits<{ success: [] }>()
   const userStore = useUserStore()
-  const { getDictMap } = storeToRefs(userStore)
   const { confirmAction } = useArtFeedback()
   const dialogRef = ref<ArtDialogExpose>()
   const formRef = ref<ArtFormExpose>()
@@ -144,8 +143,6 @@
   })
   const formModel = reactive<FormModel>({ answers: {} })
 
-  const dictLabel = (code: string, value?: string | null): string =>
-    getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
   const formatDate = (value?: string | null): string =>
     value ? (formatWithDayjs(value, 'YYYY-MM-DD') ?? '--') : '--'
   const ratingOptions = Array.from({ length: 11 }, (_, score) => ({
@@ -160,7 +157,11 @@
       if (question.dimension !== previousDimension) {
         previousDimension = question.dimension
         items.push({
-          label: dictLabel('hrExperienceDimension', question.dimension),
+          label: userStore.getDictLabelByValue(
+            'hrExperienceDimension',
+            question.dimension,
+            question.dimension ?? '--'
+          ),
           key: `dimension-${question.dimension}`,
           type: 'divider',
           span: 24

@@ -79,7 +79,13 @@
             >
               <article>
                 <div>
-                  <strong>{{ dictLabel('hrComplianceEventType', event.eventType) }}</strong>
+                  <strong>{{
+                    userStore.getDictLabelByValue(
+                      'hrComplianceEventType',
+                      event.eventType,
+                      event.eventType ?? '--'
+                    )
+                  }}</strong>
                   <span>{{ actorText(event) }}</span>
                 </div>
                 <small v-if="event.fromStatus || event.toStatus">
@@ -140,10 +146,7 @@
   onBeforeUnmount(() => openDetail(''))
   const entity = ref<Entity>('contract')
   const userStore = useUserStore()
-  const { getDictMap } = storeToRefs(userStore)
 
-  const dictLabel = (code: string, value?: string | null): string =>
-    getDictMap.value[code]?.find((item) => item.value === value)?.label ?? value ?? '--'
   const formatDate = createDateTimeFormatter({ format: 'YYYY-MM-DD' })
   const employeeText = computed(
     () =>
@@ -158,8 +161,16 @@
   const statusLabel = computed(() => {
     if (!record.value) return '--'
     return entity.value === 'contract'
-      ? dictLabel('hrContractStatus', (record.value as Api.Hr.ComplianceContract).contractStatus)
-      : dictLabel('hrQualificationStatus', (record.value as Api.Hr.ComplianceQualification).status)
+      ? userStore.getDictLabelByValue(
+          'hrContractStatus',
+          (record.value as Api.Hr.ComplianceContract).contractStatus,
+          (record.value as Api.Hr.ComplianceContract).contractStatus ?? '--'
+        )
+      : userStore.getDictLabelByValue(
+          'hrQualificationStatus',
+          (record.value as Api.Hr.ComplianceQualification).status,
+          (record.value as Api.Hr.ComplianceQualification).status ?? '--'
+        )
   })
   const statusTone = computed<TagProps['type']>(() => {
     if (!record.value) return 'info'
@@ -203,7 +214,13 @@
     if (days <= reminderDays.value) return 'watch'
     return 'clear'
   })
-  const riskLabel = computed(() => dictLabel('hrComplianceRiskStatus', resolvedRiskStatus.value))
+  const riskLabel = computed(() =>
+    userStore.getDictLabelByValue(
+      'hrComplianceRiskStatus',
+      resolvedRiskStatus.value,
+      resolvedRiskStatus.value ?? '--'
+    )
+  )
   const riskTone = computed<TagProps['type']>(() =>
     ['overdue', 'critical'].includes(resolvedRiskStatus.value)
       ? 'danger'
@@ -228,7 +245,11 @@
         { label: '合同期限', value: formatDate(item.endDate), hint: daysHint.value },
         {
           label: '续签决策',
-          value: dictLabel('hrContractRenewalDecision', item.renewalDecision),
+          value: userStore.getDictLabelByValue(
+            'hrContractRenewalDecision',
+            item.renewalDecision,
+            item.renewalDecision ?? '--'
+          ),
           hint: item.renewalOwner?.employeeName || '尚未指定负责人'
         },
         {
@@ -239,7 +260,11 @@
         {
           label: '工作地点',
           value: item.workLocation || '--',
-          hint: dictLabel('hrContractType', item.contractType)
+          hint: userStore.getDictLabelByValue(
+            'hrContractType',
+            item.contractType,
+            item.contractType ?? '--'
+          )
         }
       ]
     }
@@ -248,7 +273,11 @@
       { label: '有效期限', value: formatDate(item.expiryDate), hint: daysHint.value },
       {
         label: '核验状态',
-        value: dictLabel('hrQualificationVerificationStatus', item.verificationStatus),
+        value: userStore.getDictLabelByValue(
+          'hrQualificationVerificationStatus',
+          item.verificationStatus,
+          item.verificationStatus ?? '--'
+        ),
         hint: item.verifiedByEmployee?.employeeName || '尚未完成独立核验'
       },
       {
@@ -270,7 +299,14 @@
       const item = record.value as Api.Hr.ComplianceContract
       return [
         { label: '合同编号', value: item.contractNo },
-        { label: '合同类型', value: dictLabel('hrContractType', item.contractType) },
+        {
+          label: '合同类型',
+          value: userStore.getDictLabelByValue(
+            'hrContractType',
+            item.contractType,
+            item.contractType ?? '--'
+          )
+        },
         { label: '签订日期', value: formatDate(item.signDate) },
         { label: '生效日期', value: formatDate(item.startDate) },
         { label: '结束日期', value: formatDate(item.endDate) },
@@ -286,7 +322,14 @@
     }
     const item = record.value as Api.Hr.ComplianceQualification
     return [
-      { label: '资质类别', value: dictLabel('hrQualificationType', item.qualificationType) },
+      {
+        label: '资质类别',
+        value: userStore.getDictLabelByValue(
+          'hrQualificationType',
+          item.qualificationType,
+          item.qualificationType ?? '--'
+        )
+      },
       { label: '证书编号', value: item.certificateNo || '--' },
       { label: '发证机构', value: item.issuer || '--' },
       { label: '发证日期', value: formatDate(item.issueDate) },
@@ -304,9 +347,10 @@
   const attachmentUrl = computed(() => record.value?.attachmentUrl || '')
 
   const dictStatusLabel = (status: string): string =>
-    dictLabel(
+    userStore.getDictLabelByValue(
       entity.value === 'contract' ? 'hrContractStatus' : 'hrQualificationVerificationStatus',
-      status
+      status,
+      status ?? '--'
     )
   const actorText = (event: Api.Hr.ComplianceEvent): string =>
     event.actor?.employeeName || event.createBy || '系统自动处理'

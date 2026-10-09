@@ -138,11 +138,12 @@
 </template>
 
 <script setup lang="tsx">
+  import { createDateTimeFormatter } from '@/utils/ui/format'
+
   import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
   import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
   import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
-  import dayjs from 'dayjs'
   import { ElButton, ElTag, type TagProps } from 'element-plus'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
@@ -172,6 +173,17 @@
     type HrEntityNavigationItem
   } from '@hr/views/shared/hr-entity-navigation.vue'
   import OrganizationDesignDialog from './modules/organization-design-dialog.vue'
+
+  const formatTableDateTime = createDateTimeFormatter({
+    format: 'YYYY-MM-DD HH:mm',
+    emptyText: '--',
+    invalidText: '--'
+  })
+  const formatTableDateTime2 = createDateTimeFormatter({
+    format: 'YYYY-MM-DD HH:mm',
+    emptyText: '待提交评审',
+    invalidText: '待提交评审'
+  })
 
   defineOptions({ name: 'HrOrganizationDesign' })
   type Entity = Api.Hr.OrganizationDesignEntity
@@ -348,15 +360,7 @@
       </ElTag>
     )
   }
-  const identity = (title?: string | null, subtitle?: string | null, extra?: string | null) => (
-    <BusinessTableIdentityCell primary={title} secondary={subtitle} tertiary={extra} />
-  )
-  const impact = (value: number | undefined, label: string, risk = false) => (
-    <span class={['org-design-page__impact', risk && (value ?? 0) > 0 ? 'is-risk' : '']}>
-      <b>{value ?? 0}</b>
-      {label}
-    </span>
-  )
+
   const changeTypeLabel = (value: Api.Hr.OrganizationChangeType) =>
     ({ create: '新增组织', rename: '组织更名', reparent: '调整上级', inactivate: '停用组织' })[
       value
@@ -428,7 +432,13 @@
       link: { onClick: (row) => focusChanges(row as Api.Hr.OrganizationDesignScenario) },
       formatter: (row) => {
         const item = row as Api.Hr.OrganizationDesignScenario
-        return identity(item.scenarioName, item.scenarioCode, item.objective)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.scenarioName}
+            secondary={item.scenarioCode}
+            tertiary={item.objective}
+          />
+        )
       }
     },
     {
@@ -437,7 +447,13 @@
       minWidth: 170,
       formatter: (row) => {
         const item = row as Api.Hr.OrganizationDesignScenario
-        return identity(item.effectiveDate, item.ownerEmployeeName, item.ownerEmployeeNo)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.effectiveDate}
+            secondary={item.ownerEmployeeName}
+            tertiary={item.ownerEmployeeNo}
+          />
+        )
       }
     },
     {
@@ -447,11 +463,35 @@
       formatter: (row) => {
         const item = row as Api.Hr.OrganizationDesignScenario
         return (
-          <div class="org-design-page__impact-grid">
-            {impact(item.changeCount, ' 项变更')}
-            {impact(item.impactedEmployeeCount, ' 人')}
-            {impact(item.impactedPositionCount, ' 岗位')}
-            {impact(item.impactedSecurityUserCount, ' 账号', true)}
+          <div class="flex flex-wrap gap-1">
+            {
+              <ElTag size="small" type={'info'} effect="light">
+                {item.changeCount ?? 0}
+                {' 项变更'}
+              </ElTag>
+            }
+            {
+              <ElTag size="small" type={'info'} effect="light">
+                {item.impactedEmployeeCount ?? 0}
+                {' 人'}
+              </ElTag>
+            }
+            {
+              <ElTag size="small" type={'info'} effect="light">
+                {item.impactedPositionCount ?? 0}
+                {' 岗位'}
+              </ElTag>
+            }
+            {
+              <ElTag
+                size="small"
+                type={(item.impactedSecurityUserCount ?? 0) > 0 ? 'danger' : 'info'}
+                effect="light"
+              >
+                {item.impactedSecurityUserCount ?? 0}
+                {' 账号'}
+              </ElTag>
+            }
           </div>
         )
       }
@@ -472,8 +512,7 @@
       prop: 'updateTime',
       label: '最近更新',
       width: 145,
-      formatter: (row) =>
-        dayjs((row as Api.Hr.OrganizationDesignScenario).updateTime).format('YYYY-MM-DD HH:mm')
+      formatter: (row) => formatTableDateTime((row as Api.Hr.OrganizationDesignScenario).updateTime)
     },
     {
       prop: 'action',
@@ -491,7 +530,13 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.OrganizationDesignChange
-        return identity(changeTarget(item), changeTypeLabel(item.changeType), changeResult(item))
+        return (
+          <BusinessTableIdentityCell
+            primary={changeTarget(item)}
+            secondary={changeTypeLabel(item.changeType)}
+            tertiary={changeResult(item)}
+          />
+        )
       }
     },
     {
@@ -500,7 +545,9 @@
       minWidth: 180,
       formatter: (row) => {
         const item = row as Api.Hr.OrganizationDesignChange
-        return identity(item.scenarioName, item.scenarioCode)
+        return (
+          <BusinessTableIdentityCell primary={item.scenarioName} secondary={item.scenarioCode} />
+        )
       }
     },
     { prop: 'rationale', label: '业务理由', minWidth: 220, showOverflowTooltip: true },
@@ -511,11 +558,35 @@
       formatter: (row) => {
         const item = row as Api.Hr.OrganizationDesignChange
         return (
-          <div class="org-design-page__impact-grid">
-            {impact(item.impactedEmployeeCount, ' 人')}
-            {impact(item.impactedPositionCount, ' 岗位')}
-            {impact(item.impactedRequisitionCount, ' 招聘')}
-            {impact(item.impactedSecurityUserCount, ' 账号', true)}
+          <div class="flex flex-wrap gap-1">
+            {
+              <ElTag size="small" type={'info'} effect="light">
+                {item.impactedEmployeeCount ?? 0}
+                {' 人'}
+              </ElTag>
+            }
+            {
+              <ElTag size="small" type={'info'} effect="light">
+                {item.impactedPositionCount ?? 0}
+                {' 岗位'}
+              </ElTag>
+            }
+            {
+              <ElTag size="small" type={'info'} effect="light">
+                {item.impactedRequisitionCount ?? 0}
+                {' 招聘'}
+              </ElTag>
+            }
+            {
+              <ElTag
+                size="small"
+                type={(item.impactedSecurityUserCount ?? 0) > 0 ? 'danger' : 'info'}
+                effect="light"
+              >
+                {item.impactedSecurityUserCount ?? 0}
+                {' 账号'}
+              </ElTag>
+            }
           </div>
         )
       }
@@ -526,9 +597,7 @@
       width: 145,
       formatter: (row) => {
         const item = row as Api.Hr.OrganizationDesignChange
-        return item.impactCapturedAt
-          ? dayjs(item.impactCapturedAt).format('YYYY-MM-DD HH:mm')
-          : '待提交评审'
+        return formatTableDateTime2(item.impactCapturedAt)
       }
     },
     {
@@ -618,7 +687,7 @@
         onClick={(item) => void handleChangeMore(item, row)}
       />
     ) : (
-      <span class="org-design-page__locked">已锁定</span>
+      <span class="text-xs text-[var(--art-gray-500)]">已锁定</span>
     )
   const fetchTableData = (params: TableParams) => {
     const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
@@ -1049,68 +1118,6 @@
       em {
         font-size: 10px;
       }
-    }
-
-    :deep(&__identity) {
-      display: grid;
-      min-width: 0;
-      line-height: 1.35;
-    }
-
-    :deep(&__identity strong) {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: 12px;
-      color: var(--art-text-gray-900);
-      white-space: nowrap;
-    }
-
-    :deep(&__identity small) {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: 11px;
-      color: var(--art-text-gray-550);
-      white-space: nowrap;
-    }
-
-    :deep(&__identity em) {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: 10px;
-      font-style: normal;
-      color: var(--art-text-gray-500);
-      white-space: nowrap;
-    }
-
-    :deep(&__impact-grid) {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-    }
-
-    :deep(&__impact) {
-      display: inline-flex;
-      gap: 2px;
-      align-items: baseline;
-      padding: 3px 6px;
-      font-size: 9px;
-      color: var(--art-text-gray-550);
-      background: var(--art-main-bg-color);
-      border-radius: 6px;
-    }
-
-    :deep(&__impact b) {
-      font-size: 12px;
-      color: var(--art-text-gray-900);
-    }
-
-    :deep(&__impact.is-risk b) {
-      color: var(--el-color-danger);
-    }
-
-    :deep(&__locked) {
-      font-size: 11px;
-      color: var(--art-text-gray-500);
     }
   }
 

@@ -1,1 +1,0 @@
-import{H as e,K as t,S as n,h as r}from"./runtime-core.esm-bundler-jxzlpws6.js";import{t as i}from"./_plugin-vue_export-helper-BDNMzG2s.js";var a={class:`business-table-row-actions`},o=i(n({name:`BusinessTableRowActions`,__name:`index`,setup(n){return(n,i)=>(e(),r(`div`,a,[t(n.$slots,`default`,{},void 0,!0)]))}}),[[`__scopeId`,`data-v-63736961`]]);export{o as t};

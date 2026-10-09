@@ -141,12 +141,15 @@
 </template>
 
 <script setup lang="tsx">
+  import { createDateTimeFormatter } from '@/utils/ui/format'
+
   import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import MasterDataDeleteGuard from '@/components/business/master-data-delete-guard/index.vue'
   import { useRecordDeleteGuard } from '@/hooks/core/useRecordDeleteGuard'
   import { useHrMasterDeleteLocation } from '@hr/views/shared/use-hr-master-delete-location'
   import dayjs from 'dayjs'
-  import { ElButton, ElTag, type TagProps } from 'element-plus'
+  import { ElButton, ElProgress, ElTag, type TagProps } from 'element-plus'
+  import { clamp } from 'lodash-es'
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
     ArtTableQueryExpose,
@@ -175,6 +178,12 @@
     type HrEntityNavigationItem
   } from '@hr/views/shared/hr-entity-navigation.vue'
   import PolicyDocumentDialog from './modules/policy-document-dialog.vue'
+
+  const formatTableDateTime = createDateTimeFormatter({
+    format: 'YYYY-MM-DD HH:mm',
+    emptyText: '--',
+    invalidText: '--'
+  })
 
   defineOptions({ name: 'HrPolicyAcknowledgement' })
 
@@ -342,17 +351,24 @@
       {statusLabel(value)}
     </ElTag>
   )
-  const identity = (title?: string | null, subtitle?: string | null, extra?: string | null) => (
-    <BusinessTableIdentityCell primary={title} secondary={subtitle} tertiary={extra} />
-  )
+
   const progress = (completed = 0, total = 0, overdue = 0) => {
     const percentage = total ? Math.round((completed * 100) / total) : 0
     return (
-      <div class="policy-page__progress">
-        <span>
-          <i style={{ width: `${percentage}%` }} />
-        </span>
-        <small class={overdue ? 'is-risk' : ''}>
+      <div class="grid gap-1">
+        <ElProgress
+          percentage={clamp(percentage, 0, 100)}
+          strokeWidth={5}
+          showText={false}
+          status="success"
+        />
+        <small
+          class={
+            overdue
+              ? 'text-xs font-semibold text-[var(--el-color-danger)]'
+              : 'text-xs text-[var(--art-gray-600)]'
+          }
+        >
           {completed} / {total} · {percentage}%{overdue ? ` · ${overdue} 逾期` : ''}
         </small>
       </div>
@@ -427,14 +443,25 @@
       link: { onClick: (row) => focusReceipts(row as Api.Hr.HrPolicyDocument) },
       formatter: (row) => {
         const item = row as Api.Hr.HrPolicyDocument
-        return identity(item.policyTitle, `${item.policyCode} · v${item.versionNo}`, item.category)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.policyTitle}
+            secondary={`${item.policyCode} · v${item.versionNo}`}
+            tertiary={item.category}
+          />
+        )
       }
     },
     {
       prop: 'audienceType',
       label: '适用人群',
       minWidth: 180,
-      formatter: (row) => identity(audienceLabel(row as Api.Hr.HrPolicyDocument), '发布时固化范围')
+      formatter: (row) => (
+        <BusinessTableIdentityCell
+          primary={audienceLabel(row as Api.Hr.HrPolicyDocument)}
+          secondary={'发布时固化范围'}
+        />
+      )
     },
     {
       prop: 'effectiveDate',
@@ -442,7 +469,12 @@
       width: 155,
       formatter: (row) => {
         const item = row as Api.Hr.HrPolicyDocument
-        return identity(item.effectiveDate, `发布后 ${item.acknowledgementDueDays} 天内`)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.effectiveDate}
+            secondary={`发布后 ${item.acknowledgementDueDays} 天内`}
+          />
+        )
       }
     },
     {
@@ -488,7 +520,13 @@
       fixed: 'left',
       formatter: (row) => {
         const item = row as Api.Hr.HrPolicyReceipt
-        return identity(item.employeeName, item.employeeNo, item.organizationName)
+        return (
+          <BusinessTableIdentityCell
+            primary={item.employeeName}
+            secondary={item.employeeNo}
+            tertiary={item.organizationName}
+          />
+        )
       }
     },
     {
@@ -497,9 +535,11 @@
       minWidth: 220,
       formatter: (row) => {
         const item = row as Api.Hr.HrPolicyReceipt
-        return identity(
-          item.policyTitle,
-          `${item.policyCode || '--'} · v${item.policyVersionNo || '--'}`
+        return (
+          <BusinessTableIdentityCell
+            primary={item.policyTitle}
+            secondary={`${item.policyCode || '--'} · v${item.policyVersionNo || '--'}`}
+          />
         )
       }
     },
@@ -509,10 +549,16 @@
       width: 170,
       formatter: (row) => {
         const item = row as Api.Hr.HrPolicyReceipt
-        return identity(
-          item.deliveredAt ? dayjs(item.deliveredAt).format('YYYY-MM-DD HH:mm') : '--',
-          `截止 ${item.dueDate}`,
-          item.status === 'overdue' ? `逾期 ${dayjs().diff(dayjs(item.dueDate), 'day')} 天` : null
+        return (
+          <BusinessTableIdentityCell
+            primary={formatTableDateTime(item.deliveredAt)}
+            secondary={`截止 ${item.dueDate}`}
+            tertiary={
+              item.status === 'overdue'
+                ? `逾期 ${dayjs().diff(dayjs(item.dueDate), 'day')} 天`
+                : null
+            }
+          />
         )
       }
     },
@@ -522,12 +568,20 @@
       minWidth: 180,
       formatter: (row) => {
         const item = row as Api.Hr.HrPolicyReceipt
-        return identity(
-          item.acknowledgedBy || item.waivedBy,
-          item.acknowledgedAt || item.waivedAt
-            ? dayjs(item.acknowledgedAt || item.waivedAt).format('YYYY-MM-DD HH:mm')
-            : null,
-          overview.evidenceAccess ? item.acknowledgementNote || item.waiverReason : '业务依据受控'
+        return (
+          <BusinessTableIdentityCell
+            primary={item.acknowledgedBy || item.waivedBy}
+            secondary={
+              item.acknowledgedAt || item.waivedAt
+                ? dayjs(item.acknowledgedAt || item.waivedAt).format('YYYY-MM-DD HH:mm')
+                : null
+            }
+            tertiary={
+              overview.evidenceAccess
+                ? item.acknowledgementNote || item.waiverReason
+                : '业务依据受控'
+            }
+          />
         )
       }
     },
@@ -633,7 +687,7 @@
     return actions.length ? (
       <ArtButtonMore list={actions} onClick={(item) => void handleReceiptMore(item, row)} />
     ) : (
-      <span class="policy-page__locked">只读</span>
+      <span class="text-xs text-[var(--art-gray-500)]">只读</span>
     )
   }
 
@@ -1082,72 +1136,6 @@
       em {
         font-size: 10px;
       }
-    }
-
-    :deep(&__identity) {
-      display: grid;
-      min-width: 0;
-      line-height: 1.35;
-    }
-
-    :deep(&__identity strong) {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: 12px;
-      color: var(--art-text-gray-900);
-      white-space: nowrap;
-    }
-
-    :deep(&__identity small) {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: 11px;
-      color: var(--art-text-gray-550);
-      white-space: nowrap;
-    }
-
-    :deep(&__identity em) {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: 10px;
-      font-style: normal;
-      color: var(--art-text-gray-500);
-      white-space: nowrap;
-    }
-
-    :deep(&__progress) {
-      display: grid;
-      gap: 5px;
-    }
-
-    :deep(&__progress > span) {
-      display: block;
-      height: 5px;
-      overflow: hidden;
-      background: var(--art-gray-100);
-      border-radius: 999px;
-    }
-
-    :deep(&__progress i) {
-      display: block;
-      height: 100%;
-      background: var(--el-color-success);
-      border-radius: inherit;
-    }
-
-    :deep(&__progress small) {
-      font-size: 10px;
-      color: var(--art-text-gray-550);
-    }
-
-    :deep(&__progress small.is-risk) {
-      font-weight: 700;
-      color: var(--el-color-danger);
-    }
-
-    :deep(&__locked) {
-      font-size: 11px;
-      color: var(--art-text-gray-500);
     }
   }
 
