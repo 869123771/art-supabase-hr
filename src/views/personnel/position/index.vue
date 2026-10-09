@@ -128,6 +128,7 @@
   import { formatWithDayjs } from '@/utils/time'
   import TreeUtils from '@/utils/tree'
   import { useUserStore } from '@/store/modules/user'
+  import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import { useTenantScopeStore } from '@/store/modules/tenant-scope'
   import { deletePosition, fetchPositionList, fetchPositionOrganizationTree } from '@hr/api'
   import PositionDialog from './modules/position-dialog.vue'
@@ -158,7 +159,7 @@
   const { deleteGuardRef, inspectDeleteReferences } = useRecordDeleteGuard('mdm_position', '岗位')
   const deleteBusy = ref(false)
   const userStore = useUserStore()
-  const { getDictMap, isPlatformSuper } = storeToRefs(userStore)
+  const { isPlatformSuper } = storeToRefs(userStore)
   const { effectiveTenantId, isAllTenants } = storeToRefs(useTenantScopeStore())
   const organizationTreeUtils = new TreeUtils({
     idKey: 'id',
@@ -209,11 +210,11 @@
   const employeeCount = computed(() =>
     overview.rows.reduce((total, position) => total + Number(position.employeeCount ?? 0), 0)
   )
+  const enabledOptions = useDictionaryOptions('commonBoolean', (value) => value === 'true')
   const booleanOptions = computed(() =>
-    (getDictMap.value.commonBoolean ?? []).map((item) => ({
+    enabledOptions.map((item) => ({
       ...item,
-      label: item.value === 'true' ? '启用' : '停用',
-      value: item.value === 'true'
+      label: item.value ? '启用' : '停用'
     }))
   )
   const workspaceTags: BusinessWorkspaceTag[] = [
