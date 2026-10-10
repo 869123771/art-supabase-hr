@@ -75,7 +75,7 @@
   import type { ArtDialogExpose } from '@/components/core/dialogs/art-dialog/types'
   import ArtForm, { type FormItem } from '@/components/core/forms/art-form/index.vue'
   import ArtSvgIcon from '@/components/core/base/art-svg-icon/index.vue'
-  import { formatWithDayjs } from '@/utils/time'
+  import { createDateTimeFormatter } from '@/utils/ui/format'
   import { validateArtFormForSubmit } from '@/utils/form/validate-art-form'
   import { notifyFriendlyError, useArtFeedback } from '@/hooks/core/useArtFeedback'
   import { useUserStore } from '@/store/modules/user'
@@ -143,8 +143,7 @@
   })
   const formModel = reactive<FormModel>({ answers: {} })
 
-  const formatDate = (value?: string | null): string =>
-    value ? (formatWithDayjs(value, 'YYYY-MM-DD') ?? '--') : '--'
+  const formatDate = createDateTimeFormatter({ format: 'YYYY-MM-DD' })
   const ratingOptions = Array.from({ length: 11 }, (_, score) => ({
     label: String(score),
     value: score
