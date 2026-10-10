@@ -8,7 +8,9 @@
     @retry="initializePage"
   >
     <MasterDeleteProcessingNotice
-      :location-ready="Boolean(form.id && form.id === route.query.recordId)"
+      :record-rows="[form]"
+      :record-loading="page.loading"
+      :record-error="Boolean(page.error)"
     />
     <ArtPageHeader
       :title="isEdit ? '编辑员工档案' : '新增员工档案'"
@@ -1509,13 +1511,6 @@
       background: var(--el-fill-color-extra-light);
       border-color: var(--el-border-color);
       border-radius: calc(var(--custom-radius) - 4px);
-    }
-
-    &__avatar :deep(.resource-picker-action) {
-      color: var(--el-text-color-secondary);
-      background: var(--el-bg-color);
-      border-color: var(--el-border-color-lighter);
-      border-radius: calc(var(--custom-radius) - 4px) calc(var(--custom-radius) - 4px) 0 0;
     }
 
     &__summary-copy {

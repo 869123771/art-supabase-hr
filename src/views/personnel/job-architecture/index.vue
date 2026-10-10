@@ -163,11 +163,11 @@
   const tableState = reactive<{ searchQuery: Api.Hr.JobArchitectureSearchParams }>({
     searchQuery: { enabled: undefined, keyword: '' }
   })
-  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+  const { locationReady } = useHrMasterDeleteLocation<Entity>(
     { mdm_job_profile: 'profile' },
     activeEntity,
     tableState.searchQuery,
-    () => void tableQueryRef.value?.refreshData(),
+    tableQueryRef,
     () => {
       tableState.searchQuery.enabled = undefined
     }
@@ -342,7 +342,6 @@
     })
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
-    markRows(rows)
     overview.total = response.total ?? rows.length
     overview.enabled = rows.filter((row) => Boolean(row.enabled)).length
     overview.references = rows.reduce(

@@ -322,7 +322,7 @@
   const tableState = reactive<{ searchQuery: Api.Hr.CompensationReviewSearchParams }>({
     searchQuery: { keyword: '', status: '', tenantId: '' }
   })
-  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+  const { locationReady } = useHrMasterDeleteLocation<Entity>(
     {
       hr_compensation_review_cycle: 'cycle',
       hr_compensation_review_item: 'item',
@@ -330,7 +330,7 @@
     },
     activeEntity,
     tableState.searchQuery,
-    () => void tableQueryRef.value?.refreshData(),
+    tableQueryRef,
     () => {
       selectedCycleId.value = ''
     }
@@ -1027,7 +1027,6 @@
     })
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
-    markRows(rows)
     tableTotal.value = response.total ?? 0
     tableAmountAccess.value = Boolean(
       'amountAccess' in response && (response as { amountAccess?: boolean }).amountAccess

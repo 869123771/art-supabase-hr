@@ -239,14 +239,14 @@
   const tableState = reactive<{ searchQuery: Api.Hr.ComplianceSearchParams }>({
     searchQuery: { tenantId: '', status: '', riskStatus: '', keyword: '' }
   })
-  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+  const { locationReady } = useHrMasterDeleteLocation<Entity>(
     {
       hr_employee_contract: 'contract',
       hr_employee_qualification: 'qualification'
     },
     activeEntity,
     tableState.searchQuery,
-    () => void tableQueryRef.value?.refreshData()
+    tableQueryRef
   )
   const overview = reactive<Api.Hr.ComplianceOverview>({
     activeContractCount: 0,
@@ -911,7 +911,6 @@
     return fetchComplianceRecords(activeEntity.value, { ...params, from, to })
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
-    markRows(rows)
     tableTotal.value = response.total ?? 0
   }
   const refreshOverview = async (): Promise<void> => {

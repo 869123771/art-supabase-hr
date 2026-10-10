@@ -232,7 +232,7 @@
   const tableState = reactive<{ searchQuery: Api.Hr.WorkforcePlanningSearchParams }>({
     searchQuery: { tenantId: '', status: '', keyword: '', planId: '' }
   })
-  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+  const { locationReady } = useHrMasterDeleteLocation<Entity>(
     {
       hr_workforce_plan_cycle: 'cycle',
       hr_position_headcount: 'effective',
@@ -240,7 +240,7 @@
     },
     activeEntity,
     tableState.searchQuery,
-    () => void tableQueryRef.value?.refreshData()
+    tableQueryRef
   )
   const overview = reactive<Api.Hr.WorkforcePlanningOverview>({
     activePlanCount: 0,
@@ -750,7 +750,6 @@
       from: page.from,
       to: page.to
     })
-    markRows(response.data)
     return response
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (_data, response) => {

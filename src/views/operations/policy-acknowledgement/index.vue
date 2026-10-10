@@ -233,11 +233,11 @@
   const tableState = reactive<{ searchQuery: Api.Hr.PolicyAcknowledgementSearchParams }>({
     searchQuery: { keyword: '', status: '', tenantId: '' }
   })
-  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+  const { locationReady } = useHrMasterDeleteLocation<Entity>(
     { hr_policy_document: 'policy', hr_policy_receipt: 'receipt' },
     activeEntity,
     tableState.searchQuery,
-    () => void tableQueryRef.value?.refreshData(),
+    tableQueryRef,
     () => {
       focusedPolicy.value = null
     }
@@ -701,7 +701,6 @@
     })
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
-    markRows(rows)
     tableTotal.value = response.total ?? 0
   }
   const refreshOverview = async (): Promise<void> => {

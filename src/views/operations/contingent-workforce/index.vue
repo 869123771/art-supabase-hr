@@ -267,7 +267,7 @@
   const tableState = reactive<{ searchQuery: Api.Hr.ContingentWorkforceSearchParams }>({
     searchQuery: { keyword: '', status: '', tenantId: '' }
   })
-  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+  const { locationReady } = useHrMasterDeleteLocation<Entity>(
     {
       hr_external_engagement: 'engagement',
       hr_external_worker: 'worker',
@@ -276,7 +276,7 @@
     },
     activeEntity,
     tableState.searchQuery,
-    () => void tableQueryRef.value?.refreshData(),
+    tableQueryRef,
     () => {
       focusedEngagement.value = null
     }
@@ -1060,7 +1060,6 @@
       to,
       engagementId: activeEntity.value === 'control' ? focusedEngagement.value?.id : undefined
     })
-    markRows(response.data)
     return response
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (_rows, response) => {

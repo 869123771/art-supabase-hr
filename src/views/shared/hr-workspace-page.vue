@@ -187,11 +187,11 @@
         : [])
     ])
   })
-  const { locationReady, markRows } = useHrMasterDeleteLocation<string>(
+  const { locationReady } = useHrMasterDeleteLocation<string>(
     { hr_personnel_change: 'changes' },
     activeTabKey,
     search.model,
-    () => void tableQueryRef.value?.refreshData()
+    tableQueryRef
   )
 
   const workspaceTags = computed<BusinessWorkspaceTag[]>(() =>
@@ -420,7 +420,6 @@
     const { from, to } = buildSupabasePageRange(params as TableParams)
     const result = await fetchHrWorkspaceRecords(activeTab.value.entity, { ...params, from, to })
     if (result.error) throw result.error
-    markRows(result.data)
     return result
   }
 
@@ -552,14 +551,6 @@
         color: var(--art-gray-500);
         white-space: nowrap;
       }
-    }
-
-    &__row-actions {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      min-width: 0;
-      white-space: nowrap;
     }
 
     :deep(.art-table-query) {

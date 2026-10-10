@@ -205,7 +205,7 @@
       balanceYear: dayjs().year()
     }
   })
-  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+  const { locationReady } = useHrMasterDeleteLocation<Entity>(
     {
       hr_leave_request: 'request',
       hr_leave_balance: 'balance',
@@ -215,7 +215,7 @@
     },
     activeEntity,
     tableState.searchQuery,
-    () => void tableQueryRef.value?.refreshData(),
+    tableQueryRef,
     () => {
       tableState.searchQuery.balanceYear = undefined
     }
@@ -686,7 +686,6 @@
   }
 
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
-    markRows(rows)
     tableOverview.total = response.total ?? 0
     tableOverview.reasonAccess = Boolean('reasonAccess' in response && response.reasonAccess)
   }

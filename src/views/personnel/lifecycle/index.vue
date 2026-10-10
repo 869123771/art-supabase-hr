@@ -198,7 +198,7 @@
   const tableState = reactive<{ searchQuery: Api.Hr.LifecycleSearchParams }>({
     searchQuery: { tenantId: '', status: '', keyword: '', caseId: '', templateId: '' }
   })
-  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+  const { locationReady } = useHrMasterDeleteLocation<Entity>(
     {
       hr_lifecycle_case: 'case',
       hr_lifecycle_task: 'task',
@@ -207,7 +207,7 @@
     },
     activeEntity,
     tableState.searchQuery,
-    () => void tableQueryRef.value?.refreshData()
+    tableQueryRef
   )
   const overview = reactive<Api.Hr.LifecycleOverview>({
     activeCaseCount: 0,
@@ -862,7 +862,6 @@
   const fetchTableData = async (params: TableParams) => {
     const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
     const response = await fetchLifecycleRecords(activeEntity.value, { ...params, from, to })
-    markRows(response.data)
     return response
   }
   const loadReferences = async () => {

@@ -233,7 +233,7 @@
   const tableState = reactive<{ searchQuery: Api.Hr.LearningSearchParams }>({
     searchQuery: { tenantId: '', status: '', keyword: '' }
   })
-  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+  const { locationReady } = useHrMasterDeleteLocation<Entity>(
     {
       hr_training_plan: 'plan',
       hr_learning_course: 'course',
@@ -244,7 +244,7 @@
     },
     activeEntity,
     tableState.searchQuery,
-    () => void tableQueryRef.value?.refreshData()
+    tableQueryRef
   )
   const overview = reactive<Api.Hr.LearningOverview>({
     publishedCourseCount: 0,
@@ -1038,7 +1038,6 @@
     return fetchLearningRecords(activeEntity.value, { ...params, from, to })
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
-    markRows(rows)
     tableTotal.value = response.total ?? 0
   }
   const refreshOverview = async (): Promise<void> => {

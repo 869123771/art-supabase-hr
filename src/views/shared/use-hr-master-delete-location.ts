@@ -1,15 +1,17 @@
-import { computed, nextTick, ref, watch, type Ref } from 'vue'
+import { computed, nextTick, watch, type ComputedRef, type Ref } from 'vue'
 import { useRoute } from 'vue-router'
+import type { ArtTableQueryExpose } from '@/components/core/tables/art-table-query/index.vue'
+import { hasLocatedRecord } from '@/components/business/master-delete-processing-notice/record-location'
 
+/** 人事实体与筛选规则在此管理；记录是否已找到只读取公共表格已接受的结果。 */
 export function useHrMasterDeleteLocation<Entity extends string>(
   entityByDependency: Partial<Record<string, Entity>>,
   activeEntity: Ref<Entity>,
   searchQuery: { keyword?: string; status?: string },
-  refresh: () => void,
+  table: Ref<Pick<ArtTableQueryExpose, 'dataState' | 'refreshData'> | undefined>,
   resetFilters?: () => void
-) {
+): { locationReady: ComputedRef<boolean> } {
   const route = useRoute()
-  const locationReady = ref(false)
   const targetEntity = computed(() => {
     const dependencyCode = route.query.dependencyCode
     return typeof dependencyCode === 'string' && Object.hasOwn(entityByDependency, dependencyCode)
@@ -17,8 +19,17 @@ export function useHrMasterDeleteLocation<Entity extends string>(
       : undefined
   })
 
-  watch(activeEntity, () => {
-    locationReady.value = false
+  const locationReady = computed(() => {
+    const state = table.value?.dataState
+    const recordId = route.query.recordId
+    return Boolean(
+      route.query.fromMasterDelete === '1' &&
+      targetEntity.value !== undefined &&
+      activeEntity.value === targetEntity.value &&
+      typeof recordId === 'string' &&
+      state &&
+      hasLocatedRecord(state.rows.value, recordId, state.loading.value, state.error.value)
+    )
   })
 
   watch(
@@ -33,7 +44,6 @@ export function useHrMasterDeleteLocation<Entity extends string>(
       onCleanup(() => {
         cancelled = true
       })
-      locationReady.value = false
       if (route.query.fromMasterDelete !== '1') return
 
       const dependencyCode = route.query.dependencyCode
@@ -58,21 +68,11 @@ export function useHrMasterDeleteLocation<Entity extends string>(
         searchQuery.keyword = keyword
         searchQuery.status = ''
         resetFilters?.()
-        refresh()
+        void table.value?.refreshData()
       })
     },
     { immediate: true }
   )
 
-  const markRows = (rows: Array<{ id?: string }>): void => {
-    const recordId = route.query.recordId
-    locationReady.value =
-      route.query.fromMasterDelete === '1' &&
-      targetEntity.value !== undefined &&
-      activeEntity.value === targetEntity.value &&
-      typeof recordId === 'string' &&
-      rows.some((row) => row.id === recordId)
-  }
-
-  return { locationReady, markRows }
+  return { locationReady }
 }

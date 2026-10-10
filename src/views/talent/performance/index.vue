@@ -259,7 +259,7 @@
   const tableState = reactive<{ searchQuery: Api.Hr.PerformanceSearchParams }>({
     searchQuery: { tenantId: '', status: '', keyword: '', cycleId: '', sessionId: '' }
   })
-  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+  const { locationReady } = useHrMasterDeleteLocation<Entity>(
     {
       hr_performance_cycle: 'cycle',
       hr_performance_review: 'review',
@@ -269,7 +269,7 @@
     },
     activeEntity,
     tableState.searchQuery,
-    () => void tableQueryRef.value?.refreshData(),
+    tableQueryRef,
     () => Object.assign(tableState.searchQuery, { cycleId: '', sessionId: '' })
   )
   const overview = reactive<Api.Hr.PerformanceOverview>({
@@ -1019,7 +1019,6 @@
   const fetchTableData = async (params: TableParams) => {
     const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
     const response = await fetchPerformanceRecords(activeEntity.value, { ...params, from, to })
-    markRows(response.data)
     return response
   }
   const loadReferences = async (): Promise<void> => {

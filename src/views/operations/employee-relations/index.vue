@@ -223,11 +223,11 @@
   const tableState = reactive<{ searchQuery: Api.Hr.EmployeeRelationSearchParams }>({
     searchQuery: { keyword: '', status: '', caseType: '', severity: '', tenantId: '' }
   })
-  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+  const { locationReady } = useHrMasterDeleteLocation<Entity>(
     { hr_employee_relation_case: 'case', hr_employee_relation_action: 'action' },
     activeEntity,
     tableState.searchQuery,
-    () => void tableQueryRef.value?.refreshData(),
+    tableQueryRef,
     () => {
       tableState.searchQuery.caseType = ''
       tableState.searchQuery.severity = ''
@@ -772,7 +772,6 @@
     return fetchEmployeeRelationsRecords(activeEntity.value, { ...params, from, to })
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
-    markRows(rows)
     tableTotal.value = response.total ?? 0
   }
   const refreshOverview = async (): Promise<void> => {

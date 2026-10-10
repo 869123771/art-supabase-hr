@@ -70,7 +70,6 @@
           emptyText: `暂无${activeTab.label}`,
           emptyDescription: activeTab.emptyDescription
         }"
-        :on-success="handleTableSuccess"
         focusable
       />
 
@@ -92,8 +91,7 @@
   import type { SearchFormItem } from '@/components/core/forms/art-search-bar/index.vue'
   import type {
     ArtTableQueryExpose,
-    ArtTableQueryHeaderAction,
-    ArtTableQueryProps
+    ArtTableQueryHeaderAction
   } from '@/components/core/tables/art-table-query/index.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
@@ -226,7 +224,7 @@
       periodMonth: dayjs().startOf('month').format('YYYY-MM-DD')
     }
   })
-  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+  const { locationReady } = useHrMasterDeleteLocation<Entity>(
     {
       hr_attendance_record: 'record',
       hr_shift_assignment: 'assignment',
@@ -236,7 +234,7 @@
     },
     activeEntity,
     tableState.searchQuery,
-    () => void tableQueryRef.value?.refreshData(),
+    tableQueryRef,
     () => {
       tableState.searchQuery.periodMonth = ''
     }
@@ -909,7 +907,6 @@
     const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
     return fetchTimeAttendanceRecords(activeEntity.value, { ...params, from, to })
   }
-  const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows) => markRows(rows)
   const refreshOverview = async () => {
     const response = await fetchTimeAttendanceOverview(tableState.searchQuery.tenantId)
     if (response.data) Object.assign(overview, response.data)

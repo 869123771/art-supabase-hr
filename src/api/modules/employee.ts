@@ -1,6 +1,6 @@
 import { buildSupabaseRpcRange } from '@/utils/supabase'
 import { normalizeNullableText } from '@/utils/form/normalize'
-import { useSupabase } from '@/hooks'
+import { useSupabase } from '@/hooks/core/useSupabase'
 import TreeUtils from '@/utils/tree'
 
 type Employee = Api.Hr.Employee

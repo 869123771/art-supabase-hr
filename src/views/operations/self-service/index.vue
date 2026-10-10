@@ -205,11 +205,11 @@
   })
 
   const managerView = computed(() => overview.managerView || isPlatformSuper.value)
-  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+  const { locationReady } = useHrMasterDeleteLocation<Entity>(
     { hr_self_service_request: 'request', hr_service_catalog: 'service' },
     activeEntity,
     tableState.searchQuery,
-    () => void tableQueryRef.value?.refreshData(),
+    tableQueryRef,
     () => {
       tableState.searchQuery.category = ''
       tableState.searchQuery.scope = managerView.value ? 'team' : 'mine'
@@ -770,7 +770,6 @@
   const fetchTableData = async (params: TableParams) => {
     const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
     const response = await fetchServiceDeliveryRecords(activeEntity.value, { ...params, from, to })
-    markRows(response.data)
     return response
   }
   const refreshOverview = async () => {

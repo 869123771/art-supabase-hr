@@ -1,6 +1,6 @@
 import { buildOrIlikeFilter } from '@/utils/supabase/search'
 import { omit } from 'lodash-es'
-import { useSupabase } from '@/hooks'
+import { useSupabase } from '@/hooks/core/useSupabase'
 import { useTenantScopeStore } from '@/store/modules/tenant-scope'
 import { useUserStore } from '@/store/modules/user'
 import { resolveTenantReadTargetId } from '@/utils/tenant-scope-access-policy'

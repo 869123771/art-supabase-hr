@@ -9,7 +9,11 @@
     empty-description="请返回员工列表重新选择，或刷新后重试。"
     @retry="loadPage"
   >
-    <MasterDeleteProcessingNotice :location-ready="profile?.id === route.query.recordId" />
+    <MasterDeleteProcessingNotice
+      :record-rows="profile ? [profile] : []"
+      :record-loading="page.loading"
+      :record-error="Boolean(page.error)"
+    />
     <ArtPageHeader
       :title="profile?.employeeName || '员工档案详情'"
       :subtitle="profile?.employeeNo || '--'"

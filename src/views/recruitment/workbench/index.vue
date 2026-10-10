@@ -222,7 +222,7 @@
   const tableState = reactive<{ searchQuery: Api.Hr.RecruitmentSearchParams }>({
     searchQuery: { tenantId: '', status: '', keyword: '' }
   })
-  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+  const { locationReady } = useHrMasterDeleteLocation<Entity>(
     {
       hr_recruitment_requisition: 'requisition',
       hr_candidate: 'candidate',
@@ -230,7 +230,7 @@
     },
     activeEntity,
     tableState.searchQuery,
-    () => void tableQueryRef.value?.refreshData()
+    tableQueryRef
   )
   const overview = reactive<Api.Hr.RecruitmentOverview>({
     activeRequisitionCount: 0,
@@ -1123,7 +1123,6 @@
     const { from, to } = buildSupabasePageRange(params as TableParams)
     const response = await fetchRecruitmentRecords(activeEntity.value, { ...params, from, to })
     sensitiveAccess.value = response.sensitiveAccess
-    markRows(response.data)
     return response
   }
   const refreshOverview = async (): Promise<void> => {

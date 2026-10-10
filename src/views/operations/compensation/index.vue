@@ -193,7 +193,7 @@
   const tableState = reactive<{ searchQuery: Api.Hr.CompensationSearchParams }>({
     searchQuery: { tenantId: '', status: '', keyword: '' }
   })
-  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+  const { locationReady } = useHrMasterDeleteLocation<Entity>(
     {
       hr_employee_compensation: 'employee',
       hr_salary_band: 'band',
@@ -202,7 +202,7 @@
     },
     activeEntity,
     tableState.searchQuery,
-    () => void tableQueryRef.value?.refreshData()
+    tableQueryRef
   )
   const overview = reactive<Api.Hr.CompensationOverview>({
     employeeCount: 0,
@@ -636,7 +636,6 @@
     return fetchCompensationRecords(activeEntity.value, { ...params, from, to })
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
-    markRows(rows)
     tableOverview.total = response.total ?? 0
     tableOverview.amountAccess = Boolean(
       'amountAccess' in response && (response as { amountAccess?: boolean }).amountAccess

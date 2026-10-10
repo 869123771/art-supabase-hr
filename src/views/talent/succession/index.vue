@@ -201,7 +201,7 @@
   const tableState = reactive<{ searchQuery: Api.Hr.SuccessionSearchParams }>({
     searchQuery: { tenantId: '', status: '', keyword: '' }
   })
-  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+  const { locationReady } = useHrMasterDeleteLocation<Entity>(
     {
       hr_succession_plan: 'plan',
       hr_succession_candidate: 'candidate',
@@ -209,7 +209,7 @@
     },
     activeEntity,
     tableState.searchQuery,
-    () => void tableQueryRef.value?.refreshData()
+    tableQueryRef
   )
   const overview = reactive<Api.Hr.SuccessionOverview>({
     activePlanCount: 0,
@@ -765,7 +765,6 @@
   const fetchTableData = async (params: TableParams) => {
     const { from, to } = buildSupabasePageRange({ current: params.current, size: params.size })
     const response = await fetchSuccessionRecords(activeEntity.value, { ...params, from, to })
-    markRows(response.data)
     return response
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (_rows, response) => {

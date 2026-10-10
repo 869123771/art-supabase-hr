@@ -261,14 +261,14 @@
   const tableState = reactive<{ searchQuery: Api.Hr.InternalMobilitySearchParams }>({
     searchQuery: { keyword: '', status: '', tenantId: '' }
   })
-  const { locationReady, markRows } = useHrMasterDeleteLocation<Entity>(
+  const { locationReady } = useHrMasterDeleteLocation<Entity>(
     {
       hr_internal_mobility_application: 'application',
       hr_internal_opportunity: 'opportunity'
     },
     activeEntity,
     tableState.searchQuery,
-    () => void tableQueryRef.value?.refreshData()
+    tableQueryRef
   )
   const overview = reactive<Api.Hr.InternalMobilityOverview>({
     openOpportunityCount: 0,
@@ -834,7 +834,6 @@
       to,
       opportunityId: activeEntity.value === 'application' ? focusedOpportunity.value?.id : undefined
     })
-    markRows(response.data)
     return response
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (_rows, response) => {

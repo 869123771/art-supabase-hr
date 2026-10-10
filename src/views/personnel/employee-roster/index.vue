@@ -1,8 +1,8 @@
 <template>
   <div class="hr-roster-page business-workspace-page art-full-height">
     <MasterDeleteProcessingNotice
-      :location-ready="locationReady"
-      action-hint="当前花名册已定位到关联员工；请核对任职记录，处理完成后返回原页面重新检查。"
+      :table="tableQueryRef"
+      action-hint="请核对关联员工的任职记录，处理完成后返回原页面重新检查。"
     />
     <BusinessWorkspaceHeader
       class="hr-roster-page__overview"
@@ -180,11 +180,9 @@
     hireDateRange: [],
     keyword: ''
   })
-  const locationReady = ref(false)
   watch(
     () => route.query.recordId,
     (recordId) => {
-      locationReady.value = false
       searchForm.value.recordId = typeof recordId === 'string' ? recordId : undefined
       selectedOrganizationKey.value = ALL_ORGANIZATIONS_KEY
       void tableQueryRef.value?.refreshData()
@@ -432,9 +430,6 @@
     return result
   }
   const handleTableSuccess: NonNullable<ArtTableQueryProps['onSuccess']> = (rows, response) => {
-    locationReady.value = Boolean(
-      searchForm.value.recordId && rows.some((row) => row.id === searchForm.value.recordId)
-    )
     overview.rows = rows.map((row) => ({
       employmentStatus: row.employmentStatus,
       account:
