@@ -387,7 +387,7 @@
           color-mix(in srgb, var(--theme-color) 10%, transparent),
           transparent 34%
         ),
-        color-mix(in srgb, var(--theme-color) 4%, var(--art-main-bg-color));
+        color-mix(in srgb, var(--theme-color) 4%, var(--default-box-color));
       border: 1px solid color-mix(in srgb, var(--theme-color) 16%, var(--art-card-border));
       border-radius: calc(var(--el-border-radius-base) + 5px);
     }
@@ -424,14 +424,14 @@
         overflow: hidden;
         text-overflow: ellipsis;
         font-size: 18px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
         white-space: nowrap;
       }
 
       p {
         margin: 5px 0 0;
         font-size: 12px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 
@@ -459,7 +459,7 @@
       }
 
       strong {
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       p {
@@ -482,13 +482,13 @@
       div {
         min-width: 0;
         padding: 13px;
-        background: var(--art-main-bg-color);
+        background: var(--default-box-color);
       }
 
       dt,
       small {
         font-size: 11px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
 
       dd {
@@ -496,14 +496,14 @@
         overflow: hidden;
         text-overflow: ellipsis;
         font-weight: 700;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
         white-space: nowrap;
       }
     }
 
     &__section {
       padding: 16px;
-      background: var(--art-main-bg-color);
+      background: var(--default-box-color);
       border: 1px solid var(--art-card-border);
       border-radius: calc(var(--el-border-radius-base) + 3px);
 
@@ -524,13 +524,13 @@
         }
 
         strong {
-          color: var(--art-text-gray-900);
+          color: var(--el-text-color-primary);
         }
 
         small {
           margin-top: 2px;
           font-size: 11px;
-          color: var(--art-text-gray-600);
+          color: var(--el-text-color-secondary);
         }
       }
     }
@@ -560,7 +560,7 @@
           height: 28px;
           font-size: 11px;
           font-weight: 700;
-          color: var(--art-text-gray-600);
+          color: var(--el-text-color-secondary);
           background: var(--art-gray-200);
           border-radius: 50%;
         }
@@ -579,18 +579,18 @@
 
         strong {
           font-size: 12px;
-          color: var(--art-text-gray-800);
+          color: var(--el-text-color-primary);
         }
 
         small {
           margin-top: 3px;
           font-size: 10px;
-          color: var(--art-text-gray-600);
+          color: var(--el-text-color-secondary);
         }
 
         &.is-complete,
         &.is-current {
-          background: color-mix(in srgb, var(--theme-color) 7%, var(--art-main-bg-color));
+          background: color-mix(in srgb, var(--theme-color) 7%, var(--default-box-color));
 
           > span {
             color: var(--theme-color);
@@ -624,7 +624,7 @@
         margin: 0;
         font-size: 13px;
         line-height: 1.7;
-        color: var(--art-text-gray-800);
+        color: var(--el-text-color-primary);
         white-space: pre-wrap;
       }
     }
@@ -663,7 +663,7 @@
         > span {
           margin-top: 3px;
           font-size: 9px;
-          color: var(--art-text-gray-500);
+          color: var(--el-text-color-secondary);
 
           &.is-in_progress {
             color: var(--theme-color);
@@ -674,7 +674,7 @@
           }
 
           &.is-cancelled {
-            color: var(--art-text-gray-500);
+            color: var(--el-text-color-secondary);
           }
         }
 
@@ -686,7 +686,7 @@
         }
 
         strong {
-          color: var(--art-text-gray-900);
+          color: var(--el-text-color-primary);
         }
 
         p,
@@ -694,7 +694,7 @@
           margin: 4px 0 0;
           font-size: 11px;
           line-height: 1.5;
-          color: var(--art-text-gray-600);
+          color: var(--el-text-color-secondary);
         }
       }
     }
@@ -712,14 +712,14 @@
       }
 
       article strong {
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       article span,
       article small,
       article p {
         font-size: 11px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
 
       article small {

@@ -1022,7 +1022,7 @@
           color-mix(in srgb, var(--theme-color) 8%, transparent),
           transparent 30%
         ),
-        var(--art-main-bg-color);
+        var(--default-box-color);
       border: 1px solid color-mix(in srgb, var(--theme-color) 11%, var(--art-card-border));
       border-radius: calc(var(--el-border-radius-base) + 6px);
       box-shadow: 0 10px 30px color-mix(in srgb, var(--art-gray-900) 4%, transparent);
@@ -1049,13 +1049,13 @@
 
       strong {
         font-size: 15px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       small {
         margin-top: 3px;
         font-size: 12px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 
@@ -1090,7 +1090,7 @@
       border-radius: 999px;
 
       &.is-restricted {
-        color: var(--art-text-gray-700);
+        color: var(--el-text-color-regular);
         background: var(--art-gray-100);
         border-color: var(--art-card-border);
       }
@@ -1118,12 +1118,12 @@
         border-radius: calc(var(--el-border-radius-base) + 2px);
 
         &.is-current {
-          background: color-mix(in srgb, var(--theme-color) 7%, var(--art-main-bg-color));
+          background: color-mix(in srgb, var(--theme-color) 7%, var(--default-box-color));
           border-color: color-mix(in srgb, var(--theme-color) 28%, var(--art-card-border));
         }
 
         &.is-risk {
-          background: color-mix(in srgb, var(--el-color-danger) 5%, var(--art-main-bg-color));
+          background: color-mix(in srgb, var(--el-color-danger) 5%, var(--default-box-color));
           border-color: color-mix(in srgb, var(--el-color-danger) 18%, var(--art-card-border));
 
           b {
@@ -1146,13 +1146,13 @@
 
         strong {
           font-size: 12px;
-          color: var(--art-text-gray-900);
+          color: var(--el-text-color-primary);
         }
 
         small {
           margin-top: 3px;
           font-size: 10px;
-          color: var(--art-text-gray-600);
+          color: var(--el-text-color-secondary);
         }
 
         b {
@@ -1191,7 +1191,7 @@
       min-width: 0;
       padding: 11px 13px;
       margin-top: 10px;
-      background: color-mix(in srgb, var(--theme-color) 3.5%, var(--art-main-bg-color));
+      background: color-mix(in srgb, var(--theme-color) 3.5%, var(--default-box-color));
       border: 1px solid color-mix(in srgb, var(--theme-color) 12%, var(--art-card-border));
       border-radius: calc(var(--el-border-radius-base) + 2px);
 
@@ -1219,7 +1219,7 @@
 
       > div strong {
         flex: 0 0 auto;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       > div em {
@@ -1227,7 +1227,7 @@
         text-overflow: ellipsis;
         font-size: 12px;
         font-style: normal;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
         white-space: nowrap;
       }
 
@@ -1245,7 +1245,7 @@
         align-items: baseline;
         min-width: 104px;
         padding: 7px 10px;
-        background: var(--art-main-bg-color);
+        background: var(--default-box-color);
         border: 1px solid var(--art-card-border);
         border-radius: var(--el-border-radius-base);
 
@@ -1260,14 +1260,14 @@
 
       dt {
         font-size: 11px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
 
       dd {
         margin: 0;
         font-size: 17px;
         font-weight: 700;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
     }
 
@@ -1285,7 +1285,7 @@
       margin-top: 12px;
       font-size: 11px;
       line-height: 1.55;
-      color: var(--art-text-gray-600);
+      color: var(--el-text-color-secondary);
       border-top: 1px dashed var(--art-card-border);
 
       :deep(.art-svg-icon) {
@@ -1306,7 +1306,7 @@
       > span {
         overflow: hidden;
         text-overflow: ellipsis;
-        color: var(--art-text-gray-800);
+        color: var(--el-text-color-primary);
         white-space: nowrap;
       }
     }

@@ -807,8 +807,8 @@
       padding: 10px 12px;
       font-size: 12px;
       line-height: 1.55;
-      color: var(--art-text-gray-650);
-      background: var(--art-main-bg-color);
+      color: var(--el-text-color-secondary);
+      background: var(--default-box-color);
       border: 1px dashed var(--art-card-border);
       border-radius: 10px;
 

@@ -860,7 +860,7 @@
     &__item {
       min-width: 0;
       padding: 14px;
-      background: color-mix(in srgb, var(--art-main-bg-color) 68%, transparent);
+      background: color-mix(in srgb, var(--default-box-color) 68%, transparent);
       border: 1px solid var(--art-border-color);
       border-radius: 10px;
     }

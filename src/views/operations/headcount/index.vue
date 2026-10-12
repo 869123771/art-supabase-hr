@@ -886,11 +886,11 @@
       }
 
       strong {
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       small {
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 
@@ -928,7 +928,7 @@
       align-items: stretch;
       min-width: 0;
       padding: 14px 16px;
-      background: color-mix(in srgb, var(--el-color-primary) 4%, var(--art-main-bg-color));
+      background: color-mix(in srgb, var(--el-color-primary) 4%, var(--default-box-color));
       border: 1px solid color-mix(in srgb, var(--el-color-primary) 13%, var(--art-card-border));
       border-radius: var(--el-border-radius-base);
     }
@@ -944,13 +944,13 @@
       > span:first-child,
       > small {
         font-size: 12px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
 
       > strong {
         overflow: hidden;
         text-overflow: ellipsis;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
         white-space: nowrap;
       }
     }
@@ -973,14 +973,14 @@
       small,
       span {
         font-size: 12px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
 
       strong {
         font-size: 24px;
         font-variant-numeric: tabular-nums;
         line-height: 1.05;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       .is-positive strong {
@@ -999,7 +999,7 @@
     &__bridge-operator {
       font-size: 18px !important;
       font-weight: 700;
-      color: var(--art-text-gray-500) !important;
+      color: var(--el-text-color-secondary) !important;
     }
 
     &__budget-signal {
@@ -1023,11 +1023,11 @@
       font-variant-numeric: tabular-nums;
 
       span {
-        color: var(--art-text-gray-700);
+        color: var(--el-text-color-regular);
       }
 
       small {
-        color: var(--art-text-gray-500);
+        color: var(--el-text-color-secondary);
       }
 
       strong {
@@ -1051,12 +1051,12 @@
 
       span {
         font-size: 12px;
-        color: var(--art-text-gray-700);
+        color: var(--el-text-color-regular);
       }
 
       strong {
         font-variant-numeric: tabular-nums;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
     }
 

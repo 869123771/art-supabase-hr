@@ -883,7 +883,7 @@
           color-mix(in srgb, var(--theme-color) 8%, transparent),
           transparent 34%
         ),
-        var(--art-main-bg-color);
+        var(--default-box-color);
       border: 1px solid color-mix(in srgb, var(--theme-color) 13%, var(--art-card-border));
       border-radius: calc(var(--el-border-radius-base) + 5px);
       box-shadow: 0 8px 24px color-mix(in srgb, var(--art-gray-900) 3.5%, transparent);
@@ -912,7 +912,7 @@
         margin-top: 1px;
         font-size: 16px;
         line-height: 1.35;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       small {
@@ -928,7 +928,7 @@
         text-overflow: ellipsis;
         font-size: 11px;
         font-style: normal;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
         white-space: nowrap;
       }
     }
@@ -973,7 +973,7 @@
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 0;
       overflow: hidden;
-      background: color-mix(in srgb, var(--theme-color) 2%, var(--art-main-bg-color));
+      background: color-mix(in srgb, var(--theme-color) 2%, var(--default-box-color));
       border: 1px solid var(--art-card-border);
       border-radius: calc(var(--el-border-radius-base) + 2px);
 
@@ -1002,7 +1002,7 @@
         }
 
         &:hover {
-          background: color-mix(in srgb, var(--theme-color) 4%, var(--art-main-bg-color));
+          background: color-mix(in srgb, var(--theme-color) 4%, var(--default-box-color));
         }
 
         &:focus-visible {
@@ -1013,17 +1013,17 @@
 
         &.is-active {
           z-index: 1;
-          background: color-mix(in srgb, var(--theme-color) 7%, var(--art-main-bg-color));
+          background: color-mix(in srgb, var(--theme-color) 7%, var(--default-box-color));
           box-shadow: inset 0 -3px 0 var(--theme-color);
         }
 
         &.is-active.is-warning {
-          background: color-mix(in srgb, var(--el-color-warning) 8%, var(--art-main-bg-color));
+          background: color-mix(in srgb, var(--el-color-warning) 8%, var(--default-box-color));
           box-shadow: inset 0 -3px 0 var(--el-color-warning);
         }
 
         &.is-active.is-danger {
-          background: color-mix(in srgb, var(--el-color-danger) 7%, var(--art-main-bg-color));
+          background: color-mix(in srgb, var(--el-color-danger) 7%, var(--default-box-color));
           box-shadow: inset 0 -3px 0 var(--el-color-danger);
         }
       }
@@ -1032,7 +1032,7 @@
     &__stage-index {
       font-size: 10px;
       font-weight: 800;
-      color: var(--art-text-gray-500);
+      color: var(--el-text-color-secondary);
       letter-spacing: 0.06em;
     }
 
@@ -1058,13 +1058,13 @@
 
       strong {
         font-size: 13px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       small {
         margin-top: 3px;
         font-size: 11px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
 
       em {
@@ -1076,7 +1076,7 @@
         font-weight: 700;
         color: var(--theme-color);
         white-space: nowrap;
-        background: color-mix(in srgb, var(--theme-color) 9%, var(--art-main-bg-color));
+        background: color-mix(in srgb, var(--theme-color) 9%, var(--default-box-color));
         border-radius: 999px;
       }
     }
@@ -1094,7 +1094,7 @@
     &__stage-arrow {
       display: grid;
       place-items: center;
-      color: var(--art-text-gray-500);
+      color: var(--el-text-color-secondary);
 
       :deep(.art-svg-icon) {
         font-size: 16px;
@@ -1115,7 +1115,7 @@
         align-items: center;
         min-width: 0;
         font-size: 12px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
 
         :deep(.art-svg-icon) {
           flex: 0 0 auto;
@@ -1124,7 +1124,7 @@
 
         strong {
           flex: 0 0 auto;
-          color: var(--art-text-gray-900);
+          color: var(--el-text-color-primary);
         }
 
         em {
@@ -1162,14 +1162,14 @@
 
       dt {
         font-size: 11px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
 
       dd {
         margin: 0;
         font-size: 14px;
         font-weight: 700;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       p {
@@ -1182,7 +1182,7 @@
         overflow: hidden;
         text-overflow: ellipsis;
         font-size: 11px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
         white-space: nowrap;
 
         :deep(.art-svg-icon) {
@@ -1206,7 +1206,7 @@
 
       small {
         margin-top: 4px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 
@@ -1217,7 +1217,7 @@
 
       span {
         font-size: 12px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 
@@ -1228,11 +1228,11 @@
 
       span {
         font-size: 12px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
 
       strong {
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
     }
 

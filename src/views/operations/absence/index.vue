@@ -384,7 +384,7 @@
     fixed: 'right',
     formatter: (row) => {
       if (activeEntity.value === 'ledger')
-        return <span class="text-xs text-[var(--art-text-gray-400)]">不可变</span>
+        return <span class="text-xs text-[var(--el-text-color-secondary)]">不可变</span>
       if (activeEntity.value === 'balance')
         return (
           <ArtButtonTable
@@ -821,7 +821,7 @@
           color-mix(in srgb, var(--theme-color) 8%, transparent),
           transparent 28%
         ),
-        var(--art-main-bg-color);
+        var(--default-box-color);
       border: 1px solid color-mix(in srgb, var(--theme-color) 11%, var(--art-card-border));
       border-radius: calc(var(--el-border-radius-base) + 5px);
       box-shadow: 0 8px 26px color-mix(in srgb, var(--art-gray-900) 4%, transparent);
@@ -841,13 +841,13 @@
 
       strong {
         font-size: 15px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       small {
         margin-top: 3px;
         font-size: 12px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 
@@ -887,14 +887,14 @@
       align-items: center;
       min-width: 0;
       padding: 10px 12px;
-      background: color-mix(in srgb, var(--theme-color) 3%, var(--art-main-bg-color));
+      background: color-mix(in srgb, var(--theme-color) 3%, var(--default-box-color));
       border: 1px solid var(--art-card-border);
       border-radius: calc(var(--el-border-radius-base) + 2px);
 
       > svg {
         flex: 0 0 auto;
         justify-self: center;
-        color: color-mix(in srgb, var(--theme-color) 58%, var(--art-text-gray-400));
+        color: color-mix(in srgb, var(--theme-color) 58%, var(--el-text-color-secondary));
       }
 
       > span {
@@ -928,12 +928,12 @@
 
       strong {
         font-size: 12px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       small {
         font-size: 10px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 
@@ -944,7 +944,7 @@
       padding-top: 10px;
       font-size: 11px;
       line-height: 1.5;
-      color: var(--art-text-gray-600);
+      color: var(--el-text-color-secondary);
       border-top: 1px dashed var(--art-card-border);
 
       svg {

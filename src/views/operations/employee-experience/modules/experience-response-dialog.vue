@@ -311,7 +311,7 @@
           color-mix(in srgb, var(--theme-color) 11%, transparent),
           transparent 36%
         ),
-        color-mix(in srgb, var(--theme-color) 4%, var(--art-main-bg-color));
+        color-mix(in srgb, var(--theme-color) 4%, var(--default-box-color));
       border: 1px solid color-mix(in srgb, var(--theme-color) 15%, var(--art-card-border));
       border-radius: calc(var(--el-border-radius-base) + 5px);
 
@@ -341,14 +341,14 @@
       h3 {
         margin: 2px 0 0;
         font-size: 18px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       p {
         margin: 4px 0 0;
         font-size: 12px;
         line-height: 1.55;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
 
       dl {
@@ -361,21 +361,21 @@
       dl > div {
         min-width: 88px;
         padding: 8px 10px;
-        background: color-mix(in srgb, var(--art-main-bg-color) 88%, transparent);
+        background: color-mix(in srgb, var(--default-box-color) 88%, transparent);
         border: 1px solid var(--art-card-border);
         border-radius: var(--el-border-radius-base);
       }
 
       dt {
         font-size: 10px;
-        color: var(--art-text-gray-500);
+        color: var(--el-text-color-secondary);
       }
 
       dd {
         margin: 2px 0 0;
         font-size: 13px;
         font-weight: 650;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
     }
 
@@ -429,7 +429,7 @@
       padding-top: 12px;
       font-size: 11px;
       line-height: 1.55;
-      color: var(--art-text-gray-500);
+      color: var(--el-text-color-secondary);
       border-top: 1px dashed var(--art-card-border);
     }
   }

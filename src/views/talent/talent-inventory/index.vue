@@ -446,17 +446,17 @@
       border-radius: var(--el-border-radius-base);
 
       &.is-development {
-        background: color-mix(in srgb, var(--theme-color) 5%, var(--art-main-bg-color));
+        background: color-mix(in srgb, var(--theme-color) 5%, var(--default-box-color));
         border-color: color-mix(in srgb, var(--theme-color) 16%, var(--art-border-color));
       }
 
       &.is-performance {
-        background: color-mix(in srgb, var(--el-color-warning) 7%, var(--art-main-bg-color));
+        background: color-mix(in srgb, var(--el-color-warning) 7%, var(--default-box-color));
         border-color: color-mix(in srgb, var(--el-color-warning) 18%, var(--art-border-color));
       }
 
       &.is-model {
-        background: color-mix(in srgb, var(--art-gray-500) 5%, var(--art-main-bg-color));
+        background: color-mix(in srgb, var(--art-gray-500) 5%, var(--default-box-color));
       }
 
       > span:nth-child(2) {

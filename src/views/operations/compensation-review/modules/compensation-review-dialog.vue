@@ -600,7 +600,7 @@
       gap: 18px;
       align-items: center;
       padding: 14px 16px;
-      background: var(--art-main-bg-color);
+      background: var(--default-box-color);
       border: 1px solid var(--art-card-border);
       border-radius: calc(var(--el-border-radius-base) + 3px);
 
@@ -611,19 +611,19 @@
       small,
       dt {
         font-size: 11px;
-        color: var(--art-text-gray-500);
+        color: var(--el-text-color-secondary);
       }
 
       strong {
         margin-top: 3px;
         font-size: 16px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       span {
         margin-top: 3px;
         font-size: 12px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
 
       dl {
@@ -646,7 +646,7 @@
         text-overflow: ellipsis;
         font-size: 12px;
         font-weight: 700;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
         white-space: nowrap;
       }
     }

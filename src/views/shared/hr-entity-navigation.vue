@@ -77,7 +77,7 @@
       color: inherit;
       text-align: left;
       cursor: pointer;
-      background: color-mix(in srgb, var(--art-main-bg-color) 96%, transparent);
+      background: color-mix(in srgb, var(--default-box-color) 96%, transparent);
       border: 1px solid var(--art-card-border);
       border-radius: calc(var(--el-border-radius-base) + 2px);
       transition:
@@ -111,7 +111,7 @@
       }
 
       &.is-active {
-        background: color-mix(in srgb, var(--theme-color) 6%, var(--art-main-bg-color));
+        background: color-mix(in srgb, var(--theme-color) 6%, var(--default-box-color));
         border-color: color-mix(in srgb, var(--theme-color) 45%, var(--art-card-border));
         box-shadow: 0 7px 18px color-mix(in srgb, var(--theme-color) 9%, transparent);
 
@@ -156,18 +156,18 @@
       strong {
         font-size: 13px;
         font-weight: 650;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       small {
         margin-top: 4px;
         font-size: 11px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 
     &__arrow {
-      color: var(--art-text-gray-400);
+      color: var(--el-text-color-secondary);
       transition:
         color 160ms ease,
         transform 160ms ease;

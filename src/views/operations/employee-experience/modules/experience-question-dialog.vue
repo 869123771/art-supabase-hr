@@ -193,7 +193,7 @@
       gap: 12px;
       align-items: center;
       padding: 13px 15px;
-      background: color-mix(in srgb, var(--theme-color) 5%, var(--art-main-bg-color));
+      background: color-mix(in srgb, var(--theme-color) 5%, var(--default-box-color));
       border: 1px solid color-mix(in srgb, var(--theme-color) 14%, var(--art-card-border));
       border-radius: calc(var(--el-border-radius-base) + 4px);
 
@@ -214,21 +214,21 @@
 
       small {
         font-size: 10px;
-        color: var(--art-text-gray-500);
+        color: var(--el-text-color-secondary);
       }
 
       strong {
         margin-top: 1px;
         overflow: hidden;
         text-overflow: ellipsis;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
         white-space: nowrap;
       }
 
       p {
         margin: 2px 0 0;
         font-size: 11px;
-        color: var(--art-text-gray-500);
+        color: var(--el-text-color-secondary);
       }
     }
 

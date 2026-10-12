@@ -234,7 +234,7 @@
       gap: 14px;
       align-items: center;
       padding: 14px 16px;
-      background: var(--art-main-bg-color);
+      background: var(--default-box-color);
       border: 1px solid var(--art-border-color);
       border-radius: calc(var(--el-border-radius-base) + 4px);
     }
@@ -274,7 +274,7 @@
       p {
         margin: 6px 0 3px;
         font-size: 14px;
-        color: var(--art-text-gray-800);
+        color: var(--el-text-color-primary);
       }
 
       small {

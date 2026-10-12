@@ -399,7 +399,7 @@
           color-mix(in srgb, var(--theme-color) 12%, transparent),
           transparent 34%
         ),
-        color-mix(in srgb, var(--theme-color) 5%, var(--art-main-bg-color));
+        color-mix(in srgb, var(--theme-color) 5%, var(--default-box-color));
       border: 1px solid color-mix(in srgb, var(--theme-color) 18%, var(--art-card-border));
       border-radius: calc(var(--el-border-radius-base) + 6px);
     }
@@ -423,14 +423,14 @@
         overflow: hidden;
         text-overflow: ellipsis;
         font-size: 18px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
         white-space: nowrap;
       }
 
       p {
         margin: 5px 0 0;
         font-size: 12px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 
@@ -441,7 +441,7 @@
       height: 46px;
       font-size: 22px;
       color: var(--theme-color);
-      background: color-mix(in srgb, var(--theme-color) 11%, var(--art-main-bg-color));
+      background: color-mix(in srgb, var(--theme-color) 11%, var(--default-box-color));
       border: 1px solid color-mix(in srgb, var(--theme-color) 18%, transparent);
       border-radius: calc(var(--el-border-radius-base) + 4px);
     }
@@ -456,7 +456,7 @@
 
     &__summary {
       padding: 4px 16px;
-      background: var(--art-main-bg-color);
+      background: var(--default-box-color);
       border: 1px solid var(--art-card-border);
       border-radius: calc(var(--el-border-radius-base) + 4px);
 
@@ -479,7 +479,7 @@
       dt,
       small {
         font-size: 11px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
 
       dd {
@@ -488,14 +488,14 @@
         text-overflow: ellipsis;
         font-size: 13px;
         font-weight: 650;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
         white-space: nowrap;
       }
     }
 
     &__section {
       padding: 17px;
-      background: var(--art-main-bg-color);
+      background: var(--default-box-color);
       border: 1px solid var(--art-card-border);
       border-radius: calc(var(--el-border-radius-base) + 4px);
 
@@ -517,13 +517,13 @@
 
       > header strong {
         font-size: 13px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       > header small {
         margin-top: 2px;
         font-size: 11px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 
@@ -542,18 +542,18 @@
         grid-template-columns: 108px minmax(0, 1fr);
         gap: 10px;
         padding: 11px 12px;
-        background: var(--art-main-bg-color);
+        background: var(--default-box-color);
       }
 
       dt {
         font-size: 12px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
 
       dd {
         margin: 0;
         font-size: 12px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
         overflow-wrap: anywhere;
       }
     }
@@ -567,7 +567,7 @@
       margin-top: 12px;
       color: var(--theme-color);
       text-decoration: none;
-      background: color-mix(in srgb, var(--theme-color) 7%, var(--art-main-bg-color));
+      background: color-mix(in srgb, var(--theme-color) 7%, var(--default-box-color));
       border-radius: var(--el-border-radius-base);
     }
 
@@ -593,12 +593,12 @@
 
       strong {
         font-size: 13px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       article span {
         font-size: 11px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
 
       article small {
@@ -607,7 +607,7 @@
         align-items: center;
         width: fit-content;
         font-size: 11px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
 
       p {
@@ -615,7 +615,7 @@
         margin: 0;
         font-size: 12px;
         line-height: 1.6;
-        color: var(--art-text-gray-700);
+        color: var(--el-text-color-regular);
         white-space: pre-wrap;
         background: var(--art-gray-100);
         border-radius: var(--el-border-radius-base);

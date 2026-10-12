@@ -1151,7 +1151,7 @@
           color-mix(in srgb, var(--theme-color) 8%, transparent),
           transparent 34%
         ),
-        var(--art-main-bg-color);
+        var(--default-box-color);
       border: 1px solid color-mix(in srgb, var(--theme-color) 12%, var(--art-card-border));
       border-radius: calc(var(--el-border-radius-base) + 5px);
       box-shadow: 0 8px 24px color-mix(in srgb, var(--art-gray-900) 3.5%, transparent);
@@ -1186,7 +1186,7 @@
       strong {
         margin-top: 1px;
         font-size: 16px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       em {
@@ -1195,7 +1195,7 @@
         text-overflow: ellipsis;
         font-size: 11px;
         font-style: normal;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
         white-space: nowrap;
       }
     }
@@ -1244,7 +1244,7 @@
       margin: 0;
       overflow: hidden;
       list-style: none;
-      background: color-mix(in srgb, var(--theme-color) 2%, var(--art-main-bg-color));
+      background: color-mix(in srgb, var(--theme-color) 2%, var(--default-box-color));
       border: 1px solid var(--art-card-border);
       border-radius: calc(var(--el-border-radius-base) + 2px);
 
@@ -1264,16 +1264,16 @@
         }
 
         &.is-current {
-          background: color-mix(in srgb, var(--theme-color) 6%, var(--art-main-bg-color));
+          background: color-mix(in srgb, var(--theme-color) 6%, var(--default-box-color));
           box-shadow: inset 0 -3px 0 var(--theme-color);
         }
 
         &.is-protected {
-          background: color-mix(in srgb, var(--el-color-success) 5%, var(--art-main-bg-color));
+          background: color-mix(in srgb, var(--el-color-success) 5%, var(--default-box-color));
         }
 
         &.is-risk {
-          background: color-mix(in srgb, var(--el-color-danger) 5%, var(--art-main-bg-color));
+          background: color-mix(in srgb, var(--el-color-danger) 5%, var(--default-box-color));
 
           b {
             color: var(--el-color-danger);
@@ -1295,13 +1295,13 @@
 
         strong {
           font-size: 12px;
-          color: var(--art-text-gray-900);
+          color: var(--el-text-color-primary);
         }
 
         small {
           margin-top: 3px;
           font-size: 10px;
-          color: var(--art-text-gray-600);
+          color: var(--el-text-color-secondary);
         }
 
         b {
@@ -1340,7 +1340,7 @@
       min-width: 0;
       padding: 10px 12px;
       margin-top: 10px;
-      background: color-mix(in srgb, var(--theme-color) 3.5%, var(--art-main-bg-color));
+      background: color-mix(in srgb, var(--theme-color) 3.5%, var(--default-box-color));
       border: 1px solid color-mix(in srgb, var(--theme-color) 12%, var(--art-card-border));
       border-radius: calc(var(--el-border-radius-base) + 2px);
 
@@ -1368,7 +1368,7 @@
 
       > div strong {
         flex: 0 0 auto;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       > div em {
@@ -1376,7 +1376,7 @@
         text-overflow: ellipsis;
         font-size: 12px;
         font-style: normal;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
         white-space: nowrap;
       }
 
@@ -1394,7 +1394,7 @@
         align-items: baseline;
         min-width: 104px;
         padding: 6px 9px;
-        background: var(--art-main-bg-color);
+        background: var(--default-box-color);
         border: 1px solid var(--art-card-border);
         border-radius: var(--el-border-radius-base);
 
@@ -1413,7 +1413,7 @@
 
       dt {
         font-size: 11px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
 
       dd {
@@ -1421,7 +1421,7 @@
         font-size: 16px;
         font-weight: 750;
         font-variant-numeric: tabular-nums;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
     }
 
@@ -1439,7 +1439,7 @@
       margin-top: 11px;
       font-size: 11px;
       line-height: 1.55;
-      color: var(--art-text-gray-600);
+      color: var(--el-text-color-secondary);
       border-top: 1px dashed var(--art-card-border);
 
       :deep(.art-svg-icon) {
@@ -1463,11 +1463,11 @@
       strong {
         font-size: 16px;
         font-variant-numeric: tabular-nums;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       small {
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 
@@ -1479,7 +1479,7 @@
 
       strong {
         font-variant-numeric: tabular-nums;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
     }
 

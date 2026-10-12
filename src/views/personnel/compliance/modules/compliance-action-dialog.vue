@@ -471,7 +471,7 @@
       gap: 12px;
       align-items: center;
       padding: 14px;
-      background: color-mix(in srgb, var(--theme-color) 6%, var(--art-main-bg-color));
+      background: color-mix(in srgb, var(--theme-color) 6%, var(--default-box-color));
       border: 1px solid color-mix(in srgb, var(--theme-color) 16%, var(--art-card-border));
       border-radius: var(--art-control-radius);
 
@@ -499,7 +499,7 @@
         margin-top: 3px;
         overflow: hidden;
         text-overflow: ellipsis;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
         white-space: nowrap;
       }
 
@@ -507,7 +507,7 @@
         margin: 5px 0 0;
         font-size: 12px;
         line-height: 1.55;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
   }

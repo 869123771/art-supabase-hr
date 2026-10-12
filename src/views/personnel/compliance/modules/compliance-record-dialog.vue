@@ -505,8 +505,8 @@
       gap: 12px;
       align-items: flex-start;
       padding: 14px 16px;
-      color: var(--art-text-gray-700);
-      background: color-mix(in srgb, var(--theme-color) 7%, var(--art-main-bg-color));
+      color: var(--el-text-color-regular);
+      background: color-mix(in srgb, var(--theme-color) 7%, var(--default-box-color));
       border: 1px solid color-mix(in srgb, var(--theme-color) 18%, var(--art-card-border));
       border-radius: var(--art-control-radius);
 
@@ -523,7 +523,7 @@
       }
 
       strong {
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       span {
@@ -545,7 +545,7 @@
         gap: 6px;
         align-items: center;
         font-size: 11px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
         white-space: nowrap;
 
         :deep(.art-svg-icon) {

@@ -1119,7 +1119,7 @@
         strong {
           margin-top: 2px;
           font-size: 16px;
-          color: var(--art-text-gray-900);
+          color: var(--el-text-color-primary);
         }
 
         em {
@@ -1128,7 +1128,7 @@
           text-overflow: ellipsis;
           font-size: 12px;
           font-style: normal;
-          color: var(--art-text-gray-600);
+          color: var(--el-text-color-secondary);
           white-space: nowrap;
         }
       }
@@ -1141,7 +1141,7 @@
         margin-top: 14px;
         font-size: 11px;
         line-height: 1.55;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
         border-top: 1px solid var(--mobility-border);
 
         svg {
@@ -1219,13 +1219,13 @@
 
         strong {
           font-size: 12px;
-          color: var(--art-text-gray-900);
+          color: var(--el-text-color-primary);
         }
 
         small {
           margin-top: 3px;
           font-size: 10px;
-          color: var(--art-text-gray-500);
+          color: var(--el-text-color-secondary);
         }
 
         b {
@@ -1243,7 +1243,7 @@
       top: 6px;
       right: 8px;
       font-size: 9px;
-      color: var(--art-text-gray-400);
+      color: var(--el-text-color-secondary);
     }
 
     &__stage-icon {
@@ -1299,20 +1299,20 @@
 
         small {
           font-size: 9px;
-          color: var(--art-text-gray-500);
+          color: var(--el-text-color-secondary);
         }
 
         strong {
           margin-top: 1px;
           font-size: 12px;
-          color: var(--art-text-gray-800);
+          color: var(--el-text-color-primary);
         }
 
         em {
           margin-top: 2px;
           font-size: 10px;
           font-style: normal;
-          color: var(--art-text-gray-500);
+          color: var(--el-text-color-secondary);
         }
 
         &.is-restricted > span {
@@ -1348,13 +1348,13 @@
         strong {
           margin-top: 1px;
           font-size: 15px;
-          color: var(--art-text-gray-900);
+          color: var(--el-text-color-primary);
         }
 
         span {
           margin-top: 2px;
           font-size: 11px;
-          color: var(--art-text-gray-500);
+          color: var(--el-text-color-secondary);
         }
       }
     }
@@ -1368,7 +1368,7 @@
       padding: 0 10px;
       margin: 0 !important;
       font-size: 11px !important;
-      color: var(--art-text-gray-600) !important;
+      color: var(--el-text-color-secondary) !important;
       background: var(--art-gray-100);
       border-radius: 999px;
     }
@@ -1405,12 +1405,12 @@
 
       small {
         font-size: 9px;
-        color: var(--art-text-gray-500);
+        color: var(--el-text-color-secondary);
       }
 
       strong {
         font-size: 12px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       em {
@@ -1418,7 +1418,7 @@
         text-overflow: ellipsis;
         font-size: 10px;
         font-style: normal;
-        color: var(--art-text-gray-500);
+        color: var(--el-text-color-secondary);
         white-space: nowrap;
       }
     }
@@ -1437,7 +1437,7 @@
 
       span {
         font-size: 11px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 
@@ -1448,18 +1448,18 @@
         display: block;
         margin-bottom: 7px;
         font-size: 11px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
 
       strong {
         font-size: 14px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
     }
 
     &__locked {
       font-size: 11px;
-      color: var(--art-text-gray-400);
+      color: var(--el-text-color-secondary);
     }
   }
 

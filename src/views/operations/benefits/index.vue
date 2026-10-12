@@ -943,13 +943,13 @@
       }
 
       strong {
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       small {
         margin-top: 3px;
         font-size: 11px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 
@@ -1004,10 +1004,10 @@
         align-items: center;
         min-width: 0;
         padding: 14px;
-        background: var(--art-main-bg-color);
+        background: var(--default-box-color);
 
         &.is-current {
-          background: color-mix(in srgb, var(--theme-color) 7%, var(--art-main-bg-color));
+          background: color-mix(in srgb, var(--theme-color) 7%, var(--default-box-color));
         }
 
         &.is-complete .benefits-page__rail-icon {
@@ -1043,7 +1043,7 @@
           grid-column: 2;
           font-size: 11px;
           font-weight: 600;
-          color: var(--art-text-gray-700);
+          color: var(--el-text-color-regular);
         }
       }
     }
@@ -1054,7 +1054,7 @@
       right: 8px;
       font-size: 9px;
       font-weight: 700;
-      color: var(--art-text-gray-500);
+      color: var(--el-text-color-secondary);
     }
 
     &__rail-icon {
@@ -1094,7 +1094,7 @@
         text-overflow: ellipsis;
         font-size: 11px;
         font-style: normal;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
         white-space: nowrap;
       }
 
@@ -1111,7 +1111,7 @@
 
       dt {
         font-size: 10px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
 
       dd {
@@ -1119,7 +1119,7 @@
         font-size: 18px;
         font-weight: 700;
         font-variant-numeric: tabular-nums;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       .is-warning dd {
@@ -1137,7 +1137,7 @@
       align-items: flex-start;
       font-size: 11px;
       line-height: 1.55;
-      color: var(--art-text-gray-600);
+      color: var(--el-text-color-secondary);
     }
 
     &__operations {

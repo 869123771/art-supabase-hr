@@ -1197,7 +1197,7 @@
           color-mix(in srgb, var(--theme-color) 8%, transparent),
           transparent 28%
         ),
-        var(--art-main-bg-color);
+        var(--default-box-color);
       border: 1px solid color-mix(in srgb, var(--theme-color) 11%, var(--art-card-border));
       border-radius: calc(var(--el-border-radius-base) + 5px);
       box-shadow: 0 8px 26px color-mix(in srgb, var(--art-gray-900) 4%, transparent);
@@ -1240,7 +1240,7 @@
         overflow: hidden;
         text-overflow: ellipsis;
         font-size: 16px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
         white-space: nowrap;
       }
 
@@ -1250,7 +1250,7 @@
         text-overflow: ellipsis;
         font-size: 11px;
         font-style: normal;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
         white-space: nowrap;
       }
     }
@@ -1275,7 +1275,7 @@
       label {
         font-size: 12px;
         font-weight: 600;
-        color: var(--art-text-gray-700);
+        color: var(--el-text-color-regular);
         white-space: nowrap;
       }
 
@@ -1306,7 +1306,7 @@
         min-width: 0;
         min-height: 76px;
         padding: 11px;
-        background: var(--art-main-bg-color);
+        background: var(--default-box-color);
       }
 
       li::after {
@@ -1327,15 +1327,15 @@
       }
 
       li.is-current {
-        background: color-mix(in srgb, var(--theme-color) 7%, var(--art-main-bg-color));
+        background: color-mix(in srgb, var(--theme-color) 7%, var(--default-box-color));
       }
 
       li.is-complete {
-        background: color-mix(in srgb, var(--el-color-success) 6%, var(--art-main-bg-color));
+        background: color-mix(in srgb, var(--el-color-success) 6%, var(--default-box-color));
       }
 
       li.is-risk {
-        background: color-mix(in srgb, var(--el-color-danger) 6%, var(--art-main-bg-color));
+        background: color-mix(in srgb, var(--el-color-danger) 6%, var(--default-box-color));
       }
 
       li div {
@@ -1347,7 +1347,7 @@
         overflow: hidden;
         text-overflow: ellipsis;
         font-size: 12px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
         white-space: nowrap;
       }
 
@@ -1357,7 +1357,7 @@
         text-overflow: ellipsis;
         font-size: 10px;
         font-weight: 400;
-        color: var(--art-text-gray-500);
+        color: var(--el-text-color-secondary);
         letter-spacing: 0;
         white-space: nowrap;
       }
@@ -1369,7 +1369,7 @@
         text-overflow: ellipsis;
         font-size: 10px;
         font-weight: 600;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
         white-space: nowrap;
       }
     }
@@ -1379,7 +1379,7 @@
       padding-top: 4px;
       font-size: 9px;
       font-weight: 700;
-      color: var(--art-text-gray-400);
+      color: var(--el-text-color-secondary);
     }
 
     &__stage-icon {
@@ -1414,7 +1414,7 @@
         align-items: center;
         min-width: 0;
         padding: 11px 12px;
-        background: color-mix(in srgb, var(--theme-color) 3%, var(--art-main-bg-color));
+        background: color-mix(in srgb, var(--theme-color) 3%, var(--default-box-color));
         border: 1px solid var(--art-card-border);
         border-radius: calc(var(--el-border-radius-base) + 2px);
       }
@@ -1437,7 +1437,7 @@
       article small {
         font-size: 10px;
         font-weight: 600;
-        color: var(--art-text-gray-500);
+        color: var(--el-text-color-secondary);
         letter-spacing: 0;
       }
 
@@ -1446,7 +1446,7 @@
         overflow: hidden;
         text-overflow: ellipsis;
         font-size: 12px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
         white-space: nowrap;
       }
 
@@ -1456,7 +1456,7 @@
         text-overflow: ellipsis;
         font-size: 10px;
         font-style: normal;
-        color: var(--art-text-gray-500);
+        color: var(--el-text-color-secondary);
         white-space: nowrap;
       }
 
@@ -1476,7 +1476,7 @@
       }
 
       article.is-restricted > span {
-        color: var(--art-text-gray-500);
+        color: var(--el-text-color-secondary);
         background: var(--art-bg-color);
       }
     }
@@ -1489,8 +1489,8 @@
       padding: 18px;
       background: linear-gradient(
         115deg,
-        color-mix(in srgb, var(--theme-color) 8%, var(--art-main-bg-color)),
-        var(--art-main-bg-color)
+        color-mix(in srgb, var(--theme-color) 8%, var(--default-box-color)),
+        var(--default-box-color)
       );
       border: 1px dashed color-mix(in srgb, var(--theme-color) 30%, var(--art-card-border));
       border-radius: calc(var(--el-border-radius-base) + 4px);
@@ -1511,14 +1511,14 @@
 
       strong {
         font-size: 14px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       p {
         margin: 5px 0 0;
         font-size: 11px;
         line-height: 1.6;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 
@@ -1529,7 +1529,7 @@
       padding-top: 10px;
       font-size: 11px;
       line-height: 1.55;
-      color: var(--art-text-gray-500);
+      color: var(--el-text-color-secondary);
       border-top: 1px dashed var(--art-card-border);
 
       svg {
@@ -1566,13 +1566,13 @@
       > header strong {
         margin-top: 2px;
         font-size: 14px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       > header span:not(.review-page__result) {
         margin-top: 2px;
         font-size: 11px;
-        color: var(--art-text-gray-500);
+        color: var(--el-text-color-secondary);
       }
     }
 
@@ -1583,7 +1583,7 @@
       min-height: 28px;
       padding: 0 10px;
       font-size: 11px;
-      color: var(--art-text-gray-600);
+      color: var(--el-text-color-secondary);
       white-space: nowrap;
       background: var(--art-bg-color);
       border-radius: 999px;
@@ -1610,7 +1610,7 @@
 
       small {
         font-size: 10px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
         text-align: right;
       }
     }
@@ -1620,12 +1620,12 @@
       gap: 5px;
       align-items: center;
       font-size: 11px;
-      color: var(--art-text-gray-500);
+      color: var(--el-text-color-secondary);
     }
 
     &__locked {
       font-size: 11px;
-      color: var(--art-text-gray-400);
+      color: var(--el-text-color-secondary);
     }
 
     :deep(.art-table-query) {

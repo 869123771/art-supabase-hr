@@ -1023,7 +1023,7 @@
           color-mix(in srgb, var(--theme-color) 9%, transparent),
           transparent 30%
         ),
-        var(--art-main-bg-color);
+        var(--default-box-color);
       border: 1px solid color-mix(in srgb, var(--theme-color) 10%, var(--art-card-border));
       border-radius: calc(var(--el-border-radius-base) + 6px);
       box-shadow: 0 10px 30px color-mix(in srgb, var(--art-gray-900) 4%, transparent);
@@ -1050,13 +1050,13 @@
 
       strong {
         font-size: 15px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       small {
         margin-top: 3px;
         font-size: 12px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 
@@ -1111,7 +1111,7 @@
         align-items: center;
         min-height: 82px;
         padding: 12px;
-        background: color-mix(in srgb, var(--theme-color) 2.5%, var(--art-main-bg-color));
+        background: color-mix(in srgb, var(--theme-color) 2.5%, var(--default-box-color));
         border: 1px solid var(--art-card-border);
         border-radius: calc(var(--el-border-radius-base) + 3px);
 
@@ -1150,7 +1150,7 @@
           margin-top: -5px;
           font-size: 11px;
           font-weight: 600;
-          color: var(--art-text-gray-700);
+          color: var(--el-text-color-regular);
         }
       }
     }
@@ -1158,7 +1158,7 @@
     &__rail-index {
       font-size: 11px;
       font-weight: 700;
-      color: var(--art-text-gray-500);
+      color: var(--el-text-color-secondary);
     }
 
     &__rail-icon {
@@ -1174,7 +1174,7 @@
       justify-content: space-between;
       padding: 12px 14px;
       margin-top: 12px;
-      background: color-mix(in srgb, var(--theme-color) 3%, var(--art-main-bg-color));
+      background: color-mix(in srgb, var(--theme-color) 3%, var(--default-box-color));
       border: 1px solid var(--art-card-border);
       border-radius: var(--el-border-radius-base);
 
@@ -1208,7 +1208,7 @@
         text-overflow: ellipsis;
         font-size: 11px;
         font-style: normal;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
         white-space: nowrap;
       }
 
@@ -1229,14 +1229,14 @@
 
       dt {
         font-size: 10px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
 
       dd {
         margin: 2px 0 0;
         font-size: 18px;
         font-weight: 700;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       .is-danger dd {
@@ -1261,7 +1261,7 @@
       margin-top: 11px;
       font-size: 11px;
       line-height: 1.55;
-      color: var(--art-text-gray-600);
+      color: var(--el-text-color-secondary);
 
       :deep(.art-svg-icon) {
         flex: 0 0 auto;
@@ -1277,7 +1277,7 @@
 
       small {
         font-size: 11px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 

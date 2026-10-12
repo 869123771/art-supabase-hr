@@ -75,13 +75,13 @@
 
     strong {
       font-size: 12px;
-      color: var(--art-text-gray-900);
+      color: var(--el-text-color-primary);
     }
 
     span {
       flex: 0 0 auto;
       font-size: 10px;
-      color: var(--art-text-gray-500);
+      color: var(--el-text-color-secondary);
     }
 
     small {
@@ -90,7 +90,7 @@
       align-items: center;
       margin-top: 5px;
       font-size: 10px;
-      color: var(--art-text-gray-500);
+      color: var(--el-text-color-secondary);
     }
   }
 </style>

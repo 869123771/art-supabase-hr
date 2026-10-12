@@ -236,7 +236,7 @@
       gap: 12px;
       align-items: flex-start;
       padding: 14px 16px;
-      background: color-mix(in srgb, var(--theme-color) 7%, var(--art-main-bg-color));
+      background: color-mix(in srgb, var(--theme-color) 7%, var(--default-box-color));
       border: 1px solid color-mix(in srgb, var(--theme-color) 18%, var(--art-card-border));
       border-radius: var(--el-border-radius-base);
 
@@ -253,13 +253,13 @@
       }
 
       strong {
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       span {
         font-size: 13px;
         line-height: 1.6;
-        color: var(--art-text-gray-700);
+        color: var(--el-text-color-regular);
       }
     }
   }

@@ -1204,7 +1204,7 @@
           color-mix(in srgb, var(--theme-color) 8%, transparent),
           transparent 29%
         ),
-        var(--art-main-bg-color);
+        var(--default-box-color);
       border: 1px solid var(--art-card-border);
       border-radius: calc(var(--el-border-radius-base) + 4px);
       box-shadow: var(--art-box-shadow-xs);
@@ -1232,13 +1232,13 @@
 
       strong {
         font-size: 16px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       small {
         font-size: 12px;
         line-height: 1.6;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 
@@ -1257,7 +1257,7 @@
     &__journey-icon {
       width: 40px;
       height: 40px;
-      background: color-mix(in srgb, var(--theme-color) 9%, var(--art-main-bg-color));
+      background: color-mix(in srgb, var(--theme-color) 9%, var(--default-box-color));
       border: 1px solid color-mix(in srgb, var(--theme-color) 12%, transparent);
 
       :deep(.art-svg-icon) {
@@ -1292,7 +1292,7 @@
         min-width: 0;
         min-height: 68px;
         padding: 13px 16px;
-        background: color-mix(in srgb, var(--art-main-bg-color) 96%, var(--theme-color));
+        background: color-mix(in srgb, var(--default-box-color) 96%, var(--theme-color));
         border: 1px solid var(--art-card-border);
         border-radius: calc(var(--el-border-radius-base) + 2px);
       }
@@ -1312,12 +1312,12 @@
 
       strong {
         font-size: 13px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       small {
         font-size: 11px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 
@@ -1375,7 +1375,7 @@
       padding-top: 12px;
       font-size: 12px;
       line-height: 1.6;
-      color: var(--art-text-gray-600);
+      color: var(--el-text-color-secondary);
       border-top: 1px dashed var(--art-card-border);
 
       :deep(.art-svg-icon) {
@@ -1391,7 +1391,7 @@
 
       span {
         font-size: 12px;
-        color: var(--art-text-gray-700);
+        color: var(--el-text-color-regular);
       }
     }
 

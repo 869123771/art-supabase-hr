@@ -581,7 +581,7 @@
           color-mix(in srgb, var(--theme-color) 8%, transparent),
           transparent 34%
         ),
-        color-mix(in srgb, var(--theme-color) 2.5%, var(--art-main-bg-color));
+        color-mix(in srgb, var(--theme-color) 2.5%, var(--default-box-color));
       border: 1px solid color-mix(in srgb, var(--theme-color) 12%, var(--art-border-color));
       border-radius: calc(var(--el-border-radius-base) + 3px);
     }
@@ -664,7 +664,7 @@
         gap: 2px;
         min-width: 0;
         padding: 10px 11px;
-        background: color-mix(in srgb, var(--theme-color) 1.5%, var(--art-main-bg-color));
+        background: color-mix(in srgb, var(--theme-color) 1.5%, var(--default-box-color));
         border-right: 1px solid var(--art-border-color);
 
         &:last-child {
@@ -709,11 +709,11 @@
         align-items: center;
         min-width: 0;
         padding: 8px 10px;
-        background: var(--art-main-bg-color);
+        background: var(--default-box-color);
         border-right: 1px solid var(--art-border-color);
 
         &:first-child {
-          background: color-mix(in srgb, var(--theme-color) 5%, var(--art-main-bg-color));
+          background: color-mix(in srgb, var(--theme-color) 5%, var(--default-box-color));
         }
 
         &:last-child {

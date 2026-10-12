@@ -404,8 +404,8 @@
       padding: 14px;
       background: linear-gradient(
         120deg,
-        color-mix(in srgb, var(--theme-color) 5%, var(--art-main-bg-color)),
-        var(--art-main-bg-color) 55%
+        color-mix(in srgb, var(--theme-color) 5%, var(--default-box-color)),
+        var(--default-box-color) 55%
       );
       border: 1px solid color-mix(in srgb, var(--theme-color) 11%, var(--art-card-border));
       border-radius: calc(var(--el-border-radius-base) + 4px);
@@ -424,13 +424,13 @@
 
       > div strong {
         font-size: 14px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       > div small {
         margin-top: 3px;
         font-size: 12px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 

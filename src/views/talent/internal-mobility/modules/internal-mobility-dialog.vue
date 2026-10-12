@@ -660,14 +660,14 @@
       strong {
         margin-top: 2px;
         font-size: 16px;
-        color: var(--art-text-gray-900);
+        color: var(--el-text-color-primary);
       }
 
       p {
         margin: 3px 0 0;
         font-size: 12px;
         line-height: 1.55;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
       }
     }
 
@@ -692,7 +692,7 @@
 
       > span:last-child {
         font-size: 12px;
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
         white-space: nowrap;
       }
     }

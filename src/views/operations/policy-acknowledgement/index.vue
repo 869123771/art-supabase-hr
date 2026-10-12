@@ -897,7 +897,7 @@
     &__workspace strong {
       margin-top: 2px;
       font-size: 16px;
-      color: var(--art-text-gray-900);
+      color: var(--el-text-color-primary);
     }
 
     &__lifecycle-scroll {
@@ -912,7 +912,7 @@
       text-overflow: ellipsis;
       font-size: 12px;
       font-style: normal;
-      color: var(--art-text-gray-600);
+      color: var(--el-text-color-secondary);
       white-space: nowrap;
     }
 
@@ -963,7 +963,7 @@
       small {
         overflow: hidden;
         text-overflow: ellipsis;
-        color: var(--art-text-gray-500);
+        color: var(--el-text-color-secondary);
         letter-spacing: 0;
         white-space: nowrap;
       }
@@ -972,7 +972,7 @@
         grid-column: 2 / -1;
         font-size: 11px;
         font-weight: 600;
-        color: var(--art-text-gray-650);
+        color: var(--el-text-color-secondary);
       }
     }
 
@@ -980,7 +980,7 @@
       align-self: start;
       font-size: 9px;
       font-weight: 700;
-      color: var(--art-text-gray-400);
+      color: var(--el-text-color-secondary);
     }
 
     &__stage-icon {
@@ -1006,7 +1006,7 @@
       align-items: center;
       min-width: 0;
       padding: 12px;
-      background: var(--art-main-bg-color);
+      background: var(--default-box-color);
       border: 1px solid var(--policy-border);
       border-radius: 10px;
 
@@ -1027,7 +1027,7 @@
       }
 
       small {
-        color: var(--art-text-gray-500);
+        color: var(--el-text-color-secondary);
         letter-spacing: 0;
       }
 
@@ -1057,7 +1057,7 @@
       }
 
       &.is-restricted > span {
-        color: var(--art-text-gray-600);
+        color: var(--el-text-color-secondary);
         background: var(--art-gray-100);
       }
     }
@@ -1070,7 +1070,7 @@
       margin-top: 12px;
       font-size: 11px;
       line-height: 1.55;
-      color: var(--art-text-gray-600);
+      color: var(--el-text-color-secondary);
       border-top: 1px dashed var(--policy-border);
 
       svg {
@@ -1094,7 +1094,7 @@
       gap: 6px;
       align-items: center;
       font-size: 11px !important;
-      color: var(--art-text-gray-600) !important;
+      color: var(--el-text-color-secondary) !important;
     }
 
     &__focus {
@@ -1103,7 +1103,7 @@
       align-items: center;
       padding: 10px 12px;
       margin-top: 12px;
-      background: color-mix(in srgb, var(--theme-color) 5%, var(--art-main-bg-color));
+      background: color-mix(in srgb, var(--theme-color) 5%, var(--default-box-color));
       border: 1px solid color-mix(in srgb, var(--theme-color) 15%, var(--policy-border));
       border-radius: 10px;
 
