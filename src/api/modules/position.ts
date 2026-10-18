@@ -22,7 +22,10 @@ const organizationTreeUtils = new TreeUtils({
   childrenKey: 'children'
 })
 
-const pickPositionPayload = (position: Position): Record<string, unknown> => {
+const pickPositionPayload = (
+  position: Position,
+  includeTenant = false
+): Record<string, unknown> => {
   const payload: Record<string, unknown> = {
     organizationId: position.organizationId ?? null,
     jobProfileId: position.jobProfileId,
@@ -35,7 +38,7 @@ const pickPositionPayload = (position: Position): Record<string, unknown> => {
     sort: position.sort,
     description: position.description ?? null
   }
-  if (position.tenantId) payload.tenantId = position.tenantId
+  if (includeTenant && position.tenantId) payload.tenantId = position.tenantId
   return keysToSnakeDeep(payload)
 }
 
@@ -104,7 +107,8 @@ export async function fetchPositionOptions(
 
 export async function addPosition(position: Position) {
   return await responseHandle<string>(
-    () => supabase.rpc('hr_create_position_secure', { p_payload: pickPositionPayload(position) }),
+    () =>
+      supabase.rpc('hr_create_position_secure', { p_payload: pickPositionPayload(position, true) }),
     { showMessage: true, message: '岗位已创建', breakReturn: true }
   )
 }
