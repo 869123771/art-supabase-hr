@@ -43,10 +43,12 @@
               <template #prefix><ArtSvgIcon icon="ri:search-line" /></template>
             </ElInput>
             <ElRadioGroup v-model="activeScope" size="small" aria-label="人才盘点范围">
-              <ElRadioButton value="all">全部</ElRadioButton>
-              <ElRadioButton value="gap">存在缺口</ElRadioButton>
-              <ElRadioButton value="high">高绩效</ElRadioButton>
-              <ElRadioButton value="unassessed">待评估</ElRadioButton>
+              <ElRadioButton
+                v-for="option in scopeOptions"
+                :key="option.value"
+                :value="option.value"
+                >{{ option.label }}</ElRadioButton
+              >
             </ElRadioGroup>
           </div>
         </template>
@@ -187,6 +189,7 @@
 </template>
 
 <script setup lang="ts">
+  import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import type { ColumnOption } from '@/types'
   import ArtTable from '@/components/core/tables/art-table/index.vue'
@@ -217,6 +220,12 @@
   const errorMessage = ref('')
   const overview = ref<Api.Hr.TalentInventoryOverview | null>(null)
   const activeScope = ref<Scope>('all')
+  const configuredScopeOptions = useDictionaryOptions('hrTalentInventoryFilter')
+  const scopeOptions = computed(() =>
+    configuredScopeOptions.filter((option) =>
+      ['all', 'gap', 'high', 'unassessed'].includes(option.value)
+    )
+  )
   const keyword = ref('')
   const canViewEmployee = computed(() => hasAuth('Hr:Employee:View'))
   const tableColumns: ColumnOption<TalentRecord>[] = [

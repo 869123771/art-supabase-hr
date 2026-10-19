@@ -215,11 +215,12 @@
               <template #prefix><ArtSvgIcon icon="ri:search-line" /></template>
             </ElInput>
             <ElRadioGroup v-model="activeScope" size="small" aria-label="技能矩阵范围">
-              <ElRadioButton value="all">全部</ElRadioButton>
-              <ElRadioButton value="gap">有缺口</ElRadioButton>
-              <ElRadioButton value="ready">已就绪</ElRadioButton>
-              <ElRadioButton value="unassessed">待评估</ElRadioButton>
-              <ElRadioButton value="unmodelled">未建模</ElRadioButton>
+              <ElRadioButton
+                v-for="option in scopeOptions"
+                :key="option.value"
+                :value="option.value"
+                >{{ option.label }}</ElRadioButton
+              >
             </ElRadioGroup>
           </div>
         </template>
@@ -320,6 +321,7 @@
 </template>
 
 <script setup lang="ts">
+  import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import type { ColumnOption } from '@/types'
   import BusinessWorkspaceHeader, {
@@ -345,6 +347,12 @@
   const loading = ref(false)
   const errorMessage = ref('')
   const activeScope = ref<Scope>('all')
+  const configuredScopeOptions = useDictionaryOptions('hrSkillMatrixFilter')
+  const scopeOptions = computed(() =>
+    configuredScopeOptions.filter((option) =>
+      ['all', 'gap', 'ready', 'unassessed', 'unmodelled'].includes(option.value)
+    )
+  )
   const keyword = ref('')
   const currentPage = ref(1)
   const pageSize = 20

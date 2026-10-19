@@ -37,11 +37,12 @@
               <p>按风险紧急程度排序，数据更新时间：{{ generatedAt }}</p>
             </div>
             <ElRadioGroup v-model="activeKind" size="small">
-              <ElRadioButton value="all">全部</ElRadioButton>
-              <ElRadioButton value="contract">合同</ElRadioButton>
-              <ElRadioButton value="qualification">资质</ElRadioButton>
-              <ElRadioButton value="probation">试用期</ElRadioButton>
-              <ElRadioButton value="headcount">编制</ElRadioButton>
+              <ElRadioButton
+                v-for="option in riskFilterOptions"
+                :key="option.value"
+                :value="option.value"
+                >{{ option.label }}</ElRadioButton
+              >
             </ElRadioGroup>
           </header>
         </template>
@@ -79,6 +80,7 @@
 </template>
 
 <script setup lang="ts">
+  import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import { getFriendlySupabaseErrorMessage } from '@/utils/supabase'
   import ArtSectionCard from '@/components/core/surfaces/art-section-card/index.vue'
@@ -101,6 +103,12 @@
   const overview = ref<Api.Hr.WorkforceRiskOverview | null>(null)
   const errorMessage = ref('')
   const activeKind = ref<'all' | RiskKind>('all')
+  const configuredRiskFilterOptions = useDictionaryOptions('hrWorkforceRiskFilter')
+  const riskFilterOptions = computed(() =>
+    configuredRiskFilterOptions.filter((option) =>
+      ['all', 'contract', 'qualification', 'probation', 'headcount'].includes(option.value)
+    )
+  )
 
   const kindMeta: Record<RiskKind, { label: string; icon: string }> = {
     contract: { label: '劳动合同', icon: 'ri:file-shield-2-line' },

@@ -174,8 +174,12 @@
               /></ElFormItem>
               <ElFormItem label="学习形式"
                 ><ElRadioGroup v-model="item.fullTime"
-                  ><ElRadioButton :value="true">全日制</ElRadioButton
-                  ><ElRadioButton :value="false">非全日制</ElRadioButton></ElRadioGroup
+                  ><ElRadioButton
+                    v-for="option in fullTimeOptions"
+                    :key="String(option.value)"
+                    :value="option.value"
+                    >{{ option.label }}</ElRadioButton
+                  ></ElRadioGroup
                 ></ElFormItem
               >
               <ElFormItem label="证书编号"
@@ -567,6 +571,7 @@
   import { useUserStore } from '@/store/modules/user'
   import { useTenantScopeStore } from '@/store/modules/tenant-scope'
   import { useDocumentNumberRule } from '@/hooks/core/useDocumentNumberRule'
+  import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import {
     canEditField,
     canViewField,
@@ -575,6 +580,7 @@
   } from '@/utils/field-permission'
 
   defineOptions({ name: 'HrEmployeeProfile' })
+  const fullTimeOptions = useDictionaryOptions('hrFullTimeFlag', (value) => value === 'true')
 
   type EmployeeProfile = Api.Hr.EmployeeProfile
   type HistoryTabName = 'contracts' | 'educations' | 'workExperiences' | 'trainings' | 'rewards'
