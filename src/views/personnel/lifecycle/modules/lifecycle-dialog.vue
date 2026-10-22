@@ -147,6 +147,7 @@
   })
 
   const createInitialModel = (): FormModel => ({
+    id: undefined,
     tenantId: isPlatformSuper.value ? undefined : getUserInfo.value.tenantId,
     caseNo: '',
     handoffId: undefined,

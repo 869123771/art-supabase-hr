@@ -1,0 +1,1 @@
+var e=new Set([`/system/tenant`]);function t({isAllTenants:t,isPlatformSuper:n,routePath:r}){return t&&!n&&!e.has(r)}function n({effectiveTenantId:e,requestedTenantId:t,isPlatformSuper:n}){let r=e?.trim(),i=t?.trim();if(n&&!r)return i||null;if(!(!r||i&&i!==r))return r}export{t as n,n as t};

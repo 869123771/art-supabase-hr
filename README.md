@@ -4,13 +4,13 @@
   <p>从岗位编制和招聘入职，到考勤薪酬、绩效发展、员工服务与用工风险，沉淀一条连续的人才数据主线。</p>
 
   <p>
-    <a href="https://gitee.com/wangyanghub/art-supabase-hr">Gitee</a>
+    <a href="https://gitee.com/art-si/art-supabase-hr">Gitee</a>
     ·
-    <a href="https://github.com/869123771/art-supabase-hr">GitHub</a>
+    <a href="https://github.com/art-si/art-supabase-hr">GitHub</a>
     ·
-    <a href="https://gitee.com/wangyanghub/art-supabase-pro">主平台</a>
+    <a href="https://gitee.com/art-si/art-supabase-pro">主平台</a>
     ·
-    <a href="https://869123771.github.io/art-supabase-doc/modules/hr">使用文档</a>
+    <a href="https://art-si.github.io/art-supabase-doc/modules/hr">使用文档</a>
   </p>
 </div>
 
@@ -18,7 +18,7 @@
 
 亿企工场 HR 是亿企工场的人力资源业务应用，围绕组织与岗位、员工档案、人才获取、人才发展和日常人事运营建立统一的人力数据与流程体系。
 
-本仓只维护 HR 页面、业务 API、领域类型与适配代码。认证、租户、权限、菜单、布局、路由、公共组件、Store 和 Supabase 公共客户端由 [`art-supabase-pro`](https://gitee.com/wangyanghub/art-supabase-pro) 统一提供。
+本仓只维护 HR 页面、业务 API、领域类型与适配代码。认证、租户、权限、菜单、布局、路由、公共组件、Store 和 Supabase 公共客户端由 [`art-supabase-pro`](https://gitee.com/art-si/art-supabase-pro) 统一提供。
 
 ![员工花名册](screenshots/employee-roster.png)
 

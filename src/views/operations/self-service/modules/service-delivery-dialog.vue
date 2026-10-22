@@ -113,6 +113,7 @@
   const employeeSelection = ref<EmployeeIntegrationItem[]>([])
 
   const createInitialModel = (): FormModel => ({
+    id: undefined,
     tenantId: isPlatformSuper.value ? undefined : getUserInfo.value.tenantId,
     requestNo: '',
     employeeId: undefined,
