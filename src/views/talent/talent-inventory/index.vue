@@ -189,6 +189,9 @@
 </template>
 
 <script setup lang="ts">
+  import { useAsyncState } from '@vueuse/core'
+  import { noop } from 'lodash-es'
+  import { getFriendlySupabaseErrorMessage } from '@/utils/supabase'
   import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import type { ColumnOption } from '@/types'
@@ -216,9 +219,21 @@
   }
 
   const { hasAuth } = useAuth()
-  const loading = ref(false)
-  const errorMessage = ref('')
-  const overview = ref<Api.Hr.TalentInventoryOverview | null>(null)
+  const {
+    state: overview,
+    isLoading: loading,
+    error: overviewError,
+    executeImmediate: loadInventory
+  } = useAsyncState<Api.Hr.TalentInventoryOverview | null, []>(fetchTalentInventory, null, {
+    immediate: false,
+    resetOnExecute: false,
+    onError: noop
+  })
+  const errorMessage = computed(() =>
+    overviewError.value === undefined
+      ? ''
+      : getFriendlySupabaseErrorMessage(overviewError.value, '人才盘点数据暂时无法加载，请稍后重试')
+  )
   const activeScope = ref<Scope>('all')
   const configuredScopeOptions = useDictionaryOptions('hrTalentInventoryFilter')
   const scopeOptions = computed(() =>
@@ -387,17 +402,6 @@
   }
   function handleMetricClick(metric: BusinessWorkspaceMetric): void {
     if (['all', 'gap', 'high'].includes(metric.key ?? '')) activeScope.value = metric.key as Scope
-  }
-  async function loadInventory(): Promise<void> {
-    loading.value = true
-    errorMessage.value = ''
-    try {
-      overview.value = await fetchTalentInventory()
-    } catch {
-      errorMessage.value = '人才盘点数据暂时无法加载，请稍后重试'
-    } finally {
-      loading.value = false
-    }
   }
   onMounted(() => void loadInventory())
 </script>

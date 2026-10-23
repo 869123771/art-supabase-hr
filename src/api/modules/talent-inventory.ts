@@ -13,7 +13,7 @@ interface TalentInventorySource {
 export async function fetchTalentInventory(): Promise<Api.Hr.TalentInventoryOverview> {
   const result = await responseHandle<TalentInventorySource>(
     () => supabase.rpc('hr_get_talent_inventory_secure'),
-    { showErrorMessage: true }
+    { showErrorMessage: false }
   )
   if (result.error) throw result.error
 

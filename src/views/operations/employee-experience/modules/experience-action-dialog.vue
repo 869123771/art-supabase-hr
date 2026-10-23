@@ -8,9 +8,9 @@
         description="行动只关联达到匿名阈值的聚合主题，不建立与个人答案的任何引用。"
       >
         <template #aside>
-          <span class="experience-action-dialog__boundary">
+          <ElTag type="success" effect="light" round>
             <ArtSvgIcon icon="ri:user-follow-line" />负责人 + 期限 + 成功标准
-          </span>
+          </ElTag>
         </template>
       </ArtEntitySummary>
 
@@ -365,17 +365,5 @@
   .experience-action-dialog {
     display: grid;
     gap: 18px;
-
-    &__boundary {
-      display: inline-flex;
-      gap: 5px;
-      align-items: center;
-      padding: 6px 9px;
-      font-size: 11px;
-      font-weight: 650;
-      color: var(--el-color-success-dark-2);
-      background: color-mix(in srgb, var(--el-color-success) 10%, transparent);
-      border-radius: 999px;
-    }
   }
 </style>

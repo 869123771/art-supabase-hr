@@ -24,15 +24,17 @@
               <small>按计划有效性、参保窗口和审核结果控制每一笔员工保障</small>
             </span>
           </div>
-          <span
+          <ElTag
             class="benefits-page__governance"
-            :class="{ 'is-restricted': !overview.amountVisible }"
+            :type="overview.amountVisible ? 'success' : 'warning'"
+            effect="light"
+            round
           >
             <ArtSvgIcon
               :icon="overview.amountVisible ? 'ri:money-cny-circle-line' : 'ri:lock-2-line'"
             />
             {{ overview.amountVisible ? '缴费金额已授权' : '缴费金额服务端隐藏' }}
-          </span>
+          </ElTag>
         </header>
 
         <ol class="benefits-page__rail" aria-label="福利管理控制阶段">
@@ -963,25 +965,6 @@
       color: var(--theme-color);
       background: color-mix(in srgb, var(--theme-color) 10%, transparent);
       border-radius: var(--el-border-radius-base);
-    }
-
-    &__governance {
-      display: inline-flex;
-      gap: 6px;
-      align-items: center;
-      min-height: 28px;
-      padding: 0 10px;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--el-color-success-dark-2);
-      white-space: nowrap;
-      background: var(--el-color-success-light-9);
-      border-radius: 999px;
-
-      &.is-restricted {
-        color: var(--el-color-warning-dark-2);
-        background: var(--el-color-warning-light-9);
-      }
     }
 
     &__rail {

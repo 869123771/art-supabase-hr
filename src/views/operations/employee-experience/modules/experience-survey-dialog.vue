@@ -8,9 +8,9 @@
         description="先定义受众、周期与匿名阈值；发布后系统固化参与名单，调查设置不再允许修改。"
       >
         <template #aside>
-          <span class="experience-survey-dialog__boundary">
+          <ElTag type="success" effect="light" round>
             <ArtSvgIcon icon="ri:shield-check-line" />最低 5 人成组
-          </span>
+          </ElTag>
         </template>
       </ArtEntitySummary>
 
@@ -301,17 +301,5 @@
   .experience-survey-dialog {
     display: grid;
     gap: 18px;
-
-    &__boundary {
-      display: inline-flex;
-      gap: 5px;
-      align-items: center;
-      padding: 6px 9px;
-      font-size: 11px;
-      font-weight: 650;
-      color: var(--el-color-success-dark-2);
-      background: color-mix(in srgb, var(--el-color-success) 10%, transparent);
-      border-radius: 999px;
-    }
   }
 </style>

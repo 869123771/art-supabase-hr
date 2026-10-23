@@ -80,6 +80,8 @@
 </template>
 
 <script setup lang="ts">
+  import { useAsyncState } from '@vueuse/core'
+  import { noop } from 'lodash-es'
   import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import { getFriendlySupabaseErrorMessage } from '@/utils/supabase'
@@ -99,9 +101,21 @@
   type RiskLevel = Api.Hr.WorkforceRiskLevel
 
   const router = useRouter()
-  const loading = ref(false)
-  const overview = ref<Api.Hr.WorkforceRiskOverview | null>(null)
-  const errorMessage = ref('')
+  const {
+    state: overview,
+    isLoading: loading,
+    error: overviewError,
+    executeImmediate: loadOverview
+  } = useAsyncState<Api.Hr.WorkforceRiskOverview | null, []>(fetchWorkforceRiskOverview, null, {
+    immediate: false,
+    resetOnExecute: false,
+    onError: noop
+  })
+  const errorMessage = computed(() =>
+    overviewError.value === undefined
+      ? ''
+      : getFriendlySupabaseErrorMessage(overviewError.value, '人力风险数据加载失败')
+  )
   const activeKind = ref<'all' | RiskKind>('all')
   const configuredRiskFilterOptions = useDictionaryOptions('hrWorkforceRiskFilter')
   const riskFilterOptions = computed(() =>
@@ -184,18 +198,6 @@
 
   function openRisk(item: Api.Hr.WorkforceRiskItem): void {
     void router.push(item.routePath)
-  }
-
-  async function loadOverview(): Promise<void> {
-    loading.value = true
-    errorMessage.value = ''
-    try {
-      overview.value = await fetchWorkforceRiskOverview()
-    } catch (error) {
-      errorMessage.value = getFriendlySupabaseErrorMessage(error, '人力风险数据加载失败')
-    } finally {
-      loading.value = false
-    }
   }
 
   onMounted(() => void loadOverview())

@@ -7,7 +7,7 @@ type SkillMatrixSource = Partial<Api.Hr.SkillMatrixOverview>
 export async function fetchSkillMatrix(): Promise<Api.Hr.SkillMatrixOverview> {
   const result = await responseHandle<SkillMatrixSource>(
     () => supabase.rpc('hr_get_skill_matrix_secure'),
-    { showErrorMessage: true }
+    { showErrorMessage: false }
   )
   if (result.error) throw result.error
 

@@ -321,6 +321,9 @@
 </template>
 
 <script setup lang="ts">
+  import { useAsyncState } from '@vueuse/core'
+  import { noop } from 'lodash-es'
+  import { getFriendlySupabaseErrorMessage } from '@/utils/supabase'
   import { useDictionaryOptions } from '@/hooks/core/useDictionaryOptions'
   import MasterDeleteProcessingNotice from '@/components/business/master-delete-processing-notice/index.vue'
   import type { ColumnOption } from '@/types'
@@ -344,8 +347,21 @@
 
   const { hasAuth } = useAuth()
   const router = useRouter()
-  const loading = ref(false)
-  const errorMessage = ref('')
+  const {
+    state: overview,
+    isLoading: loading,
+    error: overviewError,
+    executeImmediate: loadOverview
+  } = useAsyncState<Api.Hr.SkillMatrixOverview | null, []>(fetchSkillMatrix, null, {
+    immediate: false,
+    resetOnExecute: false,
+    onError: noop
+  })
+  const errorMessage = computed(() =>
+    overviewError.value === undefined
+      ? ''
+      : getFriendlySupabaseErrorMessage(overviewError.value, '技能矩阵数据暂时无法加载，请稍后重试')
+  )
   const activeScope = ref<Scope>('all')
   const configuredScopeOptions = useDictionaryOptions('hrSkillMatrixFilter')
   const scopeOptions = computed(() =>
@@ -356,7 +372,6 @@
   const keyword = ref('')
   const currentPage = ref(1)
   const pageSize = 20
-  const overview = ref<Api.Hr.SkillMatrixOverview | null>(null)
   const canViewEmployee = computed(() => hasAuth('Hr:Employee:View'))
   const tableColumns: ColumnOption<Employee>[] = [
     {
@@ -503,18 +518,6 @@
   function goToCapabilityConfig(): void {
     void router.push('/hr/talent/development')
   }
-  async function loadOverview(): Promise<void> {
-    loading.value = true
-    errorMessage.value = ''
-    try {
-      overview.value = await fetchSkillMatrix()
-    } catch {
-      errorMessage.value = '技能矩阵数据暂时无法加载，请稍后重试'
-    } finally {
-      loading.value = false
-    }
-  }
-
   watch([activeScope, keyword], () => {
     currentPage.value = 1
   })

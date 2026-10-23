@@ -8,9 +8,9 @@
         :description="contextMeta.description"
       >
         <template #aside>
-          <span class="employee-relation-record-dialog__boundary">
+          <ElTag type="warning" effect="light" round>
             <ArtSvgIcon icon="ri:shield-keyhole-line" />{{ contextMeta.boundary }}
-          </span>
+          </ElTag>
         </template>
       </ArtEntitySummary>
 
@@ -485,19 +485,5 @@
     display: grid;
     gap: 18px;
     min-width: 0;
-
-    &__boundary {
-      display: inline-flex;
-      gap: 6px;
-      align-items: center;
-      min-height: 28px;
-      padding: 0 10px;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--el-color-warning-dark-2);
-      white-space: nowrap;
-      background: var(--el-color-warning-light-9);
-      border-radius: 999px;
-    }
   }
 </style>

@@ -12,9 +12,9 @@
         "
       >
         <template #aside>
-          <span class="org-design-dialog__boundary">
+          <ElTag type="success" effect="light" round>
             <ArtSvgIcon icon="ri:shield-check-line" />不直接改主数据
-          </span>
+          </ElTag>
         </template>
       </ArtEntitySummary>
       <ArtForm
@@ -469,19 +469,5 @@
     display: grid;
     gap: 16px;
     min-width: 0;
-  }
-
-  .org-design-dialog__boundary {
-    display: inline-flex;
-    gap: 6px;
-    align-items: center;
-    min-height: 28px;
-    padding: 0 10px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--el-color-success-dark-2);
-    white-space: nowrap;
-    background: var(--el-color-success-light-9);
-    border-radius: 999px;
   }
 </style>
